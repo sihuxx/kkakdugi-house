@@ -182,9 +182,9 @@ function drawKitchen(t, prog){
   g.fillRect(W * 0.70, shY, W * 0.30, H * 0.022); g.strokeRect(W * 0.70, shY, W * 0.30, H * 0.022);
   for(let i = 0; i < 4; i++){
     const x = W * 0.735 + i * W * 0.068, r = Math.min(W * 0.028, H * 0.05);
-    g.fillStyle = ['#FFFDF6', '#FFE3EC', '#DFF0FA', '#EAF6E4'][i % 4];
+    g.fillStyle = ['#FFF8F0', '#FFE3EC', '#DFF0FA', '#EAF6E4'][i % 4];
     g.beginPath(); g.ellipse(x, shY - r * 0.75, r, r * 0.95, 0, 0, 7); g.fill(); g.stroke();
-    g.strokeStyle = 'rgba(43,43,43,.3)';
+    g.strokeStyle = 'rgba(120,95,75,.3)';
     g.beginPath(); g.ellipse(x, shY - r * 0.75, r * 0.55, r * 0.5, 0, 0, 7); g.stroke(); ink();
   }
   /* 오른쪽 창문 */
@@ -245,7 +245,7 @@ function stepPlay(dt, ts){
   const t = (playing || frozen) ? nowT() : ts / 1000;
   const prog = Math.max(0, Math.min(1, t / song.end));
   const th = lerpTheme(THEMES[song.theme], prog);
-  th.ink = '#2B2B2B';
+  th.ink = '#5A4A40';
 
   if(playing){
     const look2 = t + 0.25;
@@ -330,14 +330,14 @@ function laneField(t,th){
   g.lineWidth=LW(); g.strokeStyle=th.ink; g.globalAlpha=.5;
   roundRect(x0,top,fw,H-top-H*0.03,18); g.stroke(); g.globalAlpha=1;
   // 레인 구분선
-  g.setLineDash([6,8]); g.lineWidth=LW()*0.7; g.strokeStyle='rgba(43,43,43,.25)';
+  g.setLineDash([6,8]); g.lineWidth=LW()*0.7; g.strokeStyle='rgba(120,95,75,.25)';
   for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(x0+lw*i,top+8); g.lineTo(x0+lw*i,jy+lw*0.55); g.stroke(); }
   g.setLineDash([]);
   // 박자 줄
   const beat=song.beat, from=Math.ceil(nowT()/beat);
   for(let k=from;k<from+14;k++){
     const y=noteY(k*beat); if(y<top||y>jy) continue;
-    g.strokeStyle= (k% (song.spb/2)===0) ? 'rgba(43,43,43,.16)' : 'rgba(43,43,43,.07)';
+    g.strokeStyle= (k% (song.spb/2)===0) ? 'rgba(120,95,75,.16)' : 'rgba(120,95,75,.07)';
     g.lineWidth=LW()*0.7; g.beginPath(); g.moveTo(x0+4,y); g.lineTo(x0+fw-4,y); g.stroke();
   }
   // 눌린 줄이 위로 빛난다
@@ -403,7 +403,7 @@ function drawNotes(t,th){
       roundRect(x-nw*0.34, a, nw*0.68, Math.max(6,bnd-a), nw*0.3); g.stroke();
       // 머리·꼬리 알약
       if(!n.judged) plate(x, noteY(n.t), nw*0.46, col, th.ink);
-      g.fillStyle='#FFFDF6'; roundRect(x-nw*0.34,yTail-nh*0.34,nw*0.68,nh*0.68,nh*0.3); g.fill(); g.stroke();
+      g.fillStyle='#FFF8F0'; roundRect(x-nw*0.34,yTail-nh*0.34,nw*0.68,nh*0.68,nh*0.3); g.fill(); g.stroke();
       if(n.holding && Math.random()<0.35)
         fx.push({x:x+(Math.random()-.5)*nw,y:jy,life:.6,kind:'dust',
                  vx:(Math.random()-.5)*70,vy:-70-Math.random()*70,r:2+Math.random()*2});
@@ -421,7 +421,7 @@ function plate(x, y, r, col, ink2){
   g.fillStyle=col;
   g.beginPath(); g.ellipse(x, y, r, r*0.8, 0, 0, 6.3); g.fill();
   g.lineWidth=LW(); g.strokeStyle=ink2; g.stroke();
-  g.fillStyle='#FFFDF6'; g.globalAlpha=.85;
+  g.fillStyle='#FFF8F0'; g.globalAlpha=.85;
   g.beginPath(); g.ellipse(x, y, r*0.6, r*0.46, 0, 0, 6.3); g.fill(); g.globalAlpha=1;
   g.lineWidth=LW()*0.7; g.strokeStyle=ink2;
   g.beginPath(); g.ellipse(x, y, r*0.6, r*0.46, 0, 0, 6.3); g.stroke();
@@ -459,7 +459,7 @@ function drawChar(t,dt,th){
   if(!img||!img.complete||!img.naturalWidth) return;
   const w=sc*(img.naturalWidth/img.naturalHeight);
   g.save(); g.translate(cx,y); g.rotate(rot);
-  g.globalAlpha=.1; g.fillStyle='#2B2B2B';
+  g.globalAlpha=.1; g.fillStyle='#5A4A40';
   g.beginPath(); g.ellipse(0,2+char.float,w*0.34,6,0,0,6.3); g.fill(); g.globalAlpha=1;
   if(char.flip) g.scale(-1,1);
   g.drawImage(img,-w/2,-sc,w,sc);
@@ -489,10 +489,10 @@ function drawFx(dt,th){
     if(f.kind==='shard'){
       g.save(); g.translate(f.x,f.y); g.rotate(f.rot);
       g.fillStyle=f.col; roundRect(-f.w/2,-f.h/2,f.w,f.h,f.h*0.45); g.fill();
-      g.lineWidth=LW()*0.7; g.strokeStyle='#2B2B2B'; g.stroke(); g.restore();
+      g.lineWidth=LW()*0.7; g.strokeStyle='#5A4A40'; g.stroke(); g.restore();
     } else if(f.kind==='star'){
       g.save(); g.translate(f.x,f.y); g.rotate(f.rot);
-      g.fillStyle='#FFD98A'; g.strokeStyle='#2B2B2B'; g.lineWidth=LW()*0.55;
+      g.fillStyle='#FFD98A'; g.strokeStyle='#5A4A40'; g.lineWidth=LW()*0.55;
       g.beginPath();
       for(let i=0;i<8;i++){ const ang=i*Math.PI/4, rr=i%2?f.r*0.42:f.r*1.35;
         i?g.lineTo(Math.cos(ang)*rr,Math.sin(ang)*rr):g.moveTo(Math.cos(ang)*rr,Math.sin(ang)*rr); }
@@ -504,7 +504,7 @@ function drawFx(dt,th){
       g.fillStyle=f.col||char.accent;
       g.beginPath(); g.arc(f.x,f.y,f.r,0,6.3); g.fill();
     } else {
-      g.strokeStyle=f.col||'#7BC47F'; g.lineWidth=LW();
+      g.strokeStyle=f.col||'#8FBF92'; g.lineWidth=LW();
       g.beginPath(); g.arc(f.x,f.y,f.r,0,6.3); g.stroke();
     }
   }
@@ -518,7 +518,7 @@ function drawFx(dt,th){
     g.save(); g.translate(tx.x,tx.y); g.scale(sc,sc); g.rotate(-0.05);
     g.font='700 '+Math.round((tx.big?34:27)*uiK())+'px "Gaegu", sans-serif';
     g.textAlign='center'; g.lineWidth=LW(); g.lineJoin='round';
-    g.strokeStyle='#FFFDF6'; g.strokeText(tx.s,0,0);
+    g.strokeStyle='#FFF8F0'; g.strokeText(tx.s,0,0);
     g.fillStyle = tx.v==='perfect' ? '#E8A33D'
                 : tx.v==='great'   ? '#5AA8D8'
                 : (tx.s==='MISS'||tx.s==='놓쳤다') ? '#C9A9A9' : th.ink;
@@ -531,9 +531,9 @@ function drawHud(t,th){
   const p=Math.max(0,Math.min(1,t/song.end));
   g.strokeStyle=th.ink; g.lineWidth=LW(); g.lineCap='round';
   g.beginPath(); g.moveTo(pad,y); g.lineTo(pad+w,y); g.stroke();
-  g.strokeStyle='#7BC47F'; g.lineWidth=LW();
+  g.strokeStyle='#8FBF92'; g.lineWidth=LW();
   g.beginPath(); g.moveTo(pad,y); g.lineTo(pad+w*p,y); g.stroke();
-  g.fillStyle='#7BC47F';
+  g.fillStyle='#8FBF92';
   for(let i=0;i<4;i++){ const a=i*Math.PI/2+t;
     g.beginPath(); g.ellipse(pad+w+13+Math.cos(a)*5.5,y+Math.sin(a)*5.5,5.5,5.5,0,0,6.3); g.fill(); }
   const tx0=pad+40;
@@ -550,7 +550,7 @@ function drawHud(t,th){
     g.translate(cbx,H*0.30); g.scale(sc,sc); g.rotate(-0.04);
     g.textAlign='center';
     g.font='700 '+Math.round(Math.min(56,26+combo*0.3)*uiK())+'px "Gaegu", sans-serif';
-    g.lineWidth=LW()*1.7; g.lineJoin='round'; g.strokeStyle='#FFFDF6'; g.strokeText(combo,0,0);
+    g.lineWidth=LW()*1.7; g.lineJoin='round'; g.strokeStyle='#FFF8F0'; g.strokeText(combo,0,0);
     g.fillStyle=th.ink; g.fillText(combo,0,0);
     g.font='400 '+Math.round(14*uiK())+'px "Gowun Dodum", sans-serif'; g.globalAlpha=.7;
     g.fillText('콤보',0,20*uiK()); g.restore(); g.globalAlpha=1;

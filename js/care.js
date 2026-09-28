@@ -107,7 +107,7 @@ function finishAct(kind){
 }
 function puffs(shape, n){
   const cx = rx(home.x), cy = yAt(home.y);
-  const col = { z:'#B9A7D9', drop:'#A9D9F0', heart:'#FFB3C1', dot:'#F5B971', bub:'#A9D9F0' }[shape];
+  const col = { z:'#AD9ED4', drop:'#8FC0D8', heart:'#EFA6B8', dot:'#E0A45C', bub:'#8FC0D8' }[shape];
   for(let i = 0; i < n; i++)
     home.parts.push({ x: cx + (Math.random() - 0.5) * 70, y: cy - 40 - Math.random() * 40,
                       vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 70,
@@ -432,7 +432,7 @@ function petOnce(){
   home.pet.n++;
   const cx = rx(home.x), cy = yAt(home.y) - dugiH() * 0.7;
   home.parts.push({ x:cx + (Math.random() - .5) * 40, y:cy, vx:(Math.random() - .5) * 40,
-                    vy:-50 - Math.random() * 40, life:0.9, t:0, c:'#FFB3C1', s:'heart' });
+                    vy:-50 - Math.random() * 40, life:0.9, t:0, c:'#EFA6B8', s:'heart' });
   if(home.pet.n % 12 === 0){ home.bubble = '헤헤'; home.bubbleT = 1.2; blip(880, 0.05); }
   if(S.stat.pet % 25 === 0) checkAchieve();
   refreshBar();
@@ -480,11 +480,11 @@ function drawDugi(){
   g.restore();
 
   if(a && a.kind === 'sleep'){
-    g.save(); g.globalAlpha = 0.2 * Math.min(1, a.t * 1.6); g.fillStyle = '#2B2B2B';
+    g.save(); g.globalAlpha = 0.2 * Math.min(1, a.t * 1.6); g.fillStyle = '#5A4A40';
     g.fillRect(0, 0, W, H); g.restore();
     for(let i = 0; i < 3; i++){
       const p = ((a.t * 0.5 + i * 0.33) % 1);
-      g.save(); g.globalAlpha = 1 - p; g.fillStyle = '#B9A7D9';
+      g.save(); g.globalAlpha = 1 - p; g.fillStyle = '#AD9ED4';
       g.font = '700 ' + ((16 + p * 14) * uiK()) + 'px Gaegu, sans-serif';
       g.fillText('z', cx + baseH * 0.4 + p * 26, cy - baseH * 0.7 - p * 46);
       g.restore();
@@ -505,14 +505,14 @@ function speech(tx, ty, text, want){
   const w = g.measureText(text).width + 28 * uiK(), h = 32 * uiK();
   const x = Math.max(6, Math.min(W - w - 6, tx - w / 2));
   const y = ty - h + (want ? Math.sin(home.t * 3) * 2 * uiK() : 0);
-  g.fillStyle = want ? '#FFF3D6' : '#FFFDF6'; ink();
+  g.fillStyle = want ? '#FFF3D6' : '#FFF8F0'; ink();
   rrect(x, y, w, h, 13 * uiK()); g.fill(); g.stroke();
-  g.fillStyle = want ? '#FFF3D6' : '#FFFDF6';
+  g.fillStyle = want ? '#FFF3D6' : '#FFF8F0';
   g.beginPath(); g.moveTo(tx - 7 * uiK(), y + h - 1); g.lineTo(tx, y + h + 9 * uiK());
   g.lineTo(tx + 7 * uiK(), y + h - 1); g.closePath(); g.fill();
   g.beginPath(); g.moveTo(tx - 7 * uiK(), y + h - 1); g.lineTo(tx, y + h + 9 * uiK());
   g.lineTo(tx + 7 * uiK(), y + h - 1); g.stroke();
-  g.fillStyle = '#2B2B2B'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(text, x + w / 2, y + h / 2 + 1);
   g.restore();
 }
@@ -521,7 +521,7 @@ function moodIcon(cx, ty, col){
   g.save(); g.translate(cx, ty - s * 0.4 + Math.sin(home.t * 3) * 2);
   g.fillStyle = col || '#C9A9A9'; ink();
   g.beginPath(); g.arc(0, 0, s, 0, 7); g.fill(); g.stroke();
-  g.fillStyle = '#2B2B2B'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.font = '700 ' + (s * 1.3) + 'px Gaegu, sans-serif'; g.fillText('!', 0, 1);
   g.restore();
 }
@@ -540,7 +540,7 @@ function drawParts(){
       g.quadraticCurveTo(p.x - s * 0.7, p.y + s * 0.2, p.x, p.y - s);
       g.fill(); g.stroke();
     }else if(p.s === 'z'){
-      g.fillStyle = '#B9A7D9'; g.font = '700 ' + (s * 2.2) + 'px Gaegu, sans-serif';
+      g.fillStyle = '#AD9ED4'; g.font = '700 ' + (s * 2.2) + 'px Gaegu, sans-serif';
       g.textAlign = 'center'; g.fillText('z', p.x, p.y);
     }else{
       g.beginPath(); g.arc(p.x, p.y, s * 0.55, 0, 7); g.fill(); g.stroke();
@@ -565,7 +565,7 @@ function drawBall(){
   if(b.home) return;
   const cx = rx(b.x), cy = yAt(b.y), s = 26 * uiK() * depthAt(cy);
   shadow(cx, cy, s * 0.5);
-  g.save(); ink(); g.fillStyle = '#FFB3C1';
+  g.save(); ink(); g.fillStyle = '#EFA6B8';
   g.beginPath(); g.arc(cx, cy - s * 0.5, s * 0.5, 0, 7); g.fill(); g.stroke();
   g.strokeStyle = '#E39FB2';
   g.beginPath(); g.arc(cx, cy - s * 0.5, s * 0.5, 2.4, 3.9); g.stroke();
@@ -575,7 +575,7 @@ function drawBall(){
     g.save(); ink(LW() * 0.8); g.setLineDash([7, 7]); g.globalAlpha = .7;
     g.beginPath(); g.moveTo(ax, ay); g.lineTo(cx, cy - s * 0.5); g.stroke();
     g.setLineDash([]);
-    g.fillStyle = '#2B2B2B'; g.textAlign = 'center';
+    g.fillStyle = '#5A4A40'; g.textAlign = 'center';
     g.font = '700 ' + (15 * uiK()) + 'px Gaegu, sans-serif';
     g.fillText('놓으면 던져요', cx, cy - s * 1.4);
     g.restore();
@@ -593,9 +593,9 @@ function drawPrompt(){
   const cx = rx(home.x), cy = yAt(home.y) - dugiH() - 46 * k;
   const x = Math.max(6 * k, Math.min(W - w - 6 * k, cx - w / 2));
   const y = Math.max(wallBot() * 0.2, cy) + Math.sin(home.t * 4) * 2 * k;
-  g.fillStyle = '#2B2B2B'; g.globalAlpha = .92;
+  g.fillStyle = '#5A4A40'; g.globalAlpha = .92;
   rrect(x, y, w, h, h / 2); g.fill();
-  g.globalAlpha = 1; g.fillStyle = '#FFFDF6'; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.globalAlpha = 1; g.fillStyle = '#FFF8F0'; g.textAlign = 'left'; g.textBaseline = 'middle';
   g.font = '700 ' + (15 * k) + 'px Gaegu, sans-serif';
   g.fillText('E', x + 12 * k, y + h / 2 + 1);
   g.font = '700 ' + (19 * k) + 'px Gaegu, sans-serif';
@@ -633,12 +633,12 @@ function drawHome(dt){
 function drawDecoHint(){
   const k = uiK();
   g.save();
-  g.fillStyle = 'rgba(43,43,43,.9)';
+  g.fillStyle = 'rgba(120,95,75,.9)';
   const txt = '가구를 끌어서 옮기세요';
   g.font = '700 ' + (18 * k) + 'px Gaegu, sans-serif';
   const w = g.measureText(txt).width + 30 * k;
   rrect(W / 2 - w / 2, H * 0.12, w, 30 * k, 15 * k); g.fill();
-  g.fillStyle = '#FFFDF6'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#FFF8F0'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(txt, W / 2, H * 0.12 + 15 * k);
   g.restore();
 }
@@ -647,7 +647,7 @@ function drawDecoHint(){
 function drawMini(){
   const k = uiK();
   g.save();
-  g.fillStyle = 'rgba(43,43,43,.55)'; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(250,245,238,.86)'; g.fillRect(0, 0, W, H);
   const cx = W * 0.5, cy = H * 0.56, sz = Math.min(W * 0.42, H * 0.6);
   const c = look(), im = IMG[c.run];
 
@@ -658,12 +658,12 @@ function drawMini(){
     g.scale((c.flip === false ? 1 : -1) * (1 + chew), 1 - chew);
     if(im && im.complete) g.drawImage(im, -sz * 0.5, -sz, sz, sz);
     g.restore();
-    g.fillStyle = '#FFFDF6'; g.textAlign = 'center';
+    g.fillStyle = '#4E4038'; g.textAlign = 'center';
     g.font = '700 ' + (26 * k) + 'px Gaegu, sans-serif';
     g.fillText(mini.picked ? '냠냠!' : '뭘 줄까요?', cx, H * 0.16);
     if(!mini.picked){
       g.font = '400 ' + (14 * k) + 'px Gowun Dodum, sans-serif';
-      g.fillStyle = '#F2E8D9';
+      g.fillStyle = '#8A7264';
       g.fillText('좋아하는 음식을 찾으면 마음이 두 배로 올라요', cx, H * 0.21);
     }
     const n = mini.foods.length, cw = Math.min(W * 0.16, 110 * k), gap = cw * 0.24;
@@ -677,10 +677,10 @@ function drawMini(){
         return;
       }
       if(mini.picked) return;
-      g.fillStyle = '#FFFDF6'; ink();
-      rrect(x, y, cw, cw * 0.86, 14 * k); g.fill(); g.stroke();
+      g.fillStyle = '#FFFFFF'; g.strokeStyle = '#EFE4D8'; g.lineWidth = LW() * 0.7;
+      rrect(x, y, cw, cw * 0.86, 18 * k); g.fill(); g.stroke(); ink();
       drawFood(f, x + cw / 2, y + cw * 0.36, cw * 0.26);
-      g.fillStyle = '#2B2B2B'; g.textAlign = 'center';
+      g.fillStyle = '#5A4A40'; g.textAlign = 'center';
       g.font = '700 ' + (15 * k) + 'px Gaegu, sans-serif';
       g.fillText(f.name, x + cw / 2, y + cw * 0.74);
       f._hit = { x, y, w:cw, h:cw * 0.86 };
@@ -707,15 +707,16 @@ function drawMini(){
       g.beginPath(); g.arc(b.x, b.y, b.r, 0, 7); g.fill(); g.stroke(); g.restore();
     });
     const done = mini.spots.filter(s => s.hp <= 0).length;
-    g.fillStyle = '#FFFDF6'; g.textAlign = 'center';
+    g.fillStyle = '#4E4038'; g.textAlign = 'center';
     g.font = '700 ' + (26 * k) + 'px Gaegu, sans-serif';
     g.fillText('문질러서 씻겨요', cx, H * 0.14);
     const bw = Math.min(W * 0.5, 320 * k), bx = cx - bw / 2, by = H * 0.19;
-    g.fillStyle = '#FFFDF6'; ink(); rrect(bx, by, bw, 16 * k, 8 * k); g.fill(); g.stroke();
-    g.fillStyle = '#7BC47F';
+    g.fillStyle = '#FFFFFF'; g.strokeStyle = '#EFE4D8'; g.lineWidth = LW() * 0.7;
+    rrect(bx, by, bw, 16 * k, 8 * k); g.fill(); g.stroke();
+    g.fillStyle = '#8FBF92';
     rrect(bx + 2, by + 2, (bw - 4) * (done / mini.total), 12 * k, 6 * k); g.fill();
     if(mini.soap){
-      g.fillStyle = '#F2E8D9'; g.font = '400 ' + (13 * k) + 'px Gowun Dodum, sans-serif';
+      g.fillStyle = '#8A7264'; g.font = '400 ' + (13 * k) + 'px Gowun Dodum, sans-serif';
       g.fillText('거품비누를 쓰는 중 — 한 번에 지워져요', cx, H * 0.24);
     }
   }
@@ -726,7 +727,7 @@ function drawFood(f, x, y, r){
   if(f.id === 'carrot'){
     g.beginPath(); g.moveTo(x, y + r); g.lineTo(x - r * 0.5, y - r * 0.5);
     g.lineTo(x + r * 0.5, y - r * 0.5); g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = '#8CCB86';
+    g.fillStyle = '#8FBF92';
     g.beginPath(); g.ellipse(x, y - r * 0.6, r * 0.45, r * 0.22, 0, 0, 7); g.fill(); g.stroke();
   }else if(f.id === 'bread'){
     rrect(x - r * 0.7, y - r * 0.55, r * 1.4, r * 1.1, r * 0.35); g.fill(); g.stroke();
@@ -737,13 +738,13 @@ function drawFood(f, x, y, r){
     g.quadraticCurveTo(x - r * 0.8, y - r * 0.2, x, y - r * 0.7);
     g.quadraticCurveTo(x + r * 0.8, y - r * 0.2, x, y + r * 0.9);
     g.fill(); g.stroke();
-    g.fillStyle = '#8CCB86';
+    g.fillStyle = '#8FBF92';
     g.beginPath(); g.ellipse(x, y - r * 0.7, r * 0.4, r * 0.18, 0, 0, 7); g.fill(); g.stroke();
   }else if(f.id === 'fish'){
     g.beginPath(); g.ellipse(x, y, r * 0.85, r * 0.5, 0, 0, 7); g.fill(); g.stroke();
     g.beginPath(); g.moveTo(x + r * 0.7, y); g.lineTo(x + r * 1.2, y - r * 0.4);
     g.lineTo(x + r * 1.2, y + r * 0.4); g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = '#2B2B2B';
+    g.fillStyle = '#5A4A40';
     g.beginPath(); g.arc(x - r * 0.4, y - r * 0.1, r * 0.08, 0, 7); g.fill();
   }else if(f.id === 'icecre'){
     g.beginPath(); g.arc(x, y - r * 0.2, r * 0.6, 0, 7); g.fill(); g.stroke();

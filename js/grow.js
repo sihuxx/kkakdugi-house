@@ -43,13 +43,13 @@ const HOUSE = () => HOUSES[Math.min(HOUSES.length - 1, S.house || 0)];
 
 /* 벽지 · 바닥 (상점에서 삼) */
 const WALLS = [
-  { id:'w0', name:'기본 벽지',   price:0,   a:'#FBF1DE', b:'#F4E7D0', pat:'dot' },
+  { id:'w0', name:'기본 벽지',   price:0,   a:'#FBEEDD', b:'#F4E2CB', pat:'dot' },
   { id:'w1', name:'민트 줄무늬', price:280, a:'#E8F6EF', b:'#D9EEE4', pat:'stripe' },
   { id:'w2', name:'분홍 물방울', price:320, a:'#FDEFF3', b:'#F8E1E8', pat:'dot' },
   { id:'w3', name:'하늘 격자',   price:420, a:'#EAF4FB', b:'#DCECF7', pat:'grid' }
 ];
 const FLOORS = [
-  { id:'f0', name:'기본 마루',   price:0,   a:'#E8D6B4', b:'#D9C097' },
+  { id:'f0', name:'기본 마루',   price:0,   a:'#EBD4B4', b:'#DCC29A' },
   { id:'f1', name:'밝은 마루',   price:260, a:'#F3E4C9', b:'#E6D2AE' },
   { id:'f2', name:'회색 타일',   price:340, a:'#E4E6E4', b:'#D3D6D4' },
   { id:'f3', name:'분홍 카펫',   price:460, a:'#F6DCE3', b:'#EBC7D2' }
@@ -59,10 +59,10 @@ const FLOORNOW = () => FLOORS.find(f => f.id === (S.floor || 'f0')) || FLOORS[0]
 
 /* ===== 스탯 ===== */
 const STATS = [
-  { id:'full',   name:'배부름', color:'#F5B971' },
-  { id:'clean',  name:'깨끗함', color:'#A9D9F0' },
-  { id:'fun',    name:'기분',   color:'#FFB3C1' },
-  { id:'energy', name:'기운',   color:'#7BC47F' }
+  { id:'full',   name:'배부름', color:'#E0A45C' },
+  { id:'clean',  name:'깨끗함', color:'#8FC0D8' },
+  { id:'fun',    name:'기분',   color:'#EFA6B8' },
+  { id:'energy', name:'기운',   color:'#8FBF92' }
 ];
 
 /* ===== 가구 =====
@@ -137,7 +137,7 @@ const FOODS = [
   { id:'carrot', name:'당근',     color:'#F09A5B', full:22 },
   { id:'bread',  name:'빵',       color:'#E8C98A', full:26 },
   { id:'berry',  name:'딸기',     color:'#F4899B', full:18 },
-  { id:'fish',   name:'생선',     color:'#A9D9F0', full:28 },
+  { id:'fish',   name:'생선',     color:'#8FC0D8', full:28 },
   { id:'icecre', name:'아이스크림', color:'#FFE3EC', full:16 }
 ];
 
@@ -174,9 +174,9 @@ const careerPay = n => 1 + 0.05 * (careerLv(n) - 1);
 
 const JOBS = [
   { id:'dish', game:'rhythm', name:'설거지 알바', place:'분식집 주방',
-    desc:'노래에 맞춰 접시를 씻어요', pay:'깨끗이 씻을수록 시급이 올라요', color:'#A9D9F0' },
+    desc:'노래에 맞춰 접시를 씻어요', pay:'깨끗이 씻을수록 시급이 올라요', color:'#8FC0D8' },
   { id:'deliver', game:'run', name:'배달 알바', place:'동네 골목',
-    desc:'장애물을 피해 달려서 배달', pay:'동전을 줍고 제시간에 도착하면 보너스', color:'#FFB3C1' },
+    desc:'장애물을 피해 달려서 배달', pay:'동전을 줍고 제시간에 도착하면 보너스', color:'#EFA6B8' },
   { id:'cafe', game:'cafe', name:'카페 알바', place:'골목 카페',
     desc:'손님 주문을 외워서 담기', pay:'길게 외울수록 팁이 커져요', color:'#D9C4A0' }
 ];
@@ -217,12 +217,12 @@ const ACHIEVES = [
 
 /* ===== 꺅두기런 두기별 스킬 ===== */
 const SKILLS = {
-  dash:   { name:'돌진!',      desc:'3초 무적 돌진 · 장애물을 부숴요', dur:3.0,  color:'#FFB3C1' },
-  glide:  { name:'둥실둥실',   desc:'4초 동안 천천히 떨어져요',        dur:4.0,  color:'#A9D9F0' },
-  magnet: { name:'동전 자석',  desc:'5초 동안 동전이 따라와요',        dur:5.0,  color:'#7BC47F' },
+  dash:   { name:'돌진!',      desc:'3초 무적 돌진 · 장애물을 부숴요', dur:3.0,  color:'#EFA6B8' },
+  glide:  { name:'둥실둥실',   desc:'4초 동안 천천히 떨어져요',        dur:4.0,  color:'#8FC0D8' },
+  magnet: { name:'동전 자석',  desc:'5초 동안 동전이 따라와요',        dur:5.0,  color:'#8FBF92' },
   hop:    { name:'폭신 점프',  desc:'6초 동안 3단 점프가 돼요',        dur:6.0,  color:'#D9C4A0' },
-  slow:   { name:'느긋느긋',   desc:'5초 동안 천천히 · 동전 2배',      dur:5.0,  color:'#B9A7D9' },
-  shield: { name:'꽉 버티기',  desc:'한 번 부딪혀도 안 아픈 보호막',    dur:0,    color:'#F2E8D9' }
+  slow:   { name:'느긋느긋',   desc:'5초 동안 천천히 · 동전 2배',      dur:5.0,  color:'#AD9ED4' },
+  shield: { name:'꽉 버티기',  desc:'한 번 부딪혀도 안 아픈 보호막',    dur:0,    color:'#F3EAE1' }
 };
 const CHAR_SKILL = {
   wool:'hop', proud:'shield', baby:'magnet', belly:'shield', school:'magnet',

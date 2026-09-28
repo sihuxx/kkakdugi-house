@@ -9,11 +9,11 @@ const CafeGame = (function(){
 
 const MENU = [
   { id:'coffee', name:'커피',   color:'#B98F58' },
-  { id:'milk',   name:'우유',   color:'#FFFDF6' },
-  { id:'juice',  name:'주스',   color:'#F5B971' },
-  { id:'cake',   name:'케이크', color:'#FFB3C1' },
+  { id:'milk',   name:'우유',   color:'#FFF8F0' },
+  { id:'juice',  name:'주스',   color:'#E0A45C' },
+  { id:'cake',   name:'케이크', color:'#EFA6B8' },
   { id:'cookie', name:'쿠키',   color:'#D9B884' },
-  { id:'tea',    name:'차',     color:'#8CCB86' }
+  { id:'tea',    name:'차',     color:'#8FBF92' }
 ];
 let state = 'idle';          // show · input · good · bad · over
 let order = [], input = [], round = 0, miss = 0, score = 0, tip = 0;
@@ -87,7 +87,7 @@ function cup(x, y, r, m){
     g.beginPath(); g.moveTo(x - r * 0.62, y - r * 0.7); g.lineTo(x + r * 0.62, y - r * 0.7);
     g.lineTo(x + r * 0.45, y + r * 0.8); g.lineTo(x - r * 0.45, y + r * 0.8);
     g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = '#FFFDF6';
+    g.fillStyle = '#FFF8F0';
     g.beginPath(); g.ellipse(x, y - r * 0.7, r * 0.62, r * 0.16, 0, 0, 7); g.fill(); g.stroke();
     if(m.id === 'coffee' || m.id === 'tea'){
       g.save(); g.globalAlpha = .55; g.strokeStyle = '#FFFFFF'; g.lineWidth = LW() * 0.7;
@@ -114,7 +114,7 @@ function draw(){
   g.fillStyle = '#3E3428'; g.textAlign = 'center';
   g.font = '700 ' + (20 * k) + 'px Gaegu, sans-serif';
   g.fillText('MENU', W * 0.78, H * 0.12);
-  g.font = '400 ' + (12 * k) + 'px Gowun Dodum, sans-serif'; g.fillStyle = '#F2E8D9';
+  g.font = '400 ' + (12 * k) + 'px Gowun Dodum, sans-serif'; g.fillStyle = '#F3EAE1';
   g.fillText('커피 · 우유 · 주스', W * 0.78, H * 0.17);
   g.fillText('케이크 · 쿠키 · 차', W * 0.78, H * 0.21);
   g.restore();
@@ -135,10 +135,10 @@ function draw(){
     /* 주문 말풍선 */
     const bw = Math.min(W * 0.52, 70 * k * Math.max(3, order.length)), bh = H * 0.19;
     const bx = W * 0.3, by = H * 0.26;
-    g.save(); ink(); g.fillStyle = '#FFFDF6';
+    g.save(); ink(); g.fillStyle = '#FFF8F0';
     rrect(bx, by, bw, bh, 18 * k); g.fill(); g.stroke();
     g.beginPath(); g.moveTo(bx + 18 * k, by + bh); g.lineTo(bx + 6 * k, by + bh + 16 * k);
-    g.lineTo(bx + 40 * k, by + bh); g.closePath(); g.fillStyle = '#FFFDF6'; g.fill(); g.stroke();
+    g.lineTo(bx + 40 * k, by + bh); g.closePath(); g.fillStyle = '#FFF8F0'; g.fill(); g.stroke();
     const n = order.length, r = Math.min(bh * 0.3, bw / (n + 1) * 0.42);
     order.forEach((id, i) => {
       const m = MENU.find(x => x.id === id);
@@ -149,7 +149,7 @@ function draw(){
       if(shown){
         cup(x, y, r, m);
         if(state === 'input' && i < input.length){
-          g.fillStyle = '#7BC47F'; g.beginPath();
+          g.fillStyle = '#8FBF92'; g.beginPath();
           g.arc(x + r * 0.8, y - r * 0.9, r * 0.28, 0, 7); g.fill(); ink(); g.stroke();
         }
       }else{
@@ -170,10 +170,10 @@ function draw(){
     const x = x0 + i * (bw2 + gap), y = H - bh2 - 16 * k;
     const on = state === 'input';
     g.save(); g.globalAlpha = on ? 1 : 0.45;
-    ink(); g.fillStyle = '#FFFDF6';
+    ink(); g.fillStyle = '#FFF8F0';
     rrect(x, y, bw2, bh2, 14 * k); g.fill(); g.stroke();
     cup(x + bw2 / 2, y + bh2 * 0.4, bw2 * 0.2, m);
-    g.fillStyle = '#2B2B2B'; g.textAlign = 'center';
+    g.fillStyle = '#5A4A40'; g.textAlign = 'center';
     g.font = '700 ' + (15 * k) + 'px Gaegu, sans-serif';
     g.fillText(m.name, x + bw2 / 2, y + bh2 * 0.88);
     g.restore();
@@ -181,22 +181,22 @@ function draw(){
   });
 
   /* HUD */
-  g.save(); g.textAlign = 'left'; g.fillStyle = '#2B2B2B';
+  g.save(); g.textAlign = 'left'; g.fillStyle = '#5A4A40';
   g.font = '700 ' + (30 * k) + 'px Gaegu, sans-serif';
   g.fillText(Math.round(score).toLocaleString('ko-KR'), 16 * k, 40 * k);
   g.font = '700 ' + (17 * k) + 'px Gaegu, sans-serif';
   g.fillText(round + '번째 손님 · 주문 ' + order.length + '개', 16 * k, 64 * k);
   for(let i = 0; i < MISS_MAX; i++){
     g.globalAlpha = i < MISS_MAX - miss ? 1 : 0.2;
-    g.fillStyle = '#FFB3C1'; ink(LW() * 0.8);
+    g.fillStyle = '#EFA6B8'; ink(LW() * 0.8);
     g.beginPath(); g.arc(24 * k + i * 26 * k, 84 * k, 9 * k, 0, 7); g.fill(); g.stroke();
   }
   g.globalAlpha = 1;
-  g.textAlign = 'center'; g.fillStyle = '#2B2B2B';
+  g.textAlign = 'center'; g.fillStyle = '#5A4A40';
   g.font = '700 ' + (26 * k) + 'px Gaegu, sans-serif';
   if(state === 'show') g.fillText('잘 외워두세요!', W / 2, H * 0.13);
   if(state === 'input') g.fillText('순서대로 담아요', W / 2, H * 0.13);
-  if(state === 'good'){ g.fillStyle = '#7BC47F'; g.fillText('주문 완료! +' + order.length + ' 팁', W / 2, H * 0.13); }
+  if(state === 'good'){ g.fillStyle = '#8FBF92'; g.fillText('주문 완료! +' + order.length + ' 팁', W / 2, H * 0.13); }
   if(state === 'bad'){ g.fillStyle = '#C9A9A9'; g.fillText('앗, 틀렸어요', W / 2, H * 0.13); }
   g.restore();
 }

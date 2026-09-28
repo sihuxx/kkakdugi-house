@@ -22,7 +22,7 @@ addEventListener('resize', () => { resize(); if(typeof DugiRun !== 'undefined') 
 
 const uiK = () => Math.max(0.85, Math.min(1.7, Math.min(W / 960, H / 540)));
 /* 게임 안의 모든 선은 이 굵기 하나로 통일 */
-const LW = () => Math.max(2.4, 3.1 * uiK());
+const LW = () => Math.max(2.0, 2.5 * uiK());
 
 function roundRect(x, y, w, h, r){
   r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);

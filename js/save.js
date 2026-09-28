@@ -9,8 +9,8 @@ const START_LOOKS = ['proud', 'wool', 'baby'];
 
 const DEFAULT_KEYS = ['KeyA', 'KeyS', 'KeyK', 'KeyL'];
 const SKINS = {
-  basic:     { name:'기본',      col:['#7BC47F', '#A9D9F0', '#FFB3C1', '#D9C4A0'] },
-  strawberry:{ name:'딸기우유',  col:['#FFB3C1', '#FFD6E0', '#FF9DB1', '#FFE3EC'] },
+  basic:     { name:'기본',      col:['#8FBF92', '#8FC0D8', '#EFA6B8', '#D9C4A0'] },
+  strawberry:{ name:'딸기우유',  col:['#EFA6B8', '#FFD6E0', '#FF9DB1', '#FFE3EC'] },
   mint:      { name:'민트소다',  col:['#7BD8C4', '#A9E6DC', '#5FC9B2', '#CFF2EA'] }
 };
 

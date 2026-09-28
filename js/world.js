@@ -6,12 +6,12 @@ function rgb(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),par
 function mix(a,b,k){ const A=rgb(a),B=rgb(b);
   return 'rgb('+Math.round(A[0]+(B[0]-A[0])*k)+','+Math.round(A[1]+(B[1]-A[1])*k)+','+Math.round(A[2]+(B[2]-A[2])*k)+')'; }
 const THEMES={
-  meadow:{ props:['flower','mushroom','rock','tuft'], particle:'petal', pColor:'#FFB3C1', flyer:'bird',
-    a:{sky1:'#D8EEFA',sky2:'#FFFDF6',far:'#EFE5D3',near:'#E3D6BE',ground:'#F7F1E4',ink:'#2B2B2B',grass:'#7BC47F',orb:'sun',orbC:'#FFE9A8',star:0},
-    b:{sky1:'#FFD2B8',sky2:'#FFF4E8',far:'#EBD5C0',near:'#DFBE9E',ground:'#F6E7D6',ink:'#2B2B2B',grass:'#8FBF7A',orb:'sun',orbC:'#FFBF86',star:0} },
+  meadow:{ props:['flower','mushroom','rock','tuft'], particle:'petal', pColor:'#EFA6B8', flyer:'bird',
+    a:{sky1:'#D8EEFA',sky2:'#FFF8F0',far:'#EFE5D3',near:'#E3D6BE',ground:'#F7F1E4',ink:'#5A4A40',grass:'#8FBF92',orb:'sun',orbC:'#FFE9A8',star:0},
+    b:{sky1:'#FFD2B8',sky2:'#FFF4E8',far:'#EBD5C0',near:'#DFBE9E',ground:'#F6E7D6',ink:'#5A4A40',grass:'#8FBF7A',orb:'sun',orbC:'#FFBF86',star:0} },
   rain:{ props:['puddle','tuft','puddle','rock'], particle:'rain', pColor:'#9FC9DE', flyer:'bird',
     a:{sky1:'#C3D6E0',sky2:'#EDF3F6',far:'#D6E2E6',near:'#C2D2D8',ground:'#E9F0F2',ink:'#2B3A40',grass:'#8FB9A8',orb:null,orbC:'#FFFFFF',star:0},
-    b:{sky1:'#D9EDF6',sky2:'#FFFDF6',far:'#E2E9DE',near:'#CBDCCF',ground:'#F0F4EE',ink:'#2B3A40',grass:'#7BC47F',orb:'sun',orbC:'#FFF0C0',star:0} },
+    b:{sky1:'#D9EDF6',sky2:'#FFF8F0',far:'#E2E9DE',near:'#CBDCCF',ground:'#F0F4EE',ink:'#2B3A40',grass:'#8FBF92',orb:'sun',orbC:'#FFF0C0',star:0} },
   night:{ props:['mushroom','rock','flower','mushroom'], particle:'sparkle', pColor:'#FFF3C4', flyer:'shoot',
     a:{sky1:'#26314F',sky2:'#5B6B94',far:'#3E4C74',near:'#313C5E',ground:'#39456A',ink:'#F2EFE4',grass:'#8FA6CE',orb:'moon',orbC:'#FFF6D8',star:1},
     b:{sky1:'#4B5A88',sky2:'#F4CDBE',far:'#6C6E95',near:'#4E4F79',ground:'#5A5A80',ink:'#F7F2E6',grass:'#A9AFD0',orb:'moon',orbC:'#FFF0D0',star:.4} },
@@ -40,20 +40,20 @@ function drawProp(kind,x,gy,s,th){
   g.lineWidth=LW(); g.strokeStyle=th.ink; g.lineJoin='round';
   if(kind==='flower'){
     g.strokeStyle=th.grass; g.beginPath(); g.moveTo(0,0); g.quadraticCurveTo(2,-12,0,-22); g.stroke();
-    g.fillStyle='#FFB3C1'; g.strokeStyle=th.ink;
+    g.fillStyle='#EFA6B8'; g.strokeStyle=th.ink;
     for(let i=0;i<5;i++){ const a=i/5*6.28; g.beginPath(); g.ellipse(Math.cos(a)*6,-22+Math.sin(a)*6,4.5,4.5,0,0,6.3); g.fill(); g.stroke(); }
     g.fillStyle='#FFE9A8'; g.beginPath(); g.arc(0,-22,3.4,0,6.3); g.fill(); g.stroke();
   } else if(kind==='mushroom'){
-    g.fillStyle='#FFFDF6'; g.beginPath(); g.rect(-3.5,-14,7,14); g.fill(); g.stroke();
+    g.fillStyle='#FFF8F0'; g.beginPath(); g.rect(-3.5,-14,7,14); g.fill(); g.stroke();
     g.fillStyle='#E88C8C'; g.beginPath(); g.ellipse(0,-14,13,9,0,Math.PI,0); g.fill(); g.stroke();
-    g.fillStyle='#FFFDF6'; [[-5,-16],[4,-18],[0,-13]].forEach(p=>{ g.beginPath(); g.arc(p[0],p[1],2.1,0,6.3); g.fill(); });
+    g.fillStyle='#FFF8F0'; [[-5,-16],[4,-18],[0,-13]].forEach(p=>{ g.beginPath(); g.arc(p[0],p[1],2.1,0,6.3); g.fill(); });
   } else if(kind==='rock'){
     g.fillStyle=th.near; g.beginPath();
     g.moveTo(-13,0); g.quadraticCurveTo(-9,-12,0,-13); g.quadraticCurveTo(10,-12,13,0); g.closePath(); g.fill(); g.stroke();
   } else if(kind==='puddle'){
-    g.fillStyle='#A9D9F0'; g.globalAlpha=.75;
+    g.fillStyle='#8FC0D8'; g.globalAlpha=.75;
     g.beginPath(); g.ellipse(0,-2,22,6,0,0,6.3); g.fill(); g.globalAlpha=1; g.stroke();
-    g.strokeStyle='#FFFDF6'; g.lineWidth=LW()*0.55;
+    g.strokeStyle='#FFF8F0'; g.lineWidth=LW()*0.55;
     g.beginPath(); g.ellipse(-4,-3,9,2.4,0,0,6.3); g.stroke();
   } else if(kind==='cactus'){
     g.fillStyle='#8FAE6E'; g.beginPath();
@@ -133,7 +133,7 @@ function scene(t,th,prog){
   g.fillStyle=grd; g.fillRect(0,0,W,gy);
 
   if(th.star>0.01){
-    g.fillStyle='#FFFDF6';
+    g.fillStyle='#FFF8F0';
     for(const s of stars){
       g.globalAlpha=th.star*(0.45+0.55*Math.abs(Math.sin(t*1.2+s.p)));
       g.beginPath(); g.arc(s.x*W,s.y*H,s.r,0,6.3); g.fill();

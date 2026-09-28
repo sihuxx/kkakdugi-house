@@ -6,10 +6,10 @@
    =============================================================== */
 let modalOpen = null;
 const CLOVER_SVG = '<svg class="cv" viewBox="0 0 20 20" aria-hidden="true">' +
-  '<g fill="#7BC47F" stroke="#2B2B2B" stroke-width="1.6">' +
+  '<g fill="#8FBF92" stroke="#5A4A40" stroke-width="1.6">' +
   '<circle cx="10" cy="5.6" r="3.5"/><circle cx="14.4" cy="10" r="3.5"/>' +
   '<circle cx="10" cy="14.4" r="3.5"/><circle cx="5.6" cy="10" r="3.5"/></g>' +
-  '<path d="M10 11 L10 19" stroke="#7BC47F" stroke-width="1.8" fill="none"/></svg>';
+  '<path d="M10 11 L10 19" stroke="#8FBF92" stroke-width="1.8" fill="none"/></svg>';
 const STARS = { base:1, N:1, R:2, SR:3, SSR:4 };
 const starRow = rk => '<span class="stars">' + '★'.repeat(STARS[rk]) + '</span>';
 let freshIds = new Set();
@@ -271,12 +271,12 @@ function drawItemIcon(cvs, id){
     g.fill(); g.stroke(); g.fillStyle = '#C9784F';
     [[-0.4, -0.1], [0.3, 0.2], [0, -0.35]].forEach(([a, b2]) => {
       g.beginPath(); g.arc(cx + a * r, cy + b2 * r, r * 0.16, 0, 7); g.fill(); }); }
-  else if(id === 'soap'){ g.fillStyle = '#A9D9F0'; rrect(cx - r, cy - r * 0.6, r * 2, r * 1.2, r * 0.3);
+  else if(id === 'soap'){ g.fillStyle = '#8FC0D8'; rrect(cx - r, cy - r * 0.6, r * 2, r * 1.2, r * 0.3);
     g.fill(); g.stroke(); g.fillStyle = '#FFFFFF';
     [[-0.6, -1.1, 0.3], [0.1, -1.4, 0.24], [0.6, -1.0, 0.2]].forEach(([a, b2, rr]) => {
       g.beginPath(); g.arc(cx + a * r, cy + b2 * r, r * rr, 0, 7); g.fill(); g.stroke(); }); }
-  else if(id === 'toy'){ g.fillStyle = '#FFB3C1'; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); g.stroke();
-    g.fillStyle = '#FFFDF6'; g.beginPath(); g.arc(cx - r * 0.3, cy - r * 0.3, r * 0.22, 0, 7); g.fill(); }
+  else if(id === 'toy'){ g.fillStyle = '#EFA6B8'; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = '#FFF8F0'; g.beginPath(); g.arc(cx - r * 0.3, cy - r * 0.3, r * 0.22, 0, 7); g.fill(); }
   else { g.fillStyle = '#E8DFF5'; rrect(cx - r * 1.1, cy - r * 0.6, r * 2.2, r * 1.2, r * 0.5);
     g.fill(); g.stroke(); }
   g = og; W = oW; H = oH;
@@ -352,7 +352,7 @@ function buildCourses(body){
     const b2 = document.createElement('button');
     b2.type = 'button'; b2.className = 'jobcard' + (locked ? ' locked' : '');
     b2.innerHTML = '<span class="sign" style="background:' +
-        (locked ? '#D8D2C4' : c.id === 'night' ? '#7E7FA6' : c.id === 'hill' ? '#F5B971' : '#A9D9F0') +
+        (locked ? '#D8D2C4' : c.id === 'night' ? '#7E7FA6' : c.id === 'hill' ? '#E0A45C' : '#8FC0D8') +
         '">' + (locked ? '경력 Lv' + c.lv + '부터' : '코스') + '</span>' +
       '<canvas width="208" height="130"></canvas>' +
       '<span class="nm">' + c.name + '</span>' +
@@ -412,11 +412,11 @@ function drawJobIcon(cvs, id){
     g.fillStyle = '#9FC3D2';
     rrect(sw * 0.18, sh * 0.58, sw * 0.64, sh * 0.2, 8); g.fill(); g.stroke();
     [[0.32, 0.46, 0.13], [0.5, 0.4, 0.15], [0.68, 0.47, 0.12]].forEach(([x, y, r]) => {
-      g.fillStyle = '#FFFDF6';
+      g.fillStyle = '#FFF8F0';
       g.beginPath(); g.ellipse(sw * x, sh * y, sw * r, sw * r * 0.82, 0, 0, 7); g.fill(); g.stroke();
-      g.strokeStyle = '#A9D9F0';
+      g.strokeStyle = '#8FC0D8';
       g.beginPath(); g.ellipse(sw * x, sh * y, sw * r * 0.55, sw * r * 0.45, 0, 0, 7); g.stroke();
-      g.strokeStyle = '#2B2B2B';
+      g.strokeStyle = '#5A4A40';
     });
     g.fillStyle = '#FFFFFF'; g.globalAlpha = .9;               // 거품
     [[0.24, 0.3, 9], [0.36, 0.22, 7], [0.62, 0.22, 8], [0.76, 0.32, 6]].forEach(([x, y, r]) => {
@@ -434,7 +434,7 @@ function drawJobIcon(cvs, id){
     g.fillStyle = '#FFE08A';                                   // 동전
     [[0.2, 0.52], [0.78, 0.46], [0.86, 0.6]].forEach(([x, y]) => {
       g.beginPath(); g.arc(sw * x, sh * y, 10, 0, 7); g.fill(); g.stroke(); });
-    g.strokeStyle = '#2B2B2B';                                 // 속도선
+    g.strokeStyle = '#5A4A40';                                 // 속도선
     [0.2, 0.34].forEach(y => { g.beginPath();
       g.moveTo(sw * 0.08, sh * y); g.lineTo(sw * 0.28, sh * y); g.stroke(); });
   }
@@ -647,7 +647,7 @@ function buildGacha(body){
 function decorate(el, rank){
   if(rank === 'N') return;
   const ring = document.createElement('span');
-  ring.className = 'ring'; ring.style.setProperty('--rc', rank === 'SR' ? '#FF9EB5' : '#A9D9F0');
+  ring.className = 'ring'; ring.style.setProperty('--rc', rank === 'SR' ? '#FF9EB5' : '#8FC0D8');
   el.appendChild(ring);
   if(rank === 'SR'){
     for(let k = 0; k < 9; k++){

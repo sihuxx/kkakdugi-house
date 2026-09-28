@@ -17,13 +17,13 @@ for(const k in SRC){ const im=new Image(); im.src=SRC[k]; IMG[k]=im; }
    rank: base 기본 · N 흔함 · R 귀함 · SR 아주 귀함 · SSR 전설
    p = 뽑기 확률(%) · style: run 기본 / float 둥둥 / slide 미끄러짐 */
 const RARITY = {
-  base:{ name:'기본',      color:'#F2E8D9', note:'처음부터 있음' },
+  base:{ name:'기본',      color:'#F3EAE1', note:'처음부터 있음' },
   N:   { name:'흔함',      color:'#DCEBD6', note:'각 7.9%' },
-  R:   { name:'귀함',      color:'#A9D9F0', note:'각 5.3%' },
-  SR:  { name:'아주 귀함', color:'#FFB3C1', note:'각 3.7%' },
-  SSR: { name:'전설',      color:'#B9A7D9', note:'2%' }
+  R:   { name:'귀함',      color:'#8FC0D8', note:'각 5.3%' },
+  SR:  { name:'아주 귀함', color:'#EFA6B8', note:'각 3.7%' },
+  SSR: { name:'전설',      color:'#AD9ED4', note:'2%' }
 };
-function C(o){ return Object.assign({ flip:true, scale:1, float:0, style:'run', accent:'#7BC47F' }, o); }
+function C(o){ return Object.assign({ flip:true, scale:1, float:0, style:'run', accent:'#8FBF92' }, o); }
 const CHARS = [
   C({ id:'wool', name:'양 두기', meta:'포근한 기본', rank:'base', p:0,
       run:'wool', jump:'wing', fall:'poot' }),
@@ -31,20 +31,20 @@ const CHARS = [
   C({ id:'proud',    name:'의젓 두기',   meta:'뒷짐 지고 당당하게', rank:'N', p:7.9,
       run:'proud', jump:'proud', fall:'proud', jumpRot:-0.18, fallRot:0.45, accent:'#D9C4A0' }),
   C({ id:'baby',     name:'애기 두기',   meta:'기저귀 차고 아장아장', rank:'N', p:7.9,
-      run:'baby', jump:'baby', fall:'baby', scale:0.92, jumpRot:-0.2, fallRot:0.5, accent:'#A9D9F0' }),
+      run:'baby', jump:'baby', fall:'baby', scale:0.92, jumpRot:-0.2, fallRot:0.5, accent:'#8FC0D8' }),
   C({ id:'belly',    name:'뱃살 두기',   meta:'배가 먼저 도착함', rank:'N', p:7.9,
-      run:'belly', jump:'belly', fall:'belly', scale:1.06, jumpRot:-0.12, fallRot:0.4, accent:'#F2E8D9' }),
+      run:'belly', jump:'belly', fall:'belly', scale:1.06, jumpRot:-0.12, fallRot:0.4, accent:'#F3EAE1' }),
   C({ id:'school',   name:'등교 두기',   meta:'터벅터벅 가방 메고', rank:'N', p:7.9,
-      run:'school', jump:'school', fall:'school', scale:0.98, jumpRot:-0.15, fallRot:0.42, accent:'#B9A7D9' }),
+      run:'school', jump:'school', fall:'school', scale:0.98, jumpRot:-0.15, fallRot:0.42, accent:'#AD9ED4' }),
   C({ id:'holdbaby', name:'애기 안은 두기', meta:'하나 더 데리고 뜀', rank:'N', p:7.9,
-      run:'holdbaby', jump:'holdbaby', fall:'holdbaby', jumpRot:-0.16, fallRot:0.45, accent:'#FFB3C1' }),
+      run:'holdbaby', jump:'holdbaby', fall:'holdbaby', jumpRot:-0.16, fallRot:0.45, accent:'#EFA6B8' }),
   C({ id:'car',      name:'두기카 두기', meta:'두기가 두기를 태움', rank:'N', p:7.9,
-      run:'car', jump:'car', fall:'car', scale:0.95, style:'slide', jumpRot:-0.1, fallRot:0.3, accent:'#A9D9F0' }),
+      run:'car', jump:'car', fall:'car', scale:0.95, style:'slide', jumpRot:-0.1, fallRot:0.3, accent:'#8FC0D8' }),
   C({ id:'snail',    name:'달팽이 두기', meta:'느긋하게 미끄러짐', rank:'N', p:7.9,
-      run:'snail', jump:'snail', fall:'snail', scale:0.88, style:'slide', jumpRot:-0.08, fallRot:0.3, accent:'#7BC47F' }),
+      run:'snail', jump:'snail', fall:'snail', scale:0.88, style:'slide', jumpRot:-0.08, fallRot:0.3, accent:'#8FBF92' }),
 
   C({ id:'rabbit',  name:'토끼탈 두기',  meta:'분홍 토끼탈', rank:'R', p:5.3,
-      run:'rabbit', jump:'rabbit', fall:'rabbit', jumpRot:-0.2, fallRot:0.5, accent:'#FFB3C1' }),
+      run:'rabbit', jump:'rabbit', fall:'rabbit', jumpRot:-0.2, fallRot:0.5, accent:'#EFA6B8' }),
   C({ id:'cat',     name:'고양이탈 두기', meta:'노란 고양이탈', rank:'R', p:5.3,
       run:'cat', jump:'cat', fall:'cat', jumpRot:-0.2, fallRot:0.5, accent:'#F5C36B' }),
   C({ id:'bear',    name:'곰 두기',      meta:'갈색 곰 옷', rank:'R', p:5.3,
@@ -52,14 +52,14 @@ const CHARS = [
   C({ id:'icecream',name:'초코 두기',    meta:'아이스크림 한 손에', rank:'R', p:5.3,
       run:'icecream', jump:'icecream', fall:'icecream', scale:0.95, jumpRot:-0.15, fallRot:0.45, accent:'#8B5E3C' }),
   C({ id:'clown',   name:'광대 두기',    meta:'무지개 가발', rank:'R', p:5.3,
-      run:'clown', jump:'clown', fall:'clown', jumpRot:-0.22, fallRot:0.5, accent:'#FFB3C1' }),
+      run:'clown', jump:'clown', fall:'clown', jumpRot:-0.22, fallRot:0.5, accent:'#EFA6B8' }),
   C({ id:'cowboy',  name:'카우보이 두기', meta:'카피바라 탑승', rank:'R', p:5.3,
       run:'cowboy', jump:'cowboy', fall:'cowboy', flip:false, scale:1.18, style:'slide',
       jumpRot:-0.1, fallRot:-0.4, accent:'#D9C4A0' }),
 
   C({ id:'fairy',  name:'요정 두기',     meta:'땅에 안 닿고 둥둥', rank:'SR', p:3.7,
       run:'fairy', jump:'fairy', fall:'fairy', flip:false, scale:1.02, float:26, style:'float',
-      jumpRot:-0.12, fallRot:-0.45, accent:'#A9D9F0' }),
+      jumpRot:-0.12, fallRot:-0.45, accent:'#8FC0D8' }),
   C({ id:'huggy',  name:'허기워기 두기', meta:'이빨이 아주 많음', rank:'SR', p:3.7,
       run:'huggy', jump:'huggy', fall:'huggy', scale:1.05, jumpRot:-0.25, fallRot:0.55, accent:'#C9A9A9' }),
   C({ id:'killer', name:'살인마 두기',   meta:'칼 들고 뛰어옴', rank:'SR', p:3.7,
@@ -170,16 +170,16 @@ const COVERS={
   clover:'<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="10" fill="#EAF6E4"/>'+
     '<circle cx="47" cy="17" r="8" fill="#FFE9A8"/>'+
     '<path d="M-2 48 Q16 33 34 48 Q48 38 66 48 L66 66 L-2 66Z" fill="#DCE9CE"/>'+
-    '<g stroke="#2B2B2B" stroke-width="2" fill="#7BC47F">'+
+    '<g stroke="#5A4A40" stroke-width="2" fill="#8FBF92">'+
     '<circle cx="24" cy="30" r="6"/><circle cx="34" cy="30" r="6"/>'+
     '<circle cx="29" cy="24" r="6"/><circle cx="29" cy="36" r="6"/></g>'+
-    '<path d="M29 38 L29 52" stroke="#7BC47F" stroke-width="3" fill="none"/></svg>',
+    '<path d="M29 38 L29 52" stroke="#8FBF92" stroke-width="3" fill="none"/></svg>',
   puddle:'<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="10" fill="#DCE9F0"/>'+
-    '<g stroke="#A9D9F0" stroke-width="3" stroke-linecap="round">'+
+    '<g stroke="#8FC0D8" stroke-width="3" stroke-linecap="round">'+
     '<path d="M14 8 L10 20"/><path d="M28 4 L24 18"/><path d="M44 10 L40 22"/><path d="M56 6 L52 18"/>'+
     '<path d="M20 26 L16 36"/><path d="M38 28 L34 38"/></g>'+
-    '<ellipse cx="32" cy="50" rx="22" ry="7" fill="#A9D9F0" stroke="#2B2B2B" stroke-width="2"/>'+
-    '<ellipse cx="27" cy="49" rx="9" ry="2.6" fill="none" stroke="#FFFDF6" stroke-width="2"/></svg>',
+    '<ellipse cx="32" cy="50" rx="22" ry="7" fill="#8FC0D8" stroke="#5A4A40" stroke-width="2"/>'+
+    '<ellipse cx="27" cy="49" rx="9" ry="2.6" fill="none" stroke="#FFF8F0" stroke-width="2"/></svg>',
   star:'<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="10" fill="#38456A"/>'+
     '<g fill="#FFF6D8"><circle cx="12" cy="14" r="1.8"/><circle cx="26" cy="8" r="1.3"/>'+
     '<circle cx="50" cy="12" r="1.6"/><circle cx="18" cy="30" r="1.2"/><circle cx="56" cy="30" r="1.4"/>'+
@@ -191,7 +191,7 @@ const COVERS={
     '<g stroke="#D9A87B" stroke-width="3" stroke-linecap="round">'+
     '<path d="M6 34 L26 34"/><path d="M12 41 L34 41"/><path d="M4 48 L22 48"/></g>'+
     '<path d="M-2 52 Q20 45 40 52 Q54 47 66 52 L66 66 L-2 66Z" fill="#E8C49B"/>'+
-    '<g fill="#8FAE6E" stroke="#2B2B2B" stroke-width="2">'+
+    '<g fill="#8FAE6E" stroke="#5A4A40" stroke-width="2">'+
     '<rect x="44" y="30" width="9" height="24" rx="4"/>'+
     '<rect x="36" y="36" width="9" height="6" rx="3"/></g></svg>'
 };
