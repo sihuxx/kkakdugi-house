@@ -226,7 +226,7 @@ function drawRoom(){
     drawBulb(rx(0.18), 0, wb * 0.24);
     drawWindow(rx(0.86), wb * 0.44, s * 0.8, true);
   }else{
-    drawWindow(rx(0.13), wb * 0.44, s, false);
+    drawWindow(rx(0.11), wb * 0.44, s, false);
     if(S.house === 2){ drawWindow(rx(0.90), wb * 0.44, s, false); drawLamp(rx(0.5), 0, wb * 0.15); }
     else drawBulb(rx(0.90), 0, wb * 0.2);
   }
@@ -251,7 +251,11 @@ function drawLamp(cx, top, len){
 }
 function drawWindow(cx, cy, s, old){
   g.save();
-  const SKY = DAY().sky;
+  let SKY = DAY().sky;
+  const WX = WEATHER();
+  if(WX.id === 'rain')  SKY = ['#9AA7B4', '#B6C1CA'];
+  if(WX.id === 'cloud') SKY = ['#C2CFD9', '#DCE5EB'];
+  if(WX.id === 'snow')  SKY = ['#C8D4E0', '#E4EBF1'];
   const sg = g.createLinearGradient(0, cy - s * 0.75, 0, cy + s * 0.75);
   sg.addColorStop(0, SKY[0]); sg.addColorStop(1, SKY[1]);
   g.fillStyle = sg; rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14);
@@ -263,6 +267,7 @@ function drawWindow(cx, cy, s, old){
   g.globalAlpha = .5; g.fillStyle = '#8FBF92';
   g.beginPath(); g.ellipse(cx + s * 0.5, cy + s * 0.62, s * 0.5, s * 0.22, 0, 0, 7); g.fill();
   g.restore();
+  drawWeatherIn(cx, cy, s, 0);
   ink();
   g.beginPath(); g.moveTo(cx, cy - s * 0.75); g.lineTo(cx, cy + s * 0.75);
   g.moveTo(cx - s * 0.95, cy); g.lineTo(cx + s * 0.95, cy); g.stroke();
@@ -814,5 +819,106 @@ function drawZoneLabels(){
     g.fillStyle = '#7A6250'; g.textBaseline = 'middle';
     g.fillText(txt, cx, cy + 1);
   });
+  g.restore();
+}
+
+
+/* ===============================================================
+   날씨 — 창밖과 방 안에 같이 나타난다
+   =============================================================== */
+let wxDrops = [];
+function seedWeather(){
+  wxDrops = [];
+  const w = WEATHER();
+  if(w.id !== 'rain' && w.id !== 'snow') return;
+  const n = w.id === 'rain' ? 46 : 30;
+  for(let i = 0; i < n; i++)
+    wxDrops.push({ x: Math.random(), y: Math.random(), v: 0.5 + Math.random() * 0.7,
+                   s: 0.6 + Math.random() * 0.8, w: Math.random() * 6.28 });
+}
+seedWeather();
+/* 창문 안쪽에 그린다 — (cx,cy)는 창 중심, s는 창 크기 */
+function drawWeatherIn(cx, cy, s, dt){
+  const w = WEATHER();
+  if(w.id === 'sun' || w.id === 'cloud') return;
+  g.save();
+  rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14); g.clip();
+  if(w.id === 'rain'){
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = Math.max(2, LW() * 0.7);
+    g.lineCap = 'round';
+    wxDrops.forEach(d => {
+      const x = cx - s * 0.95 + ((d.x + home.t * 0.05) % 1) * s * 1.9;
+      const y = cy - s * 0.75 + ((d.y + home.t * d.v * 0.5) % 1) * s * 1.5;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x - s * 0.07, y + s * 0.24); g.stroke();
+    });
+  }else{
+    g.fillStyle = 'rgba(255,255,255,.92)';
+    wxDrops.forEach(d => {
+      const x = cx - s * 0.95 + ((d.x + Math.sin(home.t * 0.6 + d.w) * 0.03 + 1) % 1) * s * 1.9;
+      const y = cy - s * 0.75 + ((d.y + home.t * d.v * 0.12) % 1) * s * 1.5;
+      g.beginPath(); g.arc(x, y, s * 0.05 * d.s, 0, 7); g.fill();
+    });
+  }
+  g.restore();
+}
+/* 오늘 날씨 알림 — 창 옆에 작게 */
+function drawWeatherChip(){
+  const w = WEATHER(), k = uiK();
+  const txt = w.name;
+  g.save();
+  g.font = '700 ' + (14 * k) + 'px Gaegu, sans-serif';
+  const tw = g.measureText(txt).width + 34 * k, th = 24 * k;
+  const x = roomL() + 12 * k, y = 10 * k;
+  g.fillStyle = 'rgba(255,252,248,.9)';
+  rrect(x, y, tw, th, th / 2); g.fill();
+  const ix = x + 13 * k, iy = y + th / 2;
+  if(w.id === 'sun'){
+    g.fillStyle = '#F5C34E'; g.beginPath(); g.arc(ix, iy, 6 * k, 0, 7); g.fill();
+    g.strokeStyle = '#F5C34E'; g.lineWidth = 2 * k;
+    for(let i = 0; i < 8; i++){ const a = i / 8 * 6.28;
+      g.beginPath(); g.moveTo(ix + Math.cos(a) * 8 * k, iy + Math.sin(a) * 8 * k);
+      g.lineTo(ix + Math.cos(a) * 10.5 * k, iy + Math.sin(a) * 10.5 * k); g.stroke(); }
+  }else{
+    g.fillStyle = w.id === 'snow' ? '#DCE8F2' : '#B9C7D4';
+    g.beginPath(); g.arc(ix - 4 * k, iy - 1 * k, 5 * k, 0, 7);
+    g.arc(ix + 2 * k, iy - 3 * k, 6.5 * k, 0, 7); g.arc(ix + 7 * k, iy, 5 * k, 0, 7); g.fill();
+    if(w.id !== 'cloud'){
+      g.strokeStyle = w.id === 'snow' ? '#FFFFFF' : '#8FC0D8'; g.lineWidth = 2.2 * k;
+      [-4, 1, 6].forEach(o => { g.beginPath();
+        g.moveTo(ix + o * k, iy + 6 * k); g.lineTo(ix + (o - 1.5) * k, iy + 10 * k); g.stroke(); });
+    }
+  }
+  g.fillStyle = '#7A6250'; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText(txt, x + 26 * k, y + th / 2 + 1);
+  g.restore();
+}
+
+/* ===============================================================
+   손님 — 현관 옆에 서 있다
+   =============================================================== */
+const GUEST_POS = { x: 0.50, y: 0.46 };
+function drawGuest(){
+  if(!S.guest || place !== 'room') return;
+  const c = guestLook(), im = c && IMG[c.run];
+  const cx = rx(GUEST_POS.x), cy = yAt(GUEST_POS.y);
+  const s = Math.min(H * 0.17, roomW() * 0.16) * depthAt(cy);
+  shadow(cx, cy, s * 0.42);
+  g.save(); g.translate(cx, cy);
+  if(S.guest.fed){ g.globalAlpha = 0.96; }
+  g.scale(c && c.flip === false ? -1 : 1, 1);
+  if(im && im.complete && im.naturalWidth) g.drawImage(im, -s * 0.5, -s, s, s);
+  g.restore();
+  /* 말풍선 */
+  const k = uiK(), txt = S.guest.fed ? '고마워요!' : S.guest.line;
+  g.save();
+  g.font = '700 ' + (16 * k) + 'px Gaegu, sans-serif';
+  const tw = g.measureText(txt).width + 22 * k, th = 26 * k;
+  const bx = cx - tw / 2, by = cy - s - th - 10 * k;
+  g.fillStyle = '#FFFFFF'; g.strokeStyle = '#EFE4D8'; g.lineWidth = LW() * 0.7;
+  rrect(bx, by, tw, th, th / 2); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(cx - 6 * k, by + th); g.lineTo(cx, by + th + 8 * k);
+  g.lineTo(cx + 7 * k, by + th); g.closePath(); g.fillStyle = '#FFFFFF'; g.fill();
+  g.fillStyle = '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(txt, cx, by + th / 2 + 1);
   g.restore();
 }

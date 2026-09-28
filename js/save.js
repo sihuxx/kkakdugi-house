@@ -34,7 +34,10 @@ function freshSave(){
     course: 'town',
     stat: { pet:0, job:0, earn:0 },
     daily: null,
-    done: [],                      // 받은 업적
+    seen: 0,                       // 마지막으로 논 시각
+    album: [],                     // 사진첩
+    guest: null,                   // 오늘 찾아온 손님
+    guestDay: 0,
     claimed: [], skins: ['basic'],
     named: false,
     settings: { keys:[...DEFAULT_KEYS], speed:1.0, offset:0, skin:'basic',
@@ -82,7 +85,7 @@ function condition(){
 /* 알바 시급 = 컨디션 + 마음 레벨 + 가구 + 그 알바 경력 */
 function payMult(jobId){
   const career = jobId ? careerPay(S.career[jobId] || 0) : 1;
-  return (0.62 + 0.38 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career;
+  return (0.62 + 0.38 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career * WEATHER().pay;
 }
 
 function addStat(k, v){
@@ -106,7 +109,7 @@ function addLove(n){
     if(u.furn && !hasFurn(u.furn)) S.furn.push(u.furn);
     toast('마음 레벨 ' + after + '!', u.txt || '두기가 더 좋아해요');
     sfxGrow();
-    checkAchieve();
+    
   }
 }
 const canFollow = () => loveLv(S.dugi.love) >= 3;
@@ -117,7 +120,7 @@ function afterOuting(jobId){
   addStat('full', -16); addStat('energy', -20); addStat('clean', -14); addStat('fun', 6);
   if(jobId){ S.career[jobId] = (S.career[jobId] || 0) + 1; }
   S.stat.job = (S.stat.job || 0) + 1;
-  bumpDaily('job', 1); checkAchieve();
+  bumpDaily('job', 1); 
   newRequest(true);
   save();
 }
@@ -160,7 +163,7 @@ function upgradeHouse(){
   if(S.clover < nxt.price){ sfxNo(); toast('클로버가 모자라요', nxt.name + '까지 ' +
       (nxt.price - S.clover).toLocaleString('ko-KR') + ' 더'); return false; }
   addClover(-nxt.price); S.house = (S.house || 0) + 1; S.pos = {}; save();
-  toast(nxt.name + '으로 이사!', nxt.note); sfxGrow(); checkAchieve();
+  toast(nxt.name + '으로 이사!', nxt.note); sfxGrow(); 
   return true;
 }
 
@@ -192,27 +195,6 @@ function bumpDaily(kind, n){
   if(typeof paintDaily === 'function') paintDaily();
 }
 
-/* ===== 업적 ===== */
-function achieveVal(kind){
-  if(kind === 'pet')   return S.stat.pet || 0;
-  if(kind === 'job')   return S.stat.job || 0;
-  if(kind === 'love')  return loveLv(S.dugi.love);
-  if(kind === 'dex')   return S.own.length;
-  if(kind === 'furn')  return S.furn.length;
-  if(kind === 'house') return S.house || 0;
-  return 0;
-}
-function checkAchieve(){
-  ACHIEVES.forEach(a => {
-    if(S.done.includes(a.id)) return;
-    if(achieveVal(a.kind) >= a.need){
-      S.done.push(a.id); S.clover += a.pay;
-      toast('업적 달성!', a.txt + ' · 클로버 +' + a.pay);
-      sfxCoin(5); save();
-    }
-  });
-}
-
 /* ===== 알림 ===== */
 let toastTimer = null;
 function toast(title, line){
@@ -240,6 +222,100 @@ function checkRewards(){
       toast('도감 ' + r.n + '종 달성!', r.txt + ' 받았어요');
     }
   });
-  checkAchieve(); save();
+  save();
 }
 function nextReward(){ return DEX_REWARDS.find(r => !S.claimed.includes(r.id)); }
+
+
+/* ===============================================================
+   자리를 비운 사이 — 시간이 흐른다
+   =============================================================== */
+const AWAY_CAP = 12 * 60;                    /* 아무리 오래 비워도 12시간치까지만 */
+function awayReport(){
+  const now = Date.now();
+  const last = S.seen || 0;
+  S.seen = now;
+  if(!last || !S.named) return null;
+  const mins = Math.floor((now - last) / 60000);
+  if(mins < 12) return null;                 /* 잠깐 나갔다 온 건 넘어간다 */
+  const m = Math.min(mins, AWAY_CAP), hrs = m / 60;
+  const lines = [];
+
+  const before = { ...S.dugi };
+  addStat('full',  -Math.round(hrs * 4.5));
+  addStat('clean', -Math.round(hrs * 3.2));
+  addStat('fun',   -Math.round(hrs * 3.6));
+  /* 자고 있었다고 치고 기운은 오히려 찬다 */
+  addStat('energy', Math.round(hrs * 2.4));
+
+  if(before.full - S.dugi.full >= 12) lines.push('배가 많이 고파졌어요');
+  if(before.clean - S.dugi.clean >= 12) lines.push('먼지가 쌓였어요');
+  if(S.dugi.energy - before.energy >= 8) lines.push('한숨 푹 자고 일어났어요');
+
+  /* 화분은 목이 마르고 */
+  if(hrs >= 4 && (S.dugi.plant || 0) > 0 && Math.random() < 0.5)
+    lines.push('화분이 목말라 해요');
+  /* 가끔 사고를 친다 */
+  if(hrs >= 3 && Math.random() < 0.45){
+    const mischief = ['냉장고를 몰래 털었어요', '휴지를 다 풀어놨어요',
+                      '소파에서 자다 굴러떨어졌대요', '창밖만 한참 봤대요'];
+    lines.push(mischief[Math.floor(Math.random() * mischief.length)]);
+    if(Math.random() < 0.5) addStat('full', 8);
+  }
+  /* 오래 비우면 선물이 와 있다 */
+  let gift = 0;
+  if(hrs >= 6){ gift = 40 + Math.round(hrs * 12); addClover(gift);
+                lines.push('우편함에 클로버 ' + gift + '이 와 있었어요'); }
+
+  save();
+  return { mins, hrs, lines, gift, capped: mins > AWAY_CAP };
+}
+
+/* ===== 손님 ===== */
+function rollGuest(){
+  const key = dayKey();
+  if(S.guestDay === key) return;             /* 하루 한 번만 정한다 */
+  S.guestDay = key;
+  S.guest = Math.random() < 0.55
+    ? { look: CHARS[Math.floor(Math.random() * CHARS.length)].id,
+        line: GUEST_LINES[Math.floor(Math.random() * GUEST_LINES.length)],
+        fed: false }
+    : null;
+  save();
+}
+function guestLook(){ return S.guest && (CHARS.find(c => c.id === S.guest.look) || CHARS[0]); }
+function feedGuest(){
+  if(!S.guest || S.guest.fed) return false;
+  S.guest.fed = true;
+  const gift = GUEST_GIFTS[Math.floor(Math.random() * GUEST_GIFTS.length)];
+  if(gift.kind === 'clover') addClover(gift.n);
+  else if(gift.kind === 'love') addLove(gift.n);
+  else { S.bag[gift.id] = (S.bag[gift.id] || 0) + 1; }
+  addLove(6);
+  toast('고마워요!', gift.txt + ' 받았어요');
+  sfxCoin(4); bumpDaily('guest', 1); save(); refreshBar();
+  return true;
+}
+
+/* ===== 앨범 ===== */
+const ALBUM_MAX = 12;
+function takePhoto(){
+  try{
+    const w = 320, h = Math.max(120, Math.round(320 * H / W));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(cv, 0, 0, w, h);
+    const D = DAY(), W2 = WEATHER();
+    S.album.unshift({
+      t: Date.now(),
+      img: c.toDataURL('image/jpeg', 0.6),
+      note: HOUSE().name + ' · ' + D.name + ' · ' + W2.name + ' · 마음 Lv' + loveLv(S.dugi.love)
+    });
+    while(S.album.length > ALBUM_MAX) S.album.pop();
+    save();
+    toast('찰칵!', '앨범에 담았어요');
+    sfxCoin(2);
+    return true;
+  }catch(e){ toast('사진을 못 찍었어요', '자리가 부족해요'); return false; }
+}
+function dropPhoto(i){ S.album.splice(i, 1); save(); }

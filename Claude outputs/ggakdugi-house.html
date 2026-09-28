@@ -637,6 +637,43 @@ body.fs #stage{border-radius:0;box-shadow:none;}
 #topbar .lovewrap{display:flex;align-items:center;gap:7px;}
 #topbar .lovewrap i{font-style:normal;font-size:11px;color:var(--ink-soft);}
 
+/* ── 사진첩 ───────────────────────────────────────────── */
+.albumtop{display:flex;align-items:center;gap:12px;width:100%;}
+.albumtop .hint{margin:0;}
+.albumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:12px;width:100%;}
+.photo{position:relative;margin:0;background:#FFFFFF;border-radius:20px;overflow:hidden;
+       box-shadow:0 6px 16px rgba(120,95,75,.10);}
+.photo img{display:block;width:100%;height:auto;background:#F3EAE1;}
+.photo figcaption{padding:8px 10px 10px;display:flex;flex-direction:column;gap:1px;}
+.photo figcaption b{font-family:var(--display);font-size:16px;}
+.photo figcaption span{font-size:11px;color:var(--ink-soft);}
+.pdel{position:absolute;top:8px;right:8px;width:26px;height:26px;border:none;border-radius:999px;
+      background:rgba(255,255,255,.9);color:#7A6250;font-size:17px;line-height:26px;cursor:pointer;
+      box-shadow:0 3px 8px rgba(120,95,75,.18);}
+
+/* ── 다녀왔어요 ───────────────────────────────────────── */
+.awaybox{display:flex;flex-direction:column;gap:10px;width:100%;}
+.awaywx{margin:0;font-size:13px;color:var(--ink-soft);text-align:center;}
+.awaywx b{font-family:var(--display);font-size:18px;color:var(--ink);}
+.awaylist{display:flex;flex-direction:column;gap:7px;}
+.awaylist p{margin:0;background:#FFFFFF;border-radius:16px;padding:10px 14px;font-size:13.5px;
+            box-shadow:0 4px 12px rgba(120,95,75,.08);}
+
+/* 날씨 · 시간대 */
+.wxbox{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft);
+       background:#FFFFFF;border-radius:999px;padding:5px 12px;
+       box-shadow:0 4px 12px rgba(120,95,75,.10);}
+.wxbox .wx{width:13px;height:13px;border-radius:999px;flex:none;}
+.wx-sun{background:#F5C34E;}
+.wx-cloud{background:#C3CFDA;}
+.wx-rain{background:#8FC0D8;}
+.wx-snow{background:#E3EDF6;box-shadow:inset 0 0 0 2px #B9CEDF;}
+@container (max-width: 980px){ .wxbox{display:none;} }
+
+.albumtop .btn{font-size:15px;padding:8px 20px;}
+.sheet.away h2, .sheet.away .hint{text-align:center;}
+.sheet.away .awaybox{margin:4px 0 6px;}
+
 </style>
 </head>
 <body>
@@ -663,6 +700,7 @@ body.fs #stage{border-radius:0;box-shadow:none;}
         <div class="stat"><span class="ic i-energy"></span><div class="track"><div class="fill" id="st_energy"></div></div></div>
       </div>
       <div class="right">
+        <span class="wxbox" id="barWx"></span>
         <span class="wallet" id="barClover"></span>
         <span class="lookname">모습 · <b id="barLook">양 두기</b><br>집 · <b id="barHouse">낡은 방</b></span>
         <nav class="tools">
@@ -670,6 +708,7 @@ body.fs #stage{border-radius:0;box-shadow:none;}
           <button id="shopBtn"  type="button" title="상점">상점</button>
           <button id="dexBtn"   type="button" title="옷장·도감">옷장</button>
           <button id="decoBtn"  type="button" title="가구 옮기기">꾸미기</button>
+          <button id="albumBtn" type="button" title="사진첩">앨범</button>
           <button id="dailyBtn" type="button" title="오늘의 할 일">할 일</button>
           <button id="setBtn"   type="button" title="설정">설정</button>
           <button id="fsBtn"   type="button" title="전체화면">⛶</button>
@@ -1099,7 +1138,7 @@ const FURNITURE = [
     desc:'물을 주면 자라요' },
   { id:'ball',   name:'공',          price:0,   base:true, zone:'living',  slot:'L8', sz:0.7, act:'play',
     desc:'던지고 놀기' },
-  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     slot:'B1', sz:1.3, act:'sleep',
+  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     slot:'B1', sz:1.15, act:'sleep',
     desc:'여기서 자면 기운이 차요' },
 
   { id:'fridge', name:'냉장고',      price:680, zone:'kitchen', slot:'K1', sz:1.3, boost:{ full:6 },
@@ -1160,13 +1199,13 @@ const SLOTS = {
     { id:'L8', x:0.34, y:0.76, row:2 }, { id:'L9', x:0.62, y:0.74, row:2 }
   ],
   bed: [
-    { id:'B1', x:0.79, y:0.04, row:1 }, { id:'B2', x:0.94, y:0.07, row:1 },
+    { id:'B1', x:0.76, y:0.04, row:1 }, { id:'B2', x:0.95, y:0.08, row:1 },
     { id:'B3', x:0.72, y:0.38, row:0 }, { id:'B4', x:0.90, y:0.40, row:0 },
     { id:'B5', x:0.80, y:0.76, row:2 }, { id:'B6', x:0.88, y:0.78, row:2 }
   ]
 };
 const WALL_SLOTS = {
-  kitchen: [{ id:'KW1', x:0.22 }, { id:'KW2', x:0.30 }],
+  kitchen: [{ id:'KW1', x:0.25 }, { id:'KW2', x:0.31 }],
   living:  [{ id:'LW1', x:0.34 }, { id:'LW2', x:0.60 }],
   bed:     [{ id:'BW1', x:0.68 }, { id:'BW2', x:0.78 }]
 };
@@ -1264,14 +1303,7 @@ const DAILY_POOL = [
 ];
 
 /* ===== 업적 ===== */
-const ACHIEVES = [
-  { id:'a_pet',  txt:'100번 쓰다듬기',   need:100, kind:'pet',   pay:200 },
-  { id:'a_job',  txt:'알바 10번',        need:10,  kind:'job',   pay:250 },
-  { id:'a_love', txt:'마음 레벨 5',      need:5,   kind:'love',  pay:300 },
-  { id:'a_dex',  txt:'모습 10종 모으기',  need:10,  kind:'dex',   pay:350 },
-  { id:'a_furn', txt:'가구 10개 놓기',    need:10,  kind:'furn',  pay:300 },
-  { id:'a_house',txt:'넓은 집으로 이사',  need:2,   kind:'house', pay:500 }
-];
+
 
 /* ===== 꺅두기런 두기별 스킬 ===== */
 const SKILLS = {
@@ -1288,6 +1320,34 @@ const CHAR_SKILL = {
 };
 const skillOf = c => SKILLS[CHAR_SKILL[c.id] || 'magnet'];
 const skillIdOf = c => CHAR_SKILL[c.id] || 'magnet';
+
+/* ===== 날씨 — 하루 단위로 정해진다 ===== */
+const WEATHERS = [
+  { id:'sun',   name:'맑음',   odds:46, note:'볕이 좋아요',        fun:2,  pay:1.00 },
+  { id:'cloud', name:'흐림',   odds:24, note:'구름이 많아요',      fun:0,  pay:1.00 },
+  { id:'rain',  name:'비',     odds:22, note:'비가 와요',          fun:-2, pay:1.12 },
+  { id:'snow',  name:'눈',     odds:8,  note:'눈이 내려요!',       fun:3,  pay:1.20 }
+];
+function dayKey(d){ d = d || new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+/* 같은 날이면 늘 같은 날씨가 나오도록 날짜를 씨앗으로 */
+function weatherOf(key){
+  let x = (key * 9301 + 49297) % 233280, r = (x / 233280) * 100, acc = 0;
+  for(const w of WEATHERS){ acc += w.odds; if(r < acc) return w; }
+  return WEATHERS[0];
+}
+const WEATHER = () => weatherOf(dayKey());
+
+/* ===== 손님 ===== */
+const GUEST_LINES = [
+  '놀러 왔어요!', '지나가다 들렀어요', '집 예쁘다~', '간식 있어요?', '오랜만이에요!'
+];
+const GUEST_GIFTS = [
+  { kind:'clover', n:180, txt:'클로버 180' },
+  { kind:'clover', n:260, txt:'클로버 260' },
+  { kind:'item',   id:'snack', txt:'간식 하나' },
+  { kind:'love',   n:14, txt:'마음 듬뿍' }
+];
 
 "use strict";
 /* 세이브·경제·성장 — 꺅두기 하우스 */
@@ -1325,7 +1385,10 @@ function freshSave(){
     course: 'town',
     stat: { pet:0, job:0, earn:0 },
     daily: null,
-    done: [],                      // 받은 업적
+    seen: 0,                       // 마지막으로 논 시각
+    album: [],                     // 사진첩
+    guest: null,                   // 오늘 찾아온 손님
+    guestDay: 0,
     claimed: [], skins: ['basic'],
     named: false,
     settings: { keys:[...DEFAULT_KEYS], speed:1.0, offset:0, skin:'basic',
@@ -1373,7 +1436,7 @@ function condition(){
 /* 알바 시급 = 컨디션 + 마음 레벨 + 가구 + 그 알바 경력 */
 function payMult(jobId){
   const career = jobId ? careerPay(S.career[jobId] || 0) : 1;
-  return (0.62 + 0.38 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career;
+  return (0.62 + 0.38 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career * WEATHER().pay;
 }
 
 function addStat(k, v){
@@ -1397,7 +1460,7 @@ function addLove(n){
     if(u.furn && !hasFurn(u.furn)) S.furn.push(u.furn);
     toast('마음 레벨 ' + after + '!', u.txt || '두기가 더 좋아해요');
     sfxGrow();
-    checkAchieve();
+    
   }
 }
 const canFollow = () => loveLv(S.dugi.love) >= 3;
@@ -1408,7 +1471,7 @@ function afterOuting(jobId){
   addStat('full', -16); addStat('energy', -20); addStat('clean', -14); addStat('fun', 6);
   if(jobId){ S.career[jobId] = (S.career[jobId] || 0) + 1; }
   S.stat.job = (S.stat.job || 0) + 1;
-  bumpDaily('job', 1); checkAchieve();
+  bumpDaily('job', 1); 
   newRequest(true);
   save();
 }
@@ -1451,7 +1514,7 @@ function upgradeHouse(){
   if(S.clover < nxt.price){ sfxNo(); toast('클로버가 모자라요', nxt.name + '까지 ' +
       (nxt.price - S.clover).toLocaleString('ko-KR') + ' 더'); return false; }
   addClover(-nxt.price); S.house = (S.house || 0) + 1; S.pos = {}; save();
-  toast(nxt.name + '으로 이사!', nxt.note); sfxGrow(); checkAchieve();
+  toast(nxt.name + '으로 이사!', nxt.note); sfxGrow(); 
   return true;
 }
 
@@ -1483,27 +1546,6 @@ function bumpDaily(kind, n){
   if(typeof paintDaily === 'function') paintDaily();
 }
 
-/* ===== 업적 ===== */
-function achieveVal(kind){
-  if(kind === 'pet')   return S.stat.pet || 0;
-  if(kind === 'job')   return S.stat.job || 0;
-  if(kind === 'love')  return loveLv(S.dugi.love);
-  if(kind === 'dex')   return S.own.length;
-  if(kind === 'furn')  return S.furn.length;
-  if(kind === 'house') return S.house || 0;
-  return 0;
-}
-function checkAchieve(){
-  ACHIEVES.forEach(a => {
-    if(S.done.includes(a.id)) return;
-    if(achieveVal(a.kind) >= a.need){
-      S.done.push(a.id); S.clover += a.pay;
-      toast('업적 달성!', a.txt + ' · 클로버 +' + a.pay);
-      sfxCoin(5); save();
-    }
-  });
-}
-
 /* ===== 알림 ===== */
 let toastTimer = null;
 function toast(title, line){
@@ -1531,9 +1573,103 @@ function checkRewards(){
       toast('도감 ' + r.n + '종 달성!', r.txt + ' 받았어요');
     }
   });
-  checkAchieve(); save();
+  save();
 }
 function nextReward(){ return DEX_REWARDS.find(r => !S.claimed.includes(r.id)); }
+
+
+/* ===============================================================
+   자리를 비운 사이 — 시간이 흐른다
+   =============================================================== */
+const AWAY_CAP = 12 * 60;                    /* 아무리 오래 비워도 12시간치까지만 */
+function awayReport(){
+  const now = Date.now();
+  const last = S.seen || 0;
+  S.seen = now;
+  if(!last || !S.named) return null;
+  const mins = Math.floor((now - last) / 60000);
+  if(mins < 12) return null;                 /* 잠깐 나갔다 온 건 넘어간다 */
+  const m = Math.min(mins, AWAY_CAP), hrs = m / 60;
+  const lines = [];
+
+  const before = { ...S.dugi };
+  addStat('full',  -Math.round(hrs * 4.5));
+  addStat('clean', -Math.round(hrs * 3.2));
+  addStat('fun',   -Math.round(hrs * 3.6));
+  /* 자고 있었다고 치고 기운은 오히려 찬다 */
+  addStat('energy', Math.round(hrs * 2.4));
+
+  if(before.full - S.dugi.full >= 12) lines.push('배가 많이 고파졌어요');
+  if(before.clean - S.dugi.clean >= 12) lines.push('먼지가 쌓였어요');
+  if(S.dugi.energy - before.energy >= 8) lines.push('한숨 푹 자고 일어났어요');
+
+  /* 화분은 목이 마르고 */
+  if(hrs >= 4 && (S.dugi.plant || 0) > 0 && Math.random() < 0.5)
+    lines.push('화분이 목말라 해요');
+  /* 가끔 사고를 친다 */
+  if(hrs >= 3 && Math.random() < 0.45){
+    const mischief = ['냉장고를 몰래 털었어요', '휴지를 다 풀어놨어요',
+                      '소파에서 자다 굴러떨어졌대요', '창밖만 한참 봤대요'];
+    lines.push(mischief[Math.floor(Math.random() * mischief.length)]);
+    if(Math.random() < 0.5) addStat('full', 8);
+  }
+  /* 오래 비우면 선물이 와 있다 */
+  let gift = 0;
+  if(hrs >= 6){ gift = 40 + Math.round(hrs * 12); addClover(gift);
+                lines.push('우편함에 클로버 ' + gift + '이 와 있었어요'); }
+
+  save();
+  return { mins, hrs, lines, gift, capped: mins > AWAY_CAP };
+}
+
+/* ===== 손님 ===== */
+function rollGuest(){
+  const key = dayKey();
+  if(S.guestDay === key) return;             /* 하루 한 번만 정한다 */
+  S.guestDay = key;
+  S.guest = Math.random() < 0.55
+    ? { look: CHARS[Math.floor(Math.random() * CHARS.length)].id,
+        line: GUEST_LINES[Math.floor(Math.random() * GUEST_LINES.length)],
+        fed: false }
+    : null;
+  save();
+}
+function guestLook(){ return S.guest && (CHARS.find(c => c.id === S.guest.look) || CHARS[0]); }
+function feedGuest(){
+  if(!S.guest || S.guest.fed) return false;
+  S.guest.fed = true;
+  const gift = GUEST_GIFTS[Math.floor(Math.random() * GUEST_GIFTS.length)];
+  if(gift.kind === 'clover') addClover(gift.n);
+  else if(gift.kind === 'love') addLove(gift.n);
+  else { S.bag[gift.id] = (S.bag[gift.id] || 0) + 1; }
+  addLove(6);
+  toast('고마워요!', gift.txt + ' 받았어요');
+  sfxCoin(4); bumpDaily('guest', 1); save(); refreshBar();
+  return true;
+}
+
+/* ===== 앨범 ===== */
+const ALBUM_MAX = 12;
+function takePhoto(){
+  try{
+    const w = 320, h = Math.max(120, Math.round(320 * H / W));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(cv, 0, 0, w, h);
+    const D = DAY(), W2 = WEATHER();
+    S.album.unshift({
+      t: Date.now(),
+      img: c.toDataURL('image/jpeg', 0.6),
+      note: HOUSE().name + ' · ' + D.name + ' · ' + W2.name + ' · 마음 Lv' + loveLv(S.dugi.love)
+    });
+    while(S.album.length > ALBUM_MAX) S.album.pop();
+    save();
+    toast('찰칵!', '앨범에 담았어요');
+    sfxCoin(2);
+    return true;
+  }catch(e){ toast('사진을 못 찍었어요', '자리가 부족해요'); return false; }
+}
+function dropPhoto(i){ S.album.splice(i, 1); save(); }
 
 "use strict";
 /* 채보 생성 — 꺅두기 하우스 */
@@ -2516,13 +2652,17 @@ function openModal(kind){
   modalOpen = kind;
   const body = $('modalBody'); body.innerHTML = '';
   const sheet = modal.querySelector('.sheet');
-  sheet.className = 'sheet' + (['wardrobe','gacha','shop','song','job','course','daily'].includes(kind) ? ' wide' : '');
+  sheet.className = 'sheet' + (['wardrobe','gacha','shop','song','job','course','daily','album'].includes(kind) ? ' wide' : '');
   $('modalClose').textContent = '확인'; $('modalClose').hidden = false;
 
   if(kind === 'wardrobe'){
     $('modalTitle').textContent = '옷장 · 두기 도감';
     $('modalHint').textContent = '모습을 누르면 자세히 볼 수 있어요';
     buildDex(body);
+  } else if(kind === 'album'){
+    $('modalTitle').textContent = '사진첩';
+    $('modalHint').textContent = '방이 마음에 들 때 찍어두면 남아요 (최대 ' + ALBUM_MAX + '장)';
+    buildAlbum(body);
   } else if(kind === 'shop'){
     $('modalTitle').textContent = '가구 상점';
     $('modalHint').textContent = '';
@@ -2790,6 +2930,76 @@ function paintCareBar(){
     b.onclick = () => { doCare(kind); };
     bar.appendChild(b);
   });
+}
+
+
+/* ===============================================================
+   사진첩
+   =============================================================== */
+function buildAlbum(body){
+  const top = document.createElement('div');
+  top.className = 'albumtop';
+  const shot = document.createElement('button');
+  shot.type = 'button'; shot.className = 'btn';
+  shot.textContent = '지금 찍기';
+  shot.onclick = () => {
+    closeModal();
+    setTimeout(() => { if(takePhoto()) setTimeout(() => openModal('album'), 420); }, 60);
+  };
+  const cnt = document.createElement('span');
+  cnt.className = 'hint';
+  cnt.textContent = S.album.length + ' / ' + ALBUM_MAX + '장';
+  top.appendChild(shot); top.appendChild(cnt);
+  body.appendChild(top);
+
+  if(!S.album.length){
+    const e = document.createElement('p'); e.className = 'hint';
+    e.textContent = '아직 사진이 없어요. 집을 꾸미고 한 장 찍어보세요.';
+    body.appendChild(e); return;
+  }
+  const grid = document.createElement('div'); grid.className = 'albumgrid';
+  body.appendChild(grid);
+  S.album.forEach((ph, i) => {
+    const card = document.createElement('figure');
+    card.className = 'photo';
+    const d = new Date(ph.t);
+    const when = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' +
+                 String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    card.innerHTML = '<img alt="' + when + ' 사진">' +
+      '<figcaption><b>' + when + '</b><span>' + ph.note + '</span></figcaption>';
+    card.querySelector('img').src = ph.img;
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'pdel'; del.setAttribute('aria-label', '사진 지우기');
+    del.textContent = '×';
+    del.onclick = () => { dropPhoto(i); openModal('album'); };
+    card.appendChild(del);
+    grid.appendChild(card);
+  });
+}
+
+/* ===============================================================
+   다녀왔어요 — 자리를 비운 사이 있었던 일
+   =============================================================== */
+function showAway(r){
+  const body = $('modalBody'); body.innerHTML = '';
+  modalOpen = 'away';
+  modal.querySelector('.sheet').className = 'sheet away';
+  $('modalTitle').textContent = '다녀왔어요!';
+  const h = Math.floor(r.hrs), m = Math.round((r.hrs - h) * 60);
+  $('modalHint').textContent = (h ? h + '시간 ' : '') + (m ? m + '분' : '') + ' 만이에요' +
+                               (r.capped ? ' (오래 비웠네요)' : '');
+  const w = WEATHER();
+  const box = document.createElement('div'); box.className = 'awaybox';
+  box.innerHTML = '<p class="awaywx">오늘은 <b>' + w.name + '</b> · ' + w.note + '</p>';
+  const ul = document.createElement('div'); ul.className = 'awaylist';
+  (r.lines.length ? r.lines : ['두기는 얌전히 기다렸어요']).forEach(t => {
+    const li = document.createElement('p'); li.textContent = t; ul.appendChild(li);
+  });
+  box.appendChild(ul);
+  body.appendChild(box);
+  $('modalClose').textContent = '두기 보러 가기';
+  $('modalClose').hidden = false;
+  modal.hidden = false;
 }
 
 "use strict";
@@ -3302,7 +3512,7 @@ function drawRoom(){
     drawBulb(rx(0.18), 0, wb * 0.24);
     drawWindow(rx(0.86), wb * 0.44, s * 0.8, true);
   }else{
-    drawWindow(rx(0.13), wb * 0.44, s, false);
+    drawWindow(rx(0.11), wb * 0.44, s, false);
     if(S.house === 2){ drawWindow(rx(0.90), wb * 0.44, s, false); drawLamp(rx(0.5), 0, wb * 0.15); }
     else drawBulb(rx(0.90), 0, wb * 0.2);
   }
@@ -3327,7 +3537,11 @@ function drawLamp(cx, top, len){
 }
 function drawWindow(cx, cy, s, old){
   g.save();
-  const SKY = DAY().sky;
+  let SKY = DAY().sky;
+  const WX = WEATHER();
+  if(WX.id === 'rain')  SKY = ['#9AA7B4', '#B6C1CA'];
+  if(WX.id === 'cloud') SKY = ['#C2CFD9', '#DCE5EB'];
+  if(WX.id === 'snow')  SKY = ['#C8D4E0', '#E4EBF1'];
   const sg = g.createLinearGradient(0, cy - s * 0.75, 0, cy + s * 0.75);
   sg.addColorStop(0, SKY[0]); sg.addColorStop(1, SKY[1]);
   g.fillStyle = sg; rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14);
@@ -3339,6 +3553,7 @@ function drawWindow(cx, cy, s, old){
   g.globalAlpha = .5; g.fillStyle = '#8FBF92';
   g.beginPath(); g.ellipse(cx + s * 0.5, cy + s * 0.62, s * 0.5, s * 0.22, 0, 0, 7); g.fill();
   g.restore();
+  drawWeatherIn(cx, cy, s, 0);
   ink();
   g.beginPath(); g.moveTo(cx, cy - s * 0.75); g.lineTo(cx, cy + s * 0.75);
   g.moveTo(cx - s * 0.95, cy); g.lineTo(cx + s * 0.95, cy); g.stroke();
@@ -3893,6 +4108,107 @@ function drawZoneLabels(){
   g.restore();
 }
 
+
+/* ===============================================================
+   날씨 — 창밖과 방 안에 같이 나타난다
+   =============================================================== */
+let wxDrops = [];
+function seedWeather(){
+  wxDrops = [];
+  const w = WEATHER();
+  if(w.id !== 'rain' && w.id !== 'snow') return;
+  const n = w.id === 'rain' ? 46 : 30;
+  for(let i = 0; i < n; i++)
+    wxDrops.push({ x: Math.random(), y: Math.random(), v: 0.5 + Math.random() * 0.7,
+                   s: 0.6 + Math.random() * 0.8, w: Math.random() * 6.28 });
+}
+seedWeather();
+/* 창문 안쪽에 그린다 — (cx,cy)는 창 중심, s는 창 크기 */
+function drawWeatherIn(cx, cy, s, dt){
+  const w = WEATHER();
+  if(w.id === 'sun' || w.id === 'cloud') return;
+  g.save();
+  rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14); g.clip();
+  if(w.id === 'rain'){
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = Math.max(2, LW() * 0.7);
+    g.lineCap = 'round';
+    wxDrops.forEach(d => {
+      const x = cx - s * 0.95 + ((d.x + home.t * 0.05) % 1) * s * 1.9;
+      const y = cy - s * 0.75 + ((d.y + home.t * d.v * 0.5) % 1) * s * 1.5;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x - s * 0.07, y + s * 0.24); g.stroke();
+    });
+  }else{
+    g.fillStyle = 'rgba(255,255,255,.92)';
+    wxDrops.forEach(d => {
+      const x = cx - s * 0.95 + ((d.x + Math.sin(home.t * 0.6 + d.w) * 0.03 + 1) % 1) * s * 1.9;
+      const y = cy - s * 0.75 + ((d.y + home.t * d.v * 0.12) % 1) * s * 1.5;
+      g.beginPath(); g.arc(x, y, s * 0.05 * d.s, 0, 7); g.fill();
+    });
+  }
+  g.restore();
+}
+/* 오늘 날씨 알림 — 창 옆에 작게 */
+function drawWeatherChip(){
+  const w = WEATHER(), k = uiK();
+  const txt = w.name;
+  g.save();
+  g.font = '700 ' + (14 * k) + 'px Gaegu, sans-serif';
+  const tw = g.measureText(txt).width + 34 * k, th = 24 * k;
+  const x = roomL() + 12 * k, y = 10 * k;
+  g.fillStyle = 'rgba(255,252,248,.9)';
+  rrect(x, y, tw, th, th / 2); g.fill();
+  const ix = x + 13 * k, iy = y + th / 2;
+  if(w.id === 'sun'){
+    g.fillStyle = '#F5C34E'; g.beginPath(); g.arc(ix, iy, 6 * k, 0, 7); g.fill();
+    g.strokeStyle = '#F5C34E'; g.lineWidth = 2 * k;
+    for(let i = 0; i < 8; i++){ const a = i / 8 * 6.28;
+      g.beginPath(); g.moveTo(ix + Math.cos(a) * 8 * k, iy + Math.sin(a) * 8 * k);
+      g.lineTo(ix + Math.cos(a) * 10.5 * k, iy + Math.sin(a) * 10.5 * k); g.stroke(); }
+  }else{
+    g.fillStyle = w.id === 'snow' ? '#DCE8F2' : '#B9C7D4';
+    g.beginPath(); g.arc(ix - 4 * k, iy - 1 * k, 5 * k, 0, 7);
+    g.arc(ix + 2 * k, iy - 3 * k, 6.5 * k, 0, 7); g.arc(ix + 7 * k, iy, 5 * k, 0, 7); g.fill();
+    if(w.id !== 'cloud'){
+      g.strokeStyle = w.id === 'snow' ? '#FFFFFF' : '#8FC0D8'; g.lineWidth = 2.2 * k;
+      [-4, 1, 6].forEach(o => { g.beginPath();
+        g.moveTo(ix + o * k, iy + 6 * k); g.lineTo(ix + (o - 1.5) * k, iy + 10 * k); g.stroke(); });
+    }
+  }
+  g.fillStyle = '#7A6250'; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText(txt, x + 26 * k, y + th / 2 + 1);
+  g.restore();
+}
+
+/* ===============================================================
+   손님 — 현관 옆에 서 있다
+   =============================================================== */
+const GUEST_POS = { x: 0.50, y: 0.46 };
+function drawGuest(){
+  if(!S.guest || place !== 'room') return;
+  const c = guestLook(), im = c && IMG[c.run];
+  const cx = rx(GUEST_POS.x), cy = yAt(GUEST_POS.y);
+  const s = Math.min(H * 0.17, roomW() * 0.16) * depthAt(cy);
+  shadow(cx, cy, s * 0.42);
+  g.save(); g.translate(cx, cy);
+  if(S.guest.fed){ g.globalAlpha = 0.96; }
+  g.scale(c && c.flip === false ? -1 : 1, 1);
+  if(im && im.complete && im.naturalWidth) g.drawImage(im, -s * 0.5, -s, s, s);
+  g.restore();
+  /* 말풍선 */
+  const k = uiK(), txt = S.guest.fed ? '고마워요!' : S.guest.line;
+  g.save();
+  g.font = '700 ' + (16 * k) + 'px Gaegu, sans-serif';
+  const tw = g.measureText(txt).width + 22 * k, th = 26 * k;
+  const bx = cx - tw / 2, by = cy - s - th - 10 * k;
+  g.fillStyle = '#FFFFFF'; g.strokeStyle = '#EFE4D8'; g.lineWidth = LW() * 0.7;
+  rrect(bx, by, tw, th, th / 2); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(cx - 6 * k, by + th); g.lineTo(cx, by + th + 8 * k);
+  g.lineTo(cx + 7 * k, by + th); g.closePath(); g.fillStyle = '#FFFFFF'; g.fill();
+  g.fillStyle = '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(txt, cx, by + th / 2 + 1);
+  g.restore();
+}
+
 "use strict";
 /* 두기 — 행동과 돌봄 — 꺅두기 하우스 */
 
@@ -3934,6 +4250,8 @@ function homeSpots(){
     if(p && p.act) list.push({ id:o.id, name:p.name, x:o.x, y:o.y, act:p.act });
   }
   list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' });
+  if(S.guest && !S.guest.fed)
+    list.push({ id:'guest', name:'손님', x:GUEST_POS.x, y:GUEST_POS.y, act:'guest' });
   return list;
 }
 const furnPos = id => { const o = spotOf(id); return o ? { x:o.x, y:o.y } : { x:0.5, y:0.5 }; };
@@ -4241,6 +4559,7 @@ function act(spot){
   if(spot.act === 'wardrobe') return openModal('wardrobe');
   if(spot.act === 'gacha')    return openModal('gacha');
   if(spot.act === 'shop')     return openModal('shop');
+  if(spot.act === 'guest')    return feedGuest();
   if(spot.act === 'job')      return openModal('job');
   if(spot.act === 'out')      return goYard();
   if(spot.act === 'in')       return goHome();
@@ -4497,7 +4816,8 @@ function drawPrompt(){
   if(!n || home.act || deco || mini) return;
   const k = uiK();
   const LABEL = { wardrobe:'옷장 열기', gacha:'뽑기', shop:'상점 들어가기',
-                  job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기' };
+                  job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기',
+                  guest:'간식 나눠주기' };
   const label = LABEL[n.act] || CARE[n.act].name;
   g.save();
   g.font = '700 ' + (19 * k) + 'px Gaegu, sans-serif';
@@ -4547,12 +4867,13 @@ function drawHome(dt){
     const by = yAt(o.y);
     drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
   }
-  for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb - (H - wb) * 0.26, fs * 0.9, near(o.id));
+  for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb * 0.46, fs * 0.82, near(o.id));
   drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.05, near('door'));
 
   const items = LAY.floor.filter(o => !o.floorLayer).sort((a, b) => a.y - b.y);
-  let drew = false;
+  let drew = false, drewG = !S.guest;
   for(const o of items){
+    if(!drewG && o.y > GUEST_POS.y){ drawGuest(); drewG = true; }
     if(!drew && o.y > home.y){ drawDugi(); drawBall(); drew = true; }
     const by = yAt(o.y);
     const hi = deco && home.drag && home.drag.id === o.id;
@@ -4561,6 +4882,7 @@ function drawHome(dt){
     if(hi) g.restore();
   }
   home.dusts.forEach(drawDust);
+  if(!drewG) drawGuest();
   if(!drew){ drawDugi(); drawBall(); }
   drawParts();
   drawDayTint();
@@ -6247,6 +6569,9 @@ function refreshBar(){
   $('barStage').textContent = '마음 Lv' + lv;
   $('barLook').textContent = look().name;
   $('barHouse').textContent = HOUSE().name;
+  const wx = WEATHER(), dp = DAY();
+  const wxEl = $('barWx');
+  if(wxEl) wxEl.innerHTML = '<i class="wx wx-' + wx.id + '"></i>' + wx.name + ' · ' + dp.name;
   $('expFill').style.width = Math.round(loveProg(d.love) * 100) + '%';
   $('expCap').textContent = lv >= LOVE_MAX ? '최고 단짝!' : ('다음 레벨까지 ' + Math.ceil(loveNext(d.love)));
   const hearts = Math.min(5, Math.round(lv / 2));
@@ -6268,7 +6593,8 @@ function goHome(){
   $('skipBtn').hidden = true; $('tapHint').hidden = true;
   $('decoBtn').classList.remove('on'); $('decoBtn').disabled = false;
   if(wasOut){ home.x = LAY.door.x; home.y = 0.22; home.target = null; home.vx = home.vy = 0; }
-  checkDaily(); seedDust(); relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
+  checkDaily(); rollGuest(); seedWeather(); seedDust();
+  relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
 }
 
 /* ===== 정원으로 나가기 ===== */
@@ -6483,6 +6809,7 @@ $('shopBtn').onclick = () => openModal('shop');
 $('dexBtn').onclick  = () => openModal('wardrobe');
 $('setBtn').onclick  = () => openModal('settings');
 $('outBtn').onclick  = () => openModal('job');
+$('albumBtn').onclick = () => openModal('album');
 $('dailyBtn').onclick = () => { $('dailyPanel').hidden = !$('dailyPanel').hidden; paintDaily(); };
 $('decoBtn').onclick = () => {
   if(place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
@@ -6545,8 +6872,17 @@ seedScenery();
 resize();
 applySkin();
 checkDaily();
-if(S.named) goHome(); else askName();
+if(S.named){
+  const away = awayReport();
+  goHome();
+  if(away) setTimeout(() => showAway(away), 500);
+}else askName();
 refreshBar();
+/* 창을 닫거나 탭을 옮길 때 시각을 적어둔다 */
+function stampSeen(){ S.seen = Date.now(); save(); }
+addEventListener('beforeunload', stampSeen);
+document.addEventListener('visibilitychange', () => { if(document.hidden) stampSeen(); });
+setInterval(stampSeen, 60000);
 requestAnimationFrame(frame);
 
 })();

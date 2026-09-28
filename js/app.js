@@ -22,6 +22,9 @@ function refreshBar(){
   $('barStage').textContent = '마음 Lv' + lv;
   $('barLook').textContent = look().name;
   $('barHouse').textContent = HOUSE().name;
+  const wx = WEATHER(), dp = DAY();
+  const wxEl = $('barWx');
+  if(wxEl) wxEl.innerHTML = '<i class="wx wx-' + wx.id + '"></i>' + wx.name + ' · ' + dp.name;
   $('expFill').style.width = Math.round(loveProg(d.love) * 100) + '%';
   $('expCap').textContent = lv >= LOVE_MAX ? '최고 단짝!' : ('다음 레벨까지 ' + Math.ceil(loveNext(d.love)));
   const hearts = Math.min(5, Math.round(lv / 2));
@@ -43,7 +46,8 @@ function goHome(){
   $('skipBtn').hidden = true; $('tapHint').hidden = true;
   $('decoBtn').classList.remove('on'); $('decoBtn').disabled = false;
   if(wasOut){ home.x = LAY.door.x; home.y = 0.22; home.target = null; home.vx = home.vy = 0; }
-  checkDaily(); seedDust(); relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
+  checkDaily(); rollGuest(); seedWeather(); seedDust();
+  relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
 }
 
 /* ===== 정원으로 나가기 ===== */
@@ -258,6 +262,7 @@ $('shopBtn').onclick = () => openModal('shop');
 $('dexBtn').onclick  = () => openModal('wardrobe');
 $('setBtn').onclick  = () => openModal('settings');
 $('outBtn').onclick  = () => openModal('job');
+$('albumBtn').onclick = () => openModal('album');
 $('dailyBtn').onclick = () => { $('dailyPanel').hidden = !$('dailyPanel').hidden; paintDaily(); };
 $('decoBtn').onclick = () => {
   if(place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
@@ -320,6 +325,15 @@ seedScenery();
 resize();
 applySkin();
 checkDaily();
-if(S.named) goHome(); else askName();
+if(S.named){
+  const away = awayReport();
+  goHome();
+  if(away) setTimeout(() => showAway(away), 500);
+}else askName();
 refreshBar();
+/* 창을 닫거나 탭을 옮길 때 시각을 적어둔다 */
+function stampSeen(){ S.seen = Date.now(); save(); }
+addEventListener('beforeunload', stampSeen);
+document.addEventListener('visibilitychange', () => { if(document.hidden) stampSeen(); });
+setInterval(stampSeen, 60000);
 requestAnimationFrame(frame);

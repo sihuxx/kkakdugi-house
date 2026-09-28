@@ -446,13 +446,17 @@ function openModal(kind){
   modalOpen = kind;
   const body = $('modalBody'); body.innerHTML = '';
   const sheet = modal.querySelector('.sheet');
-  sheet.className = 'sheet' + (['wardrobe','gacha','shop','song','job','course','daily'].includes(kind) ? ' wide' : '');
+  sheet.className = 'sheet' + (['wardrobe','gacha','shop','song','job','course','daily','album'].includes(kind) ? ' wide' : '');
   $('modalClose').textContent = '확인'; $('modalClose').hidden = false;
 
   if(kind === 'wardrobe'){
     $('modalTitle').textContent = '옷장 · 두기 도감';
     $('modalHint').textContent = '모습을 누르면 자세히 볼 수 있어요';
     buildDex(body);
+  } else if(kind === 'album'){
+    $('modalTitle').textContent = '사진첩';
+    $('modalHint').textContent = '방이 마음에 들 때 찍어두면 남아요 (최대 ' + ALBUM_MAX + '장)';
+    buildAlbum(body);
   } else if(kind === 'shop'){
     $('modalTitle').textContent = '가구 상점';
     $('modalHint').textContent = '';
@@ -720,4 +724,74 @@ function paintCareBar(){
     b.onclick = () => { doCare(kind); };
     bar.appendChild(b);
   });
+}
+
+
+/* ===============================================================
+   사진첩
+   =============================================================== */
+function buildAlbum(body){
+  const top = document.createElement('div');
+  top.className = 'albumtop';
+  const shot = document.createElement('button');
+  shot.type = 'button'; shot.className = 'btn';
+  shot.textContent = '지금 찍기';
+  shot.onclick = () => {
+    closeModal();
+    setTimeout(() => { if(takePhoto()) setTimeout(() => openModal('album'), 420); }, 60);
+  };
+  const cnt = document.createElement('span');
+  cnt.className = 'hint';
+  cnt.textContent = S.album.length + ' / ' + ALBUM_MAX + '장';
+  top.appendChild(shot); top.appendChild(cnt);
+  body.appendChild(top);
+
+  if(!S.album.length){
+    const e = document.createElement('p'); e.className = 'hint';
+    e.textContent = '아직 사진이 없어요. 집을 꾸미고 한 장 찍어보세요.';
+    body.appendChild(e); return;
+  }
+  const grid = document.createElement('div'); grid.className = 'albumgrid';
+  body.appendChild(grid);
+  S.album.forEach((ph, i) => {
+    const card = document.createElement('figure');
+    card.className = 'photo';
+    const d = new Date(ph.t);
+    const when = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' +
+                 String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    card.innerHTML = '<img alt="' + when + ' 사진">' +
+      '<figcaption><b>' + when + '</b><span>' + ph.note + '</span></figcaption>';
+    card.querySelector('img').src = ph.img;
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'pdel'; del.setAttribute('aria-label', '사진 지우기');
+    del.textContent = '×';
+    del.onclick = () => { dropPhoto(i); openModal('album'); };
+    card.appendChild(del);
+    grid.appendChild(card);
+  });
+}
+
+/* ===============================================================
+   다녀왔어요 — 자리를 비운 사이 있었던 일
+   =============================================================== */
+function showAway(r){
+  const body = $('modalBody'); body.innerHTML = '';
+  modalOpen = 'away';
+  modal.querySelector('.sheet').className = 'sheet away';
+  $('modalTitle').textContent = '다녀왔어요!';
+  const h = Math.floor(r.hrs), m = Math.round((r.hrs - h) * 60);
+  $('modalHint').textContent = (h ? h + '시간 ' : '') + (m ? m + '분' : '') + ' 만이에요' +
+                               (r.capped ? ' (오래 비웠네요)' : '');
+  const w = WEATHER();
+  const box = document.createElement('div'); box.className = 'awaybox';
+  box.innerHTML = '<p class="awaywx">오늘은 <b>' + w.name + '</b> · ' + w.note + '</p>';
+  const ul = document.createElement('div'); ul.className = 'awaylist';
+  (r.lines.length ? r.lines : ['두기는 얌전히 기다렸어요']).forEach(t => {
+    const li = document.createElement('p'); li.textContent = t; ul.appendChild(li);
+  });
+  box.appendChild(ul);
+  body.appendChild(box);
+  $('modalClose').textContent = '두기 보러 가기';
+  $('modalClose').hidden = false;
+  modal.hidden = false;
 }

@@ -77,7 +77,7 @@ const FURNITURE = [
     desc:'물을 주면 자라요' },
   { id:'ball',   name:'공',          price:0,   base:true, zone:'living',  slot:'L8', sz:0.7, act:'play',
     desc:'던지고 놀기' },
-  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     slot:'B1', sz:1.3, act:'sleep',
+  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     slot:'B1', sz:1.15, act:'sleep',
     desc:'여기서 자면 기운이 차요' },
 
   { id:'fridge', name:'냉장고',      price:680, zone:'kitchen', slot:'K1', sz:1.3, boost:{ full:6 },
@@ -138,13 +138,13 @@ const SLOTS = {
     { id:'L8', x:0.34, y:0.76, row:2 }, { id:'L9', x:0.62, y:0.74, row:2 }
   ],
   bed: [
-    { id:'B1', x:0.79, y:0.04, row:1 }, { id:'B2', x:0.94, y:0.07, row:1 },
+    { id:'B1', x:0.76, y:0.04, row:1 }, { id:'B2', x:0.95, y:0.08, row:1 },
     { id:'B3', x:0.72, y:0.38, row:0 }, { id:'B4', x:0.90, y:0.40, row:0 },
     { id:'B5', x:0.80, y:0.76, row:2 }, { id:'B6', x:0.88, y:0.78, row:2 }
   ]
 };
 const WALL_SLOTS = {
-  kitchen: [{ id:'KW1', x:0.22 }, { id:'KW2', x:0.30 }],
+  kitchen: [{ id:'KW1', x:0.25 }, { id:'KW2', x:0.31 }],
   living:  [{ id:'LW1', x:0.34 }, { id:'LW2', x:0.60 }],
   bed:     [{ id:'BW1', x:0.68 }, { id:'BW2', x:0.78 }]
 };
@@ -242,14 +242,7 @@ const DAILY_POOL = [
 ];
 
 /* ===== 업적 ===== */
-const ACHIEVES = [
-  { id:'a_pet',  txt:'100번 쓰다듬기',   need:100, kind:'pet',   pay:200 },
-  { id:'a_job',  txt:'알바 10번',        need:10,  kind:'job',   pay:250 },
-  { id:'a_love', txt:'마음 레벨 5',      need:5,   kind:'love',  pay:300 },
-  { id:'a_dex',  txt:'모습 10종 모으기',  need:10,  kind:'dex',   pay:350 },
-  { id:'a_furn', txt:'가구 10개 놓기',    need:10,  kind:'furn',  pay:300 },
-  { id:'a_house',txt:'넓은 집으로 이사',  need:2,   kind:'house', pay:500 }
-];
+
 
 /* ===== 꺅두기런 두기별 스킬 ===== */
 const SKILLS = {
@@ -266,3 +259,31 @@ const CHAR_SKILL = {
 };
 const skillOf = c => SKILLS[CHAR_SKILL[c.id] || 'magnet'];
 const skillIdOf = c => CHAR_SKILL[c.id] || 'magnet';
+
+/* ===== 날씨 — 하루 단위로 정해진다 ===== */
+const WEATHERS = [
+  { id:'sun',   name:'맑음',   odds:46, note:'볕이 좋아요',        fun:2,  pay:1.00 },
+  { id:'cloud', name:'흐림',   odds:24, note:'구름이 많아요',      fun:0,  pay:1.00 },
+  { id:'rain',  name:'비',     odds:22, note:'비가 와요',          fun:-2, pay:1.12 },
+  { id:'snow',  name:'눈',     odds:8,  note:'눈이 내려요!',       fun:3,  pay:1.20 }
+];
+function dayKey(d){ d = d || new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+/* 같은 날이면 늘 같은 날씨가 나오도록 날짜를 씨앗으로 */
+function weatherOf(key){
+  let x = (key * 9301 + 49297) % 233280, r = (x / 233280) * 100, acc = 0;
+  for(const w of WEATHERS){ acc += w.odds; if(r < acc) return w; }
+  return WEATHERS[0];
+}
+const WEATHER = () => weatherOf(dayKey());
+
+/* ===== 손님 ===== */
+const GUEST_LINES = [
+  '놀러 왔어요!', '지나가다 들렀어요', '집 예쁘다~', '간식 있어요?', '오랜만이에요!'
+];
+const GUEST_GIFTS = [
+  { kind:'clover', n:180, txt:'클로버 180' },
+  { kind:'clover', n:260, txt:'클로버 260' },
+  { kind:'item',   id:'snack', txt:'간식 하나' },
+  { kind:'love',   n:14, txt:'마음 듬뿍' }
+];

@@ -624,3 +624,40 @@ body.fs #stage{border-radius:0;box-shadow:none;}
 /* 이름 아래 하트 줄 */
 #topbar .lovewrap{display:flex;align-items:center;gap:7px;}
 #topbar .lovewrap i{font-style:normal;font-size:11px;color:var(--ink-soft);}
+
+/* ── 사진첩 ───────────────────────────────────────────── */
+.albumtop{display:flex;align-items:center;gap:12px;width:100%;}
+.albumtop .hint{margin:0;}
+.albumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:12px;width:100%;}
+.photo{position:relative;margin:0;background:#FFFFFF;border-radius:20px;overflow:hidden;
+       box-shadow:0 6px 16px rgba(120,95,75,.10);}
+.photo img{display:block;width:100%;height:auto;background:#F3EAE1;}
+.photo figcaption{padding:8px 10px 10px;display:flex;flex-direction:column;gap:1px;}
+.photo figcaption b{font-family:var(--display);font-size:16px;}
+.photo figcaption span{font-size:11px;color:var(--ink-soft);}
+.pdel{position:absolute;top:8px;right:8px;width:26px;height:26px;border:none;border-radius:999px;
+      background:rgba(255,255,255,.9);color:#7A6250;font-size:17px;line-height:26px;cursor:pointer;
+      box-shadow:0 3px 8px rgba(120,95,75,.18);}
+
+/* ── 다녀왔어요 ───────────────────────────────────────── */
+.awaybox{display:flex;flex-direction:column;gap:10px;width:100%;}
+.awaywx{margin:0;font-size:13px;color:var(--ink-soft);text-align:center;}
+.awaywx b{font-family:var(--display);font-size:18px;color:var(--ink);}
+.awaylist{display:flex;flex-direction:column;gap:7px;}
+.awaylist p{margin:0;background:#FFFFFF;border-radius:16px;padding:10px 14px;font-size:13.5px;
+            box-shadow:0 4px 12px rgba(120,95,75,.08);}
+
+/* 날씨 · 시간대 */
+.wxbox{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft);
+       background:#FFFFFF;border-radius:999px;padding:5px 12px;
+       box-shadow:0 4px 12px rgba(120,95,75,.10);}
+.wxbox .wx{width:13px;height:13px;border-radius:999px;flex:none;}
+.wx-sun{background:#F5C34E;}
+.wx-cloud{background:#C3CFDA;}
+.wx-rain{background:#8FC0D8;}
+.wx-snow{background:#E3EDF6;box-shadow:inset 0 0 0 2px #B9CEDF;}
+@container (max-width: 980px){ .wxbox{display:none;} }
+
+.albumtop .btn{font-size:15px;padding:8px 20px;}
+.sheet.away h2, .sheet.away .hint{text-align:center;}
+.sheet.away .awaybox{margin:4px 0 6px;}

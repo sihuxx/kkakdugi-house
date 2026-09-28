@@ -39,6 +39,8 @@ function homeSpots(){
     if(p && p.act) list.push({ id:o.id, name:p.name, x:o.x, y:o.y, act:p.act });
   }
   list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' });
+  if(S.guest && !S.guest.fed)
+    list.push({ id:'guest', name:'손님', x:GUEST_POS.x, y:GUEST_POS.y, act:'guest' });
   return list;
 }
 const furnPos = id => { const o = spotOf(id); return o ? { x:o.x, y:o.y } : { x:0.5, y:0.5 }; };
@@ -346,6 +348,7 @@ function act(spot){
   if(spot.act === 'wardrobe') return openModal('wardrobe');
   if(spot.act === 'gacha')    return openModal('gacha');
   if(spot.act === 'shop')     return openModal('shop');
+  if(spot.act === 'guest')    return feedGuest();
   if(spot.act === 'job')      return openModal('job');
   if(spot.act === 'out')      return goYard();
   if(spot.act === 'in')       return goHome();
@@ -602,7 +605,8 @@ function drawPrompt(){
   if(!n || home.act || deco || mini) return;
   const k = uiK();
   const LABEL = { wardrobe:'옷장 열기', gacha:'뽑기', shop:'상점 들어가기',
-                  job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기' };
+                  job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기',
+                  guest:'간식 나눠주기' };
   const label = LABEL[n.act] || CARE[n.act].name;
   g.save();
   g.font = '700 ' + (19 * k) + 'px Gaegu, sans-serif';
@@ -652,12 +656,13 @@ function drawHome(dt){
     const by = yAt(o.y);
     drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
   }
-  for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb - (H - wb) * 0.26, fs * 0.9, near(o.id));
+  for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb * 0.46, fs * 0.82, near(o.id));
   drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.05, near('door'));
 
   const items = LAY.floor.filter(o => !o.floorLayer).sort((a, b) => a.y - b.y);
-  let drew = false;
+  let drew = false, drewG = !S.guest;
   for(const o of items){
+    if(!drewG && o.y > GUEST_POS.y){ drawGuest(); drewG = true; }
     if(!drew && o.y > home.y){ drawDugi(); drawBall(); drew = true; }
     const by = yAt(o.y);
     const hi = deco && home.drag && home.drag.id === o.id;
@@ -666,6 +671,7 @@ function drawHome(dt){
     if(hi) g.restore();
   }
   home.dusts.forEach(drawDust);
+  if(!drewG) drawGuest();
   if(!drew){ drawDugi(); drawBall(); }
   drawParts();
   drawDayTint();
