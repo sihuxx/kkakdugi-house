@@ -1091,57 +1091,86 @@ const STATS = [
    zone: kitchen · living · bed  /  row 1 = 벽쪽, 0 = 앞쪽
    자리는 구역 안에서 자동 배치되고, 꾸미기 모드에서 옮기면 그 자리가 저장된다 */
 const FURNITURE = [
-  { id:'bowl',   name:'밥그릇',      price:0,   base:true, zone:'kitchen', row:0, act:'feed',
+  { id:'bowl',   name:'밥그릇',      price:0,   base:true, zone:'kitchen', slot:'K4', sz:0.8, act:'feed',
     desc:'두기 밥그릇' },
-  { id:'tub',    name:'대야',        price:0,   base:true, zone:'kitchen', row:0, act:'wash',
+  { id:'tub',    name:'대야',        price:0,   base:true, zone:'kitchen', slot:'K5', sz:0.9, act:'wash',
     desc:'씻기는 자리' },
-  { id:'plant',  name:'화분',        price:0,   base:true, zone:'living',  row:1, act:'water',
+  { id:'plant',  name:'화분',        price:0,   base:true, zone:'bed',     slot:'B3', sz:0.9, act:'water',
     desc:'물을 주면 자라요' },
-  { id:'ball',   name:'공',          price:0,   base:true, zone:'living',  row:0, act:'play',
+  { id:'ball',   name:'공',          price:0,   base:true, zone:'living',  slot:'L8', sz:0.7, act:'play',
     desc:'던지고 놀기' },
-  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     row:1, act:'sleep',
+  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     slot:'B1', sz:1.3, act:'sleep',
     desc:'여기서 자면 기운이 차요' },
 
-  { id:'fridge', name:'냉장고',      price:680, zone:'kitchen', row:1, boost:{ full:6 },
+  { id:'fridge', name:'냉장고',      price:680, zone:'kitchen', slot:'K1', sz:1.3, boost:{ full:6 },
     desc:'밥 배부름 +6' },
-  { id:'sink',   name:'싱크대',      price:380, zone:'kitchen', row:1, boost:{ clean:5 },
+  { id:'sink',   name:'싱크대',      price:380, zone:'kitchen', slot:'K2', sz:1.15, boost:{ clean:5 },
     desc:'씻길 때 깨끗함 +5' },
-  { id:'table',  name:'식탁',        price:340, zone:'kitchen', row:0, boost:{ fun:2 },
+  { id:'table',  name:'식탁',        price:340, zone:'kitchen', slot:'K3', sz:1.05, boost:{ fun:2 },
     desc:'밥 먹을 자리 (기분 +2)' },
-  { id:'rug',    name:'러그',        price:220, zone:'living',  row:2, boost:{ fun:2 },
+  { id:'rug',    name:'러그',        price:220, zone:'living',  slot:'L7', sz:1.5, floorLayer:true, boost:{ fun:2 },
     desc:'기분 회복 +2' },
-  { id:'sofa',   name:'소파',        price:1400, zone:'living', row:1, boost:{ energy:5, fun:3 },
+  { id:'sofa',   name:'소파',        price:1400, zone:'living', slot:'L3', sz:1.25, boost:{ energy:5, fun:3 },
     desc:'푹신함 (기운 +5 · 기분 +3)', need:1 },
-  { id:'tv',     name:'티비',        price:560, zone:'living',  row:1, boost:{ fun:5 },
+  { id:'tv',     name:'티비',        price:560, zone:'living',  slot:'L2', sz:1.1, boost:{ fun:5 },
     desc:'놀아줄 때 기분 +5' },
-  { id:'shelf',  name:'책장',        price:420, zone:'living',  row:1, boost:{ pay:0.04 },
+  { id:'shelf',  name:'책장',        price:420, zone:'living',  slot:'L1', sz:1.2, boost:{ pay:0.04 },
     desc:'알바 시급 +4%' },
-  { id:'cake',   name:'생일 케이크', price:900, zone:'living',  row:0, boost:{ love:0.15 },
+  { id:'cake',   name:'생일 케이크', price:900, zone:'living',  slot:'L9', sz:0.85, boost:{ love:0.15 },
     desc:'마음 +15%', need:1 },
-  { id:'piano',  name:'장난감 피아노', price:1200, zone:'living', row:1, boost:{ pay:0.08 },
+  { id:'piano',  name:'장난감 피아노', price:1200, zone:'living', slot:'L4', sz:1.05, boost:{ pay:0.08 },
     desc:'알바 시급 +8%', need:2 },
-  { id:'lamp',   name:'꼬마 램프',   price:320, zone:'bed',     row:1, boost:{ energy:4 },
+  { id:'lamp',   name:'꼬마 램프',   price:320, zone:'bed',     slot:'B4', sz:0.95, boost:{ energy:4 },
     desc:'잘 때 기운 +4' },
-  { id:'toybox', name:'장난감 상자', price:480, zone:'bed',     row:0, boost:{ fun:4 },
+  { id:'toybox', name:'장난감 상자', price:480, zone:'bed',     slot:'B5', sz:0.85, boost:{ fun:4 },
     desc:'놀아줄 때 기분 +4' },
-  { id:'cushion',name:'폭신 쿠션',   price:0,   zone:'bed',     row:0, boost:{ energy:3, love:0.05 },
+  { id:'cushion',name:'폭신 쿠션',   price:0,   zone:'bed',     slot:'B6', sz:0.75, boost:{ energy:3, love:0.05 },
     desc:'마음 Lv5 선물', lock:'love5' },
-  { id:'hammock',name:'해먹',        price:0,   zone:'living',  row:1, boost:{ energy:6 },
+  { id:'hammock',name:'해먹',        price:0,   zone:'living',  slot:'L5', sz:1.1, boost:{ energy:6 },
     desc:'마음 Lv8 선물', lock:'love8' },
-  { id:'trophy', name:'단짝 트로피', price:0,   zone:'living',  row:0, boost:{ pay:0.1, love:0.1 },
+  { id:'trophy', name:'단짝 트로피', price:0,   zone:'living',  slot:'L6', sz:0.8, boost:{ pay:0.1, love:0.1 },
     desc:'마음 Lv10 선물', lock:'love10' },
 
-  { id:'frame',  name:'액자',        price:260, zone:'living',  on:'wall', boost:{ pay:0.05 },
+  { id:'frame', slot:'LW1',  name:'액자',        price:260, zone:'living',  on:'wall', boost:{ pay:0.05 },
     desc:'알바 시급 +5%' },
-  { id:'clock',  name:'벽시계',      price:300, zone:'kitchen', on:'wall', boost:{ pay:0.05 },
+  { id:'clock', slot:'KW1',  name:'벽시계',      price:300, zone:'kitchen', on:'wall', boost:{ pay:0.05 },
     desc:'알바 시급 +5%' },
-  { id:'garland',name:'장식 깃발',   price:380, zone:'living',  on:'wall', boost:{ fun:3 },
+  { id:'garland', slot:'LW2',name:'장식 깃발',   price:380, zone:'living',  on:'wall', boost:{ fun:3 },
     desc:'집이 화사해져요 (기분 +3)' },
-  { id:'poster', name:'포스터',      price:450, zone:'bed',     on:'wall', boost:{ love:0.05 },
+  { id:'poster', slot:'BW1', name:'포스터',      price:450, zone:'bed',     on:'wall', boost:{ love:0.05 },
     desc:'마음 +5%', need:1 },
-  { id:'window2',name:'작은 창문',   price:800, zone:'bed',     on:'wall', boost:{ fun:4 },
+  { id:'window2', slot:'BW2',name:'작은 창문',   price:800, zone:'bed',     on:'wall', boost:{ fun:4 },
     desc:'햇빛이 들어와요 (기분 +4)', need:2 }
 ];
+
+/* ===== 가구 자리(슬롯) — 구역마다 못 박아 둔다 =====
+   row 1 = 벽쪽(큰 가구) · 0 = 가운데 · 2 = 앞쪽(작은 것)
+   현관은 거실 벽 0.50 고정이라 벽쪽 슬롯은 그 양옆으로 비켜 둔다 */
+const SLOTS = {
+  kitchen: [
+    { id:'K1', x:0.07, y:0.04, row:1 }, { id:'K2', x:0.22, y:0.07, row:1 },
+    { id:'K3', x:0.14, y:0.38, row:0 },
+    { id:'K4', x:0.07, y:0.74, row:2 }, { id:'K5', x:0.21, y:0.78, row:2 }
+  ],
+  living: [
+    { id:'L1', x:0.36, y:0.04, row:1 }, { id:'L2', x:0.64, y:0.04, row:1 },
+    { id:'L3', x:0.39, y:0.34, row:0 }, { id:'L4', x:0.66, y:0.38, row:0 },
+    { id:'L5', x:0.42, y:0.20, row:0 }, { id:'L6', x:0.55, y:0.20, row:0 },
+    { id:'L7', x:0.50, y:0.60, row:2 },
+    { id:'L8', x:0.34, y:0.76, row:2 }, { id:'L9', x:0.62, y:0.74, row:2 }
+  ],
+  bed: [
+    { id:'B1', x:0.79, y:0.04, row:1 }, { id:'B2', x:0.94, y:0.07, row:1 },
+    { id:'B3', x:0.72, y:0.38, row:0 }, { id:'B4', x:0.90, y:0.40, row:0 },
+    { id:'B5', x:0.80, y:0.76, row:2 }, { id:'B6', x:0.88, y:0.78, row:2 }
+  ]
+};
+const WALL_SLOTS = {
+  kitchen: [{ id:'KW1', x:0.22 }, { id:'KW2', x:0.30 }],
+  living:  [{ id:'LW1', x:0.34 }, { id:'LW2', x:0.60 }],
+  bed:     [{ id:'BW1', x:0.68 }, { id:'BW2', x:0.78 }]
+};
+const SLOT = (zone, id) => (SLOTS[zone] || []).find(s => s.id === id);
 const FURN = id => FURNITURE.find(f => f.id === id);
 const BASE_FURN = FURNITURE.filter(f => f.base).map(f => f.id);
 const ZONES = ['kitchen', 'living', 'bed'];
@@ -1149,7 +1178,7 @@ const ZONE_NAME = { kitchen:'주방', living:'거실', bed:'침실' };
 
 /* 방에 늘 있는 것 */
 const PLACES = [
-  { id:'wardrobe', name:'옷장',      zone:'bed',    row:1, act:'wardrobe' },
+  { id:'wardrobe', name:'옷장',      zone:'bed',    slot:'B2', sz:1.25, act:'wardrobe' },
   { id:'door',     name:'현관',      zone:'living', act:'out', wall:true }
 ];
 
@@ -3086,37 +3115,38 @@ function shadow(cx, base, w){
    자리 배치 — 구역(주방·거실·침실)마다 앞뒤 줄로 나눠 놓는다
    꾸미기 모드에서 옮긴 자리는 S.pos 에 저장되어 그게 우선
    =============================================================== */
-const ROW_Y = { 1:0.16, 0:0.58, 2:0.66 };
+/* 슬롯을 하나씩 잡아 나간다 — 제 자리가 차 있으면 같은 구역의 다음 빈 자리로 */
 function layoutHome(){
-  const zones = { kitchen:{ 0:[], 1:[], 2:[] }, living:{ 0:[], 1:[], 2:[] }, bed:{ 0:[], 1:[], 2:[] } };
-  const wall = { kitchen:[], living:[], bed:[] };
-  const add = (id, f) => {
-    const z = f.zone || 'living';
-    if(f.on === 'wall') wall[z].push(id);
-    else zones[z][f.row || 0].push(id);
-  };
-  for(const id of S.furn){ const f = FURN(id); if(f) add(id, f); }
-  PLACES.forEach(p => { if(p.id !== 'door') add(p.id, p); });
-
   const out = { floor: [], wall: [] };
-  ZONES.forEach(z => {
-    const [a, b] = ZONE_X[z];
-    [1, 0, 2].forEach(row => {
-      const list = zones[z][row];
-      list.forEach((id, i) => {
-        let t = list.length === 1 ? 0.5 : (i + 0.5) / list.length;
-        let x = a + (b - a) * t;
-        /* 거실 벽쪽 줄은 현관 자리를 비켜 간다 */
-        if(z === 'living' && row === 1 && Math.abs(x - 0.5) < 0.09)
-          x = x < 0.5 ? 0.5 - 0.11 : 0.5 + 0.11;
-        out.floor.push({ id, zone:z, x, y: ROW_Y[row], row });
-      });
-    });
-    wall[z].forEach((id, i) => {
-      const t = wall[z].length === 1 ? 0.5 : (i + 0.5) / wall[z].length;
-      out.wall.push({ id, zone:z, x: a + (b - a) * t });
-    });
-  });
+  const taken = {}, wtaken = {};
+  const items = [];
+  for(const id of S.furn){ const f = FURN(id); if(f) items.push([id, f]); }
+  PLACES.forEach(p => { if(p.id !== 'door') items.push([p.id, p]); });
+  /* 큰 가구(벽쪽)부터 자리를 잡아야 앞자리에 밀리지 않는다 */
+  items.sort((a, b) => (b[1].sz || 1) - (a[1].sz || 1));
+
+  const grab = (zone, want, pool, used) => {
+    const list = pool[zone] || [];
+    let s2 = want && list.find(q => q.id === want && !used[q.id]);
+    if(!s2) s2 = list.find(q => !used[q.id]);
+    if(!s2){                                   /* 이 구역이 꽉 차면 옆 구역 */
+      for(const z of ZONES){ s2 = (pool[z] || []).find(q => !used[q.id]); if(s2) break; }
+    }
+    if(s2) used[s2.id] = 1;
+    return s2;
+  };
+  for(const [id, f] of items){
+    const zone = f.zone || 'living';
+    if(f.on === 'wall'){
+      const s2 = grab(zone, f.slot, WALL_SLOTS, wtaken);
+      out.wall.push({ id, zone, x: s2 ? s2.x : 0.5, slot: s2 && s2.id });
+    }else{
+      const s2 = grab(zone, f.slot, SLOTS, taken);
+      out.floor.push({ id, zone, x: s2 ? s2.x : 0.5, y: s2 ? s2.y : 0.5,
+                       row: s2 ? s2.row : 0, slot: s2 && s2.id,
+                       sz: f.sz || 1, floorLayer: !!f.floorLayer });
+    }
+  }
   /* 옮겨둔 자리 반영 */
   out.floor.forEach(o => { const p = S.pos[o.id]; if(p){ o.x = p.x; o.y = p.y; } });
   out.wall.forEach(o => { const p = S.pos[o.id]; if(p){ o.x = p.x; } });
@@ -3126,6 +3156,63 @@ function layoutHome(){
 let LAY = layoutHome();
 function relayout(){ LAY = layoutHome(); }
 function spotOf(id){ return LAY.floor.find(o => o.id === id) || LAY.wall.find(o => o.id === id); }
+
+
+/* ===============================================================
+   시간대 — 실제 시각에 따라 방 분위기가 바뀐다
+   =============================================================== */
+const DAYPARTS = {
+  morn:  { name:'아침', sky:['#DCEFFB','#F0F8FC'], mul:'#E7EFF9', pool:0.16, glow:0    },
+  day:   { name:'낮',   sky:['#CDEBFA','#EAF6FB'], mul:null,      pool:0.14, glow:0    },
+  eve:   { name:'저녁', sky:['#FFCF9C','#FFAE85'], mul:'#FAD6B4', pool:0.26, glow:0.20 },
+  night: { name:'밤',   sky:['#4E5680','#6E7296'], mul:'#5B60A2', pool:0.34, glow:0.52 }
+};
+function dayPart(){
+  const h = new Date().getHours();
+  return h < 6 ? 'night' : h < 10 ? 'morn' : h < 17 ? 'day' : h < 20 ? 'eve' : 'night';
+}
+const DAY = () => DAYPARTS[dayPart()];
+
+/* 조명 자리 — 빛 웅덩이가 여기서 퍼진다 */
+function lampSpot(){
+  return S.house === 0 ? { x: rx(0.18), y: wallBot() * 0.3 }
+       : S.house === 2 ? { x: rx(0.5),  y: wallBot() * 0.2 }
+                       : { x: rx(0.90), y: wallBot() * 0.26 };
+}
+/* 바닥 빛 웅덩이 */
+function lightPool(a){
+  const L = lampSpot(), r = Math.max(roomW() * 0.42, (H - wallBot()) * 1.5);
+  const rg = g.createRadialGradient(L.x, wallBot() + (H - wallBot()) * 0.45, r * 0.06,
+                                    L.x, wallBot() + (H - wallBot()) * 0.45, r);
+  rg.addColorStop(0, 'rgba(255,226,152,' + a + ')');
+  rg.addColorStop(1, 'rgba(255,226,152,0)');
+  g.save(); g.fillStyle = rg; g.fillRect(0, 0, W, H); g.restore();
+}
+/* 방 전체에 시간대 색 + 구석 어둠 */
+function drawDayTint(){
+  const D = DAY();
+  g.save();
+  if(D.mul){                                   /* 곱하기 — 진짜로 어두워진다 */
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = D.mul; g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+  }
+  if(D.glow){                                  /* 조명 주변만 다시 밝게 */
+    const L = lampSpot(), cy = L.y + (H - L.y) * 0.45;
+    const rg = g.createRadialGradient(L.x, cy, 8, L.x, cy, Math.min(W, H) * 0.78);
+    rg.addColorStop(0,   'rgba(255,214,132,' + D.glow + ')');
+    rg.addColorStop(0.45,'rgba(255,214,132,' + (D.glow * 0.3).toFixed(3) + ')');
+    rg.addColorStop(1,   'rgba(255,214,132,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  }
+  /* 구석 어둠 */
+  const vg = g.createRadialGradient(W / 2, H * 0.46, Math.min(W, H) * 0.34,
+                                    W / 2, H * 0.46, Math.max(W, H) * 0.72);
+  vg.addColorStop(0, 'rgba(110,88,68,0)');
+  vg.addColorStop(1, 'rgba(110,88,68,.26)');
+  g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  g.restore();
+}
 
 /* ===============================================================
    방
@@ -3200,29 +3287,24 @@ function drawRoom(){
     g.fillRect(0, 0, L, H); g.fillRect(R, 0, W - R, H); g.restore();
   }
 
-  /* 구역 이름 (꾸미기 모드에서만) */
-  if(deco){
-    g.save(); g.globalAlpha = .5; g.textAlign = 'center';
-    g.font = '700 ' + (16 * uiK()) + 'px Gaegu, sans-serif'; g.fillStyle = '#5A4A40';
-    ZONES.forEach(z => {
-      const [a, b] = ZONE_X[z];
-      g.fillText(ZONE_NAME[z], rx((a + b) / 2), wb + (H - wb) * 0.12);
-      if(b < 0.99){ g.setLineDash([6, 8]); ink(LW() * 0.6); g.globalAlpha = .3;
-        g.beginPath(); g.moveTo(rx(b + 0.015), wb); g.lineTo(rx(b + 0.015), H); g.stroke();
-        g.setLineDash([]); g.globalAlpha = .5; }
-    });
-    g.restore();
-  }
+  /* 천장 몰딩 — 벽이 허전하지 않게 */
+  g.fillStyle = '#FFF8EF';
+  g.fillRect(L, H * 0.028, R - L, H * 0.016);
+  ink(LW() * 0.8);
+  g.beginPath(); g.moveTo(L, H * 0.044); g.lineTo(R, H * 0.044); g.stroke();
+
+  /* 바닥 빛 웅덩이 */
+  lightPool(DAY().pool);
 
   /* 조명 · 창문 */
   const s = Math.min(roomW() * 0.09, wb * 0.32);
   if(S.house === 0){
-    drawBulb(rx(0.2), 0, wb * 0.24);
-    drawWindow(rx(0.8), wb * 0.46, s * 0.8, true);
+    drawBulb(rx(0.18), 0, wb * 0.24);
+    drawWindow(rx(0.86), wb * 0.44, s * 0.8, true);
   }else{
-    drawWindow(rx(0.16), wb * 0.48, s, false);
-    if(S.house === 2){ drawWindow(rx(0.84), wb * 0.48, s, false); drawLamp(rx(0.5), 0, wb * 0.15); }
-    else drawBulb(rx(0.84), 0, wb * 0.2);
+    drawWindow(rx(0.13), wb * 0.44, s, false);
+    if(S.house === 2){ drawWindow(rx(0.90), wb * 0.44, s, false); drawLamp(rx(0.5), 0, wb * 0.15); }
+    else drawBulb(rx(0.90), 0, wb * 0.2);
   }
 }
 function drawBulb(cx, top, len){
@@ -3245,7 +3327,11 @@ function drawLamp(cx, top, len){
 }
 function drawWindow(cx, cy, s, old){
   g.save();
-  box(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14, old ? '#BFD9E4' : '#CDEBFA');
+  const SKY = DAY().sky;
+  const sg = g.createLinearGradient(0, cy - s * 0.75, 0, cy + s * 0.75);
+  sg.addColorStop(0, SKY[0]); sg.addColorStop(1, SKY[1]);
+  g.fillStyle = sg; rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14);
+  g.fill(); ink(); g.stroke();
   g.save(); rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14); g.clip();
   g.fillStyle = '#FFFFFF'; g.globalAlpha = .75;
   g.beginPath(); g.arc(cx - s * 0.32, cy - s * 0.2, s * 0.3, 0, 7);
@@ -3780,6 +3866,30 @@ function drawYardThing(id, cx, base, s, glow){
       break;
     }
   }
+  g.restore();
+}
+
+
+/* 구역 이름 — 꾸미기 모드에서, 시간대 색 위에 그린다 */
+function drawZoneLabels(){
+  const wb = wallBot();
+  g.save(); g.textAlign = 'center';
+  ZONES.forEach(z => {
+    const [a, b] = ZONE_X[z];
+    if(b < 0.99){
+      g.setLineDash([6, 8]); ink(LW() * 0.6); g.globalAlpha = .45;
+      g.beginPath(); g.moveTo(rx(b + 0.015), wb); g.lineTo(rx(b + 0.015), H); g.stroke();
+      g.setLineDash([]);
+    }
+    g.globalAlpha = 1;
+    const txt = ZONE_NAME[z], cx = rx((a + b) / 2), cy = wb + (H - wb) * 0.1;
+    g.font = '700 ' + (16 * uiK()) + 'px Gaegu, sans-serif';
+    const w = g.measureText(txt).width + 22 * uiK(), h = 26 * uiK();
+    g.fillStyle = 'rgba(255,252,248,.88)';
+    rrect(cx - w / 2, cy - h / 2, w, h, h / 2); g.fill();
+    g.fillStyle = '#7A6250'; g.textBaseline = 'middle';
+    g.fillText(txt, cx, cy + 1);
+  });
   g.restore();
 }
 
@@ -4431,22 +4541,30 @@ function drawHome(dt){
   const fs = Math.min(roomW() * 0.125, (H - wb) * 0.48);
   const near = id => home.near && home.near.id === id;
 
+  /* 러그처럼 바닥에 깔리는 건 맨 아래에 먼저 */
+  for(const o of LAY.floor){
+    if(!o.floorLayer) continue;
+    const by = yAt(o.y);
+    drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
+  }
   for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb - (H - wb) * 0.26, fs * 0.9, near(o.id));
-  drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.0, near('door'));
+  drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.05, near('door'));
 
-  const items = LAY.floor.slice().sort((a, b) => a.y - b.y);
+  const items = LAY.floor.filter(o => !o.floorLayer).sort((a, b) => a.y - b.y);
   let drew = false;
   for(const o of items){
     if(!drew && o.y > home.y){ drawDugi(); drawBall(); drew = true; }
     const by = yAt(o.y);
     const hi = deco && home.drag && home.drag.id === o.id;
     if(hi){ g.save(); g.globalAlpha = .75; }
-    drawFurn(o.id, rx(o.x), by, fs * depthAt(by), near(o.id));
+    drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
     if(hi) g.restore();
   }
   home.dusts.forEach(drawDust);
   if(!drew){ drawDugi(); drawBall(); }
   drawParts();
+  drawDayTint();
+  if(deco) drawZoneLabels();
   drawPrompt();
   if(deco) drawDecoHint();
   if(mini) drawMini();

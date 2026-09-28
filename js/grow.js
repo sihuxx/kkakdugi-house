@@ -69,57 +69,86 @@ const STATS = [
    zone: kitchen · living · bed  /  row 1 = 벽쪽, 0 = 앞쪽
    자리는 구역 안에서 자동 배치되고, 꾸미기 모드에서 옮기면 그 자리가 저장된다 */
 const FURNITURE = [
-  { id:'bowl',   name:'밥그릇',      price:0,   base:true, zone:'kitchen', row:0, act:'feed',
+  { id:'bowl',   name:'밥그릇',      price:0,   base:true, zone:'kitchen', slot:'K4', sz:0.8, act:'feed',
     desc:'두기 밥그릇' },
-  { id:'tub',    name:'대야',        price:0,   base:true, zone:'kitchen', row:0, act:'wash',
+  { id:'tub',    name:'대야',        price:0,   base:true, zone:'kitchen', slot:'K5', sz:0.9, act:'wash',
     desc:'씻기는 자리' },
-  { id:'plant',  name:'화분',        price:0,   base:true, zone:'living',  row:1, act:'water',
+  { id:'plant',  name:'화분',        price:0,   base:true, zone:'bed',     slot:'B3', sz:0.9, act:'water',
     desc:'물을 주면 자라요' },
-  { id:'ball',   name:'공',          price:0,   base:true, zone:'living',  row:0, act:'play',
+  { id:'ball',   name:'공',          price:0,   base:true, zone:'living',  slot:'L8', sz:0.7, act:'play',
     desc:'던지고 놀기' },
-  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     row:1, act:'sleep',
+  { id:'bed',    name:'침대',        price:0,   base:true, zone:'bed',     slot:'B1', sz:1.3, act:'sleep',
     desc:'여기서 자면 기운이 차요' },
 
-  { id:'fridge', name:'냉장고',      price:680, zone:'kitchen', row:1, boost:{ full:6 },
+  { id:'fridge', name:'냉장고',      price:680, zone:'kitchen', slot:'K1', sz:1.3, boost:{ full:6 },
     desc:'밥 배부름 +6' },
-  { id:'sink',   name:'싱크대',      price:380, zone:'kitchen', row:1, boost:{ clean:5 },
+  { id:'sink',   name:'싱크대',      price:380, zone:'kitchen', slot:'K2', sz:1.15, boost:{ clean:5 },
     desc:'씻길 때 깨끗함 +5' },
-  { id:'table',  name:'식탁',        price:340, zone:'kitchen', row:0, boost:{ fun:2 },
+  { id:'table',  name:'식탁',        price:340, zone:'kitchen', slot:'K3', sz:1.05, boost:{ fun:2 },
     desc:'밥 먹을 자리 (기분 +2)' },
-  { id:'rug',    name:'러그',        price:220, zone:'living',  row:2, boost:{ fun:2 },
+  { id:'rug',    name:'러그',        price:220, zone:'living',  slot:'L7', sz:1.5, floorLayer:true, boost:{ fun:2 },
     desc:'기분 회복 +2' },
-  { id:'sofa',   name:'소파',        price:1400, zone:'living', row:1, boost:{ energy:5, fun:3 },
+  { id:'sofa',   name:'소파',        price:1400, zone:'living', slot:'L3', sz:1.25, boost:{ energy:5, fun:3 },
     desc:'푹신함 (기운 +5 · 기분 +3)', need:1 },
-  { id:'tv',     name:'티비',        price:560, zone:'living',  row:1, boost:{ fun:5 },
+  { id:'tv',     name:'티비',        price:560, zone:'living',  slot:'L2', sz:1.1, boost:{ fun:5 },
     desc:'놀아줄 때 기분 +5' },
-  { id:'shelf',  name:'책장',        price:420, zone:'living',  row:1, boost:{ pay:0.04 },
+  { id:'shelf',  name:'책장',        price:420, zone:'living',  slot:'L1', sz:1.2, boost:{ pay:0.04 },
     desc:'알바 시급 +4%' },
-  { id:'cake',   name:'생일 케이크', price:900, zone:'living',  row:0, boost:{ love:0.15 },
+  { id:'cake',   name:'생일 케이크', price:900, zone:'living',  slot:'L9', sz:0.85, boost:{ love:0.15 },
     desc:'마음 +15%', need:1 },
-  { id:'piano',  name:'장난감 피아노', price:1200, zone:'living', row:1, boost:{ pay:0.08 },
+  { id:'piano',  name:'장난감 피아노', price:1200, zone:'living', slot:'L4', sz:1.05, boost:{ pay:0.08 },
     desc:'알바 시급 +8%', need:2 },
-  { id:'lamp',   name:'꼬마 램프',   price:320, zone:'bed',     row:1, boost:{ energy:4 },
+  { id:'lamp',   name:'꼬마 램프',   price:320, zone:'bed',     slot:'B4', sz:0.95, boost:{ energy:4 },
     desc:'잘 때 기운 +4' },
-  { id:'toybox', name:'장난감 상자', price:480, zone:'bed',     row:0, boost:{ fun:4 },
+  { id:'toybox', name:'장난감 상자', price:480, zone:'bed',     slot:'B5', sz:0.85, boost:{ fun:4 },
     desc:'놀아줄 때 기분 +4' },
-  { id:'cushion',name:'폭신 쿠션',   price:0,   zone:'bed',     row:0, boost:{ energy:3, love:0.05 },
+  { id:'cushion',name:'폭신 쿠션',   price:0,   zone:'bed',     slot:'B6', sz:0.75, boost:{ energy:3, love:0.05 },
     desc:'마음 Lv5 선물', lock:'love5' },
-  { id:'hammock',name:'해먹',        price:0,   zone:'living',  row:1, boost:{ energy:6 },
+  { id:'hammock',name:'해먹',        price:0,   zone:'living',  slot:'L5', sz:1.1, boost:{ energy:6 },
     desc:'마음 Lv8 선물', lock:'love8' },
-  { id:'trophy', name:'단짝 트로피', price:0,   zone:'living',  row:0, boost:{ pay:0.1, love:0.1 },
+  { id:'trophy', name:'단짝 트로피', price:0,   zone:'living',  slot:'L6', sz:0.8, boost:{ pay:0.1, love:0.1 },
     desc:'마음 Lv10 선물', lock:'love10' },
 
-  { id:'frame',  name:'액자',        price:260, zone:'living',  on:'wall', boost:{ pay:0.05 },
+  { id:'frame', slot:'LW1',  name:'액자',        price:260, zone:'living',  on:'wall', boost:{ pay:0.05 },
     desc:'알바 시급 +5%' },
-  { id:'clock',  name:'벽시계',      price:300, zone:'kitchen', on:'wall', boost:{ pay:0.05 },
+  { id:'clock', slot:'KW1',  name:'벽시계',      price:300, zone:'kitchen', on:'wall', boost:{ pay:0.05 },
     desc:'알바 시급 +5%' },
-  { id:'garland',name:'장식 깃발',   price:380, zone:'living',  on:'wall', boost:{ fun:3 },
+  { id:'garland', slot:'LW2',name:'장식 깃발',   price:380, zone:'living',  on:'wall', boost:{ fun:3 },
     desc:'집이 화사해져요 (기분 +3)' },
-  { id:'poster', name:'포스터',      price:450, zone:'bed',     on:'wall', boost:{ love:0.05 },
+  { id:'poster', slot:'BW1', name:'포스터',      price:450, zone:'bed',     on:'wall', boost:{ love:0.05 },
     desc:'마음 +5%', need:1 },
-  { id:'window2',name:'작은 창문',   price:800, zone:'bed',     on:'wall', boost:{ fun:4 },
+  { id:'window2', slot:'BW2',name:'작은 창문',   price:800, zone:'bed',     on:'wall', boost:{ fun:4 },
     desc:'햇빛이 들어와요 (기분 +4)', need:2 }
 ];
+
+/* ===== 가구 자리(슬롯) — 구역마다 못 박아 둔다 =====
+   row 1 = 벽쪽(큰 가구) · 0 = 가운데 · 2 = 앞쪽(작은 것)
+   현관은 거실 벽 0.50 고정이라 벽쪽 슬롯은 그 양옆으로 비켜 둔다 */
+const SLOTS = {
+  kitchen: [
+    { id:'K1', x:0.07, y:0.04, row:1 }, { id:'K2', x:0.22, y:0.07, row:1 },
+    { id:'K3', x:0.14, y:0.38, row:0 },
+    { id:'K4', x:0.07, y:0.74, row:2 }, { id:'K5', x:0.21, y:0.78, row:2 }
+  ],
+  living: [
+    { id:'L1', x:0.36, y:0.04, row:1 }, { id:'L2', x:0.64, y:0.04, row:1 },
+    { id:'L3', x:0.39, y:0.34, row:0 }, { id:'L4', x:0.66, y:0.38, row:0 },
+    { id:'L5', x:0.42, y:0.20, row:0 }, { id:'L6', x:0.55, y:0.20, row:0 },
+    { id:'L7', x:0.50, y:0.60, row:2 },
+    { id:'L8', x:0.34, y:0.76, row:2 }, { id:'L9', x:0.62, y:0.74, row:2 }
+  ],
+  bed: [
+    { id:'B1', x:0.79, y:0.04, row:1 }, { id:'B2', x:0.94, y:0.07, row:1 },
+    { id:'B3', x:0.72, y:0.38, row:0 }, { id:'B4', x:0.90, y:0.40, row:0 },
+    { id:'B5', x:0.80, y:0.76, row:2 }, { id:'B6', x:0.88, y:0.78, row:2 }
+  ]
+};
+const WALL_SLOTS = {
+  kitchen: [{ id:'KW1', x:0.22 }, { id:'KW2', x:0.30 }],
+  living:  [{ id:'LW1', x:0.34 }, { id:'LW2', x:0.60 }],
+  bed:     [{ id:'BW1', x:0.68 }, { id:'BW2', x:0.78 }]
+};
+const SLOT = (zone, id) => (SLOTS[zone] || []).find(s => s.id === id);
 const FURN = id => FURNITURE.find(f => f.id === id);
 const BASE_FURN = FURNITURE.filter(f => f.base).map(f => f.id);
 const ZONES = ['kitchen', 'living', 'bed'];
@@ -127,7 +156,7 @@ const ZONE_NAME = { kitchen:'주방', living:'거실', bed:'침실' };
 
 /* 방에 늘 있는 것 */
 const PLACES = [
-  { id:'wardrobe', name:'옷장',      zone:'bed',    row:1, act:'wardrobe' },
+  { id:'wardrobe', name:'옷장',      zone:'bed',    slot:'B2', sz:1.25, act:'wardrobe' },
   { id:'door',     name:'현관',      zone:'living', act:'out', wall:true }
 ];
 

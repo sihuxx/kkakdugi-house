@@ -646,22 +646,30 @@ function drawHome(dt){
   const fs = Math.min(roomW() * 0.125, (H - wb) * 0.48);
   const near = id => home.near && home.near.id === id;
 
+  /* 러그처럼 바닥에 깔리는 건 맨 아래에 먼저 */
+  for(const o of LAY.floor){
+    if(!o.floorLayer) continue;
+    const by = yAt(o.y);
+    drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
+  }
   for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb - (H - wb) * 0.26, fs * 0.9, near(o.id));
-  drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.0, near('door'));
+  drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.05, near('door'));
 
-  const items = LAY.floor.slice().sort((a, b) => a.y - b.y);
+  const items = LAY.floor.filter(o => !o.floorLayer).sort((a, b) => a.y - b.y);
   let drew = false;
   for(const o of items){
     if(!drew && o.y > home.y){ drawDugi(); drawBall(); drew = true; }
     const by = yAt(o.y);
     const hi = deco && home.drag && home.drag.id === o.id;
     if(hi){ g.save(); g.globalAlpha = .75; }
-    drawFurn(o.id, rx(o.x), by, fs * depthAt(by), near(o.id));
+    drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
     if(hi) g.restore();
   }
   home.dusts.forEach(drawDust);
   if(!drew){ drawDugi(); drawBall(); }
   drawParts();
+  drawDayTint();
+  if(deco) drawZoneLabels();
   drawPrompt();
   if(deco) drawDecoHint();
   if(mini) drawMini();

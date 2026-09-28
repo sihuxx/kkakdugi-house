@@ -39,37 +39,38 @@ function shadow(cx, base, w){
    자리 배치 — 구역(주방·거실·침실)마다 앞뒤 줄로 나눠 놓는다
    꾸미기 모드에서 옮긴 자리는 S.pos 에 저장되어 그게 우선
    =============================================================== */
-const ROW_Y = { 1:0.16, 0:0.58, 2:0.66 };
+/* 슬롯을 하나씩 잡아 나간다 — 제 자리가 차 있으면 같은 구역의 다음 빈 자리로 */
 function layoutHome(){
-  const zones = { kitchen:{ 0:[], 1:[], 2:[] }, living:{ 0:[], 1:[], 2:[] }, bed:{ 0:[], 1:[], 2:[] } };
-  const wall = { kitchen:[], living:[], bed:[] };
-  const add = (id, f) => {
-    const z = f.zone || 'living';
-    if(f.on === 'wall') wall[z].push(id);
-    else zones[z][f.row || 0].push(id);
-  };
-  for(const id of S.furn){ const f = FURN(id); if(f) add(id, f); }
-  PLACES.forEach(p => { if(p.id !== 'door') add(p.id, p); });
-
   const out = { floor: [], wall: [] };
-  ZONES.forEach(z => {
-    const [a, b] = ZONE_X[z];
-    [1, 0, 2].forEach(row => {
-      const list = zones[z][row];
-      list.forEach((id, i) => {
-        let t = list.length === 1 ? 0.5 : (i + 0.5) / list.length;
-        let x = a + (b - a) * t;
-        /* 거실 벽쪽 줄은 현관 자리를 비켜 간다 */
-        if(z === 'living' && row === 1 && Math.abs(x - 0.5) < 0.09)
-          x = x < 0.5 ? 0.5 - 0.11 : 0.5 + 0.11;
-        out.floor.push({ id, zone:z, x, y: ROW_Y[row], row });
-      });
-    });
-    wall[z].forEach((id, i) => {
-      const t = wall[z].length === 1 ? 0.5 : (i + 0.5) / wall[z].length;
-      out.wall.push({ id, zone:z, x: a + (b - a) * t });
-    });
-  });
+  const taken = {}, wtaken = {};
+  const items = [];
+  for(const id of S.furn){ const f = FURN(id); if(f) items.push([id, f]); }
+  PLACES.forEach(p => { if(p.id !== 'door') items.push([p.id, p]); });
+  /* 큰 가구(벽쪽)부터 자리를 잡아야 앞자리에 밀리지 않는다 */
+  items.sort((a, b) => (b[1].sz || 1) - (a[1].sz || 1));
+
+  const grab = (zone, want, pool, used) => {
+    const list = pool[zone] || [];
+    let s2 = want && list.find(q => q.id === want && !used[q.id]);
+    if(!s2) s2 = list.find(q => !used[q.id]);
+    if(!s2){                                   /* 이 구역이 꽉 차면 옆 구역 */
+      for(const z of ZONES){ s2 = (pool[z] || []).find(q => !used[q.id]); if(s2) break; }
+    }
+    if(s2) used[s2.id] = 1;
+    return s2;
+  };
+  for(const [id, f] of items){
+    const zone = f.zone || 'living';
+    if(f.on === 'wall'){
+      const s2 = grab(zone, f.slot, WALL_SLOTS, wtaken);
+      out.wall.push({ id, zone, x: s2 ? s2.x : 0.5, slot: s2 && s2.id });
+    }else{
+      const s2 = grab(zone, f.slot, SLOTS, taken);
+      out.floor.push({ id, zone, x: s2 ? s2.x : 0.5, y: s2 ? s2.y : 0.5,
+                       row: s2 ? s2.row : 0, slot: s2 && s2.id,
+                       sz: f.sz || 1, floorLayer: !!f.floorLayer });
+    }
+  }
   /* 옮겨둔 자리 반영 */
   out.floor.forEach(o => { const p = S.pos[o.id]; if(p){ o.x = p.x; o.y = p.y; } });
   out.wall.forEach(o => { const p = S.pos[o.id]; if(p){ o.x = p.x; } });
@@ -79,6 +80,63 @@ function layoutHome(){
 let LAY = layoutHome();
 function relayout(){ LAY = layoutHome(); }
 function spotOf(id){ return LAY.floor.find(o => o.id === id) || LAY.wall.find(o => o.id === id); }
+
+
+/* ===============================================================
+   시간대 — 실제 시각에 따라 방 분위기가 바뀐다
+   =============================================================== */
+const DAYPARTS = {
+  morn:  { name:'아침', sky:['#DCEFFB','#F0F8FC'], mul:'#E7EFF9', pool:0.16, glow:0    },
+  day:   { name:'낮',   sky:['#CDEBFA','#EAF6FB'], mul:null,      pool:0.14, glow:0    },
+  eve:   { name:'저녁', sky:['#FFCF9C','#FFAE85'], mul:'#FAD6B4', pool:0.26, glow:0.20 },
+  night: { name:'밤',   sky:['#4E5680','#6E7296'], mul:'#5B60A2', pool:0.34, glow:0.52 }
+};
+function dayPart(){
+  const h = new Date().getHours();
+  return h < 6 ? 'night' : h < 10 ? 'morn' : h < 17 ? 'day' : h < 20 ? 'eve' : 'night';
+}
+const DAY = () => DAYPARTS[dayPart()];
+
+/* 조명 자리 — 빛 웅덩이가 여기서 퍼진다 */
+function lampSpot(){
+  return S.house === 0 ? { x: rx(0.18), y: wallBot() * 0.3 }
+       : S.house === 2 ? { x: rx(0.5),  y: wallBot() * 0.2 }
+                       : { x: rx(0.90), y: wallBot() * 0.26 };
+}
+/* 바닥 빛 웅덩이 */
+function lightPool(a){
+  const L = lampSpot(), r = Math.max(roomW() * 0.42, (H - wallBot()) * 1.5);
+  const rg = g.createRadialGradient(L.x, wallBot() + (H - wallBot()) * 0.45, r * 0.06,
+                                    L.x, wallBot() + (H - wallBot()) * 0.45, r);
+  rg.addColorStop(0, 'rgba(255,226,152,' + a + ')');
+  rg.addColorStop(1, 'rgba(255,226,152,0)');
+  g.save(); g.fillStyle = rg; g.fillRect(0, 0, W, H); g.restore();
+}
+/* 방 전체에 시간대 색 + 구석 어둠 */
+function drawDayTint(){
+  const D = DAY();
+  g.save();
+  if(D.mul){                                   /* 곱하기 — 진짜로 어두워진다 */
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = D.mul; g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+  }
+  if(D.glow){                                  /* 조명 주변만 다시 밝게 */
+    const L = lampSpot(), cy = L.y + (H - L.y) * 0.45;
+    const rg = g.createRadialGradient(L.x, cy, 8, L.x, cy, Math.min(W, H) * 0.78);
+    rg.addColorStop(0,   'rgba(255,214,132,' + D.glow + ')');
+    rg.addColorStop(0.45,'rgba(255,214,132,' + (D.glow * 0.3).toFixed(3) + ')');
+    rg.addColorStop(1,   'rgba(255,214,132,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  }
+  /* 구석 어둠 */
+  const vg = g.createRadialGradient(W / 2, H * 0.46, Math.min(W, H) * 0.34,
+                                    W / 2, H * 0.46, Math.max(W, H) * 0.72);
+  vg.addColorStop(0, 'rgba(110,88,68,0)');
+  vg.addColorStop(1, 'rgba(110,88,68,.26)');
+  g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  g.restore();
+}
 
 /* ===============================================================
    방
@@ -153,29 +211,24 @@ function drawRoom(){
     g.fillRect(0, 0, L, H); g.fillRect(R, 0, W - R, H); g.restore();
   }
 
-  /* 구역 이름 (꾸미기 모드에서만) */
-  if(deco){
-    g.save(); g.globalAlpha = .5; g.textAlign = 'center';
-    g.font = '700 ' + (16 * uiK()) + 'px Gaegu, sans-serif'; g.fillStyle = '#5A4A40';
-    ZONES.forEach(z => {
-      const [a, b] = ZONE_X[z];
-      g.fillText(ZONE_NAME[z], rx((a + b) / 2), wb + (H - wb) * 0.12);
-      if(b < 0.99){ g.setLineDash([6, 8]); ink(LW() * 0.6); g.globalAlpha = .3;
-        g.beginPath(); g.moveTo(rx(b + 0.015), wb); g.lineTo(rx(b + 0.015), H); g.stroke();
-        g.setLineDash([]); g.globalAlpha = .5; }
-    });
-    g.restore();
-  }
+  /* 천장 몰딩 — 벽이 허전하지 않게 */
+  g.fillStyle = '#FFF8EF';
+  g.fillRect(L, H * 0.028, R - L, H * 0.016);
+  ink(LW() * 0.8);
+  g.beginPath(); g.moveTo(L, H * 0.044); g.lineTo(R, H * 0.044); g.stroke();
+
+  /* 바닥 빛 웅덩이 */
+  lightPool(DAY().pool);
 
   /* 조명 · 창문 */
   const s = Math.min(roomW() * 0.09, wb * 0.32);
   if(S.house === 0){
-    drawBulb(rx(0.2), 0, wb * 0.24);
-    drawWindow(rx(0.8), wb * 0.46, s * 0.8, true);
+    drawBulb(rx(0.18), 0, wb * 0.24);
+    drawWindow(rx(0.86), wb * 0.44, s * 0.8, true);
   }else{
-    drawWindow(rx(0.16), wb * 0.48, s, false);
-    if(S.house === 2){ drawWindow(rx(0.84), wb * 0.48, s, false); drawLamp(rx(0.5), 0, wb * 0.15); }
-    else drawBulb(rx(0.84), 0, wb * 0.2);
+    drawWindow(rx(0.13), wb * 0.44, s, false);
+    if(S.house === 2){ drawWindow(rx(0.90), wb * 0.44, s, false); drawLamp(rx(0.5), 0, wb * 0.15); }
+    else drawBulb(rx(0.90), 0, wb * 0.2);
   }
 }
 function drawBulb(cx, top, len){
@@ -198,7 +251,11 @@ function drawLamp(cx, top, len){
 }
 function drawWindow(cx, cy, s, old){
   g.save();
-  box(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14, old ? '#BFD9E4' : '#CDEBFA');
+  const SKY = DAY().sky;
+  const sg = g.createLinearGradient(0, cy - s * 0.75, 0, cy + s * 0.75);
+  sg.addColorStop(0, SKY[0]); sg.addColorStop(1, SKY[1]);
+  g.fillStyle = sg; rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14);
+  g.fill(); ink(); g.stroke();
   g.save(); rrect(cx - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, s * 0.14); g.clip();
   g.fillStyle = '#FFFFFF'; g.globalAlpha = .75;
   g.beginPath(); g.arc(cx - s * 0.32, cy - s * 0.2, s * 0.3, 0, 7);
@@ -733,5 +790,29 @@ function drawYardThing(id, cx, base, s, glow){
       break;
     }
   }
+  g.restore();
+}
+
+
+/* 구역 이름 — 꾸미기 모드에서, 시간대 색 위에 그린다 */
+function drawZoneLabels(){
+  const wb = wallBot();
+  g.save(); g.textAlign = 'center';
+  ZONES.forEach(z => {
+    const [a, b] = ZONE_X[z];
+    if(b < 0.99){
+      g.setLineDash([6, 8]); ink(LW() * 0.6); g.globalAlpha = .45;
+      g.beginPath(); g.moveTo(rx(b + 0.015), wb); g.lineTo(rx(b + 0.015), H); g.stroke();
+      g.setLineDash([]);
+    }
+    g.globalAlpha = 1;
+    const txt = ZONE_NAME[z], cx = rx((a + b) / 2), cy = wb + (H - wb) * 0.1;
+    g.font = '700 ' + (16 * uiK()) + 'px Gaegu, sans-serif';
+    const w = g.measureText(txt).width + 22 * uiK(), h = 26 * uiK();
+    g.fillStyle = 'rgba(255,252,248,.88)';
+    rrect(cx - w / 2, cy - h / 2, w, h, h / 2); g.fill();
+    g.fillStyle = '#7A6250'; g.textBaseline = 'middle';
+    g.fillText(txt, cx, cy + 1);
+  });
   g.restore();
 }
