@@ -690,3 +690,31 @@ body.fs #stage{border-radius:0;box-shadow:none;}
 .dcard.r-UR{background:linear-gradient(#FFFDF8,#FFEFBE);
             box-shadow:0 0 0 2px #E8C86A inset, 0 6px 16px rgba(120,95,75,.10);}
 .gcard.r-UR{background:linear-gradient(#FFFDF8,#FFEFBE);}
+
+/* ── 계정 화면 ─────────────────────────────────────────── */
+.authbox{display:flex;flex-direction:column;gap:12px;width:min(360px,88%);
+         background:#FFFFFF;border-radius:26px;padding:18px 18px 16px;
+         box-shadow:0 10px 28px rgba(120,95,75,.12);}
+.authbox .tabs{gap:6px;}
+#authForm{display:flex;flex-direction:column;gap:10px;}
+.fld{display:flex;flex-direction:column;gap:4px;text-align:left;}
+.fld span{font-size:12px;color:var(--ink-soft);}
+.fld input{font-family:var(--body);font-size:15px;border:none;border-radius:14px;
+           background:#F7F0E8;color:var(--ink);padding:11px 13px;width:100%;box-sizing:border-box;}
+.fld input:focus{outline:3px solid var(--pink);outline-offset:2px;}
+.pwhint{margin:0;font-size:11px;color:var(--ink-soft);text-align:left;line-height:1.5;}
+.chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);}
+.chk input{width:17px;height:17px;accent-color:#8FBF92;}
+.autherr{margin:0;font-size:12.5px;color:#B4565F;background:#FBE7EC;border-radius:12px;
+         padding:9px 12px;text-align:left;line-height:1.5;}
+.autherr.ok{color:#3E6B44;background:#EEF5EA;}
+.authsub{display:flex;flex-direction:column;gap:5px;}
+.linkbtn{background:none;border:none;font-family:var(--body);font-size:12px;
+         color:var(--ink-soft);text-decoration:underline;cursor:pointer;padding:3px;}
+.linkbtn:hover{color:var(--ink);}
+.acctbox{display:flex;flex-direction:column;gap:7px;width:100%;}
+.acctrow{margin:0;display:flex;justify-content:space-between;gap:12px;font-size:13px;
+         background:#FFFFFF;border-radius:14px;padding:10px 14px;
+         box-shadow:0 4px 12px rgba(120,95,75,.08);}
+.acctrow b{font-family:var(--display);font-size:15px;}
+.acctrow span{color:var(--ink-soft);word-break:break-all;}

@@ -4,11 +4,11 @@
 /* ===============================================================
    셸 — 화면 전환 · 입력 · 메인 루프
    =============================================================== */
-let mode = 'home';          // home · cut · run · runresult · cafe · caferesult
+let mode = 'home';          // home · auth · cut · run · runresult · cafe · caferesult
 let last = performance.now();
 
 function showScreen(el){
-  [$('introScreen'), $('runResult')]
+  [$('introScreen'), $('authScreen'), $('runResult')]
     .forEach(s => { if(s) s.hidden = s !== el; });
   $('careBar').hidden = !(mode === 'home' && place === 'room' && !el && !mini && !deco);
 }
@@ -130,7 +130,7 @@ function askName(){
   setTimeout(() => $('introName').focus(), 200);
 }
 function finishIntro(){
-  const v = ($('introName').value || '').trim().slice(0, 6) || '두기';
+  const v = cleanName($('introName').value, 8) || '두기';
   S.dugi.name = v; S.named = true; save();
   initAudio(); goHome();
   toast(v + '와(과) 함께!', '두기를 쓰다듬어 보세요');
@@ -307,3 +307,121 @@ addEventListener('beforeunload', stampSeen);
 document.addEventListener('visibilitychange', () => { if(document.hidden) stampSeen(); });
 setInterval(stampSeen, 60000);
 requestAnimationFrame(frame);
+
+/* ===============================================================
+   계정 화면 — 회원가입 · 로그인 · 클라우드 세이브 붙이기
+   =============================================================== */
+let authMode = 'login';
+function authMsg(t, bad){
+  const el = $('authErr');
+  el.textContent = t || '';
+  el.hidden = !t;
+  el.classList.toggle('ok', !bad && !!t);
+}
+function setAuthMode(m){
+  authMode = m;
+  $('tabLogin').classList.toggle('on', m === 'login');
+  $('tabJoin').classList.toggle('on', m === 'join');
+  $('authGo').textContent = m === 'join' ? '가입하기' : '로그인';
+  $('authPw').setAttribute('autocomplete', m === 'join' ? 'new-password' : 'current-password');
+  $('pwHint').hidden = m !== 'join';
+  authMsg('');
+}
+function showAuth(){
+  mode = 'auth';
+  showScreen($('authScreen'));
+  $('topbar').hidden = true; $('careBar').hidden = true;
+  $('authNote').textContent = Auth.enabled()
+    ? '비밀번호는 이 게임이 저장하지 않아요. 인증 서버가 암호화해서 보관합니다.'
+    : '서버가 아직 연결되지 않아 이 기기에만 저장됩니다 (js/config.js).';
+  $('authForm').hidden = !Auth.enabled();
+  $('authForgot').hidden = !Auth.enabled();
+  setAuthMode('login');
+  setTimeout(() => { try{ $('authEmail').focus(); }catch(e){} }, 150);
+}
+function leaveAuth(){
+  if(S.named) goHome(); else askName();
+}
+
+$('tabLogin').onclick = () => setAuthMode('login');
+$('tabJoin').onclick  = () => setAuthMode('join');
+$('authSkip').onclick = () => { try{ localStorage.setItem('ggakdugi.local', '1'); }catch(e){} leaveAuth(); };
+$('acctBtn').onclick  = () => {
+  if(Auth.current()) openModal('account'); else showAuth();
+};
+$('authForgot').onclick = async () => {
+  const em = $('authEmail').value;
+  if(Auth.checkEmail(em)){ authMsg('이메일을 먼저 적어주세요', true); return; }
+  $('authForgot').disabled = true;
+  try{ await Auth.resetPassword(em); }catch(e){}
+  $('authForgot').disabled = false;
+  authMsg('가입된 주소라면 재설정 메일을 보냈어요');
+};
+$('authForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = $('authGo');
+  if(btn.disabled) return;
+  const em = $('authEmail').value, pw = $('authPw').value;
+  const keep = $('authKeep').checked;
+  btn.disabled = true; authMsg('');
+  try{
+    if(authMode === 'join'){
+      await Auth.signUp(em, pw);
+      $('authPw').value = '';
+      setAuthMode('login');
+      authMsg('메일함을 확인해 인증을 끝내고 로그인해주세요');
+    }else{
+      await Auth.signIn(em, pw, keep);
+      $('authPw').value = '';
+      await mergeCloud();
+      leaveAuth();
+      toast('로그인했어요', Auth.current().email);
+    }
+  }catch(err){
+    authMsg(String(err && err.message || '문제가 생겼어요'), true);
+  }finally{
+    btn.disabled = false;
+  }
+};
+
+/* 서버 세이브와 이 기기 세이브 맞추기 */
+async function mergeCloud(){
+  let remote = null;
+  try{ remote = await Auth.pull(); }catch(e){ return; }
+  const localAt = S.seen || 0;
+  if(!remote){ await Auth.push(S).catch(() => {}); return; }
+  const pick = (remote.at > localAt + 60000 && remote.data.named)
+    ? 'remote'
+    : (S.named ? 'ask' : 'remote');
+  if(pick === 'remote' || (pick === 'ask' && confirm(
+        '서버에 더 최근 세이브가 있어요.\n서버 것으로 불러올까요?\n(취소하면 이 기기 것을 서버에 올립니다)'))){
+    applyCloud(remote.data);
+  }else{
+    await Auth.push(S).catch(() => {});
+  }
+}
+function applyCloud(data){
+  const clean = Auth.sanitizeSave(data);
+  if(!clean) return;
+  Object.assign(S, clean);
+  S.seen = Date.now();
+  save(); relayout(); refreshBar(); paintCareBar(); paintDaily();
+}
+
+/* 저장할 때마다 서버에도 (너무 자주 올리지 않게 모아서) */
+const _saveLocal = save;
+save = function(){ _saveLocal(); if(Auth.enabled() && Auth.current()) Auth.pushLater(S); };
+
+/* 로그인 상태가 바뀌면 상단바 버튼 모양도 바꾼다 */
+Auth.onChange(u => {
+  const b = $('acctBtn');
+  if(b) b.textContent = u ? '내 계정' : '로그인';
+});
+
+/* 페이지를 열 때: 저장된 세션이 있으면 조용히 이어서 로그인 */
+(async function bootAuth(){
+  if(!Auth.enabled()) return;
+  const u = await Auth.ready();
+  if(u){ try{ await mergeCloud(); }catch(e){} }
+  else if(!S.named && !localStorage.getItem('ggakdugi.local')) showAuth();
+})();

@@ -3,6 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 보안: 외부에서 스크립트를 끼워 넣지 못하게 막습니다.
+     connect-src 는 본인 Supabase 주소만 남기고 좁히세요. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self';
+  style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data: blob:;
+  connect-src 'self' https://*.supabase.co https://*.supabase.in;
+  form-action 'none';
+  base-uri 'none';
+  object-src 'none'">
+<meta name="referrer" content="no-referrer">
 <title>꺅두기 하우스</title>
 <meta name="description" content="꺅두기를 애기부터 어른까지 키우는 웹 게임. 집을 꾸미고, 리듬게임과 꺅두기런으로 클로버를 벌어요.">
 <link rel="icon" href="assets/clover.png">
@@ -45,6 +58,7 @@
           <button id="decoBtn"  type="button" title="가구 옮기기">꾸미기</button>
           <button id="albumBtn" type="button" title="사진첩">앨범</button>
           <button id="dailyBtn" type="button" title="오늘의 할 일">할 일</button>
+          <button id="acctBtn"  type="button" title="계정">계정</button>
           <button id="setBtn"   type="button" title="설정">설정</button>
           <button id="fsBtn"   type="button" title="전체화면">⛶</button>
         </nav>
@@ -59,10 +73,43 @@
       <img class="mascot sway" src="assets/run.png" alt="꺅두기">
       <h1>꺅두기 하우스<span class="sub">GGAKDUGI HOUSE</span></h1>
       <p class="lead">오늘부터 두기를 키웁니다.<br>이름을 지어주세요.</p>
-      <input id="introName" class="nameinput big" type="text" maxlength="6" value="두기" aria-label="두기 이름">
+      <input id="introName" class="nameinput big" type="text" maxlength="8" value="두기" aria-label="두기 이름">
       <button class="btn" id="introGo">시작!</button>
       <p class="credit">집에서는 <span class="kbd">WASD</span> 로 걷고, 두기를 <b>문질러 쓰다듬으면</b> 마음이 올라요 ·
         현관으로 나가면 알바를 해서 클로버를 벌 수 있어요</p>
+    </section>
+
+    <!-- 계정 -->
+    <section class="screen" id="authScreen" hidden>
+      <h1 style="font-size:clamp(24px,4.4vw,36px)">꺅두기 하우스<span class="sub">계정</span></h1>
+      <p class="lead" id="authLead">로그인하면 세이브가 서버에 저장돼서<br>다른 컴퓨터에서도 이어할 수 있어요.</p>
+
+      <div class="authbox">
+        <div class="tabs" id="authTabs">
+          <button class="tab on" id="tabLogin" type="button">로그인</button>
+          <button class="tab" id="tabJoin" type="button">회원가입</button>
+        </div>
+
+        <form id="authForm" autocomplete="on" novalidate>
+          <label class="fld"><span>이메일</span>
+            <input id="authEmail" type="email" inputmode="email" autocomplete="username"
+                   maxlength="254" spellcheck="false" required></label>
+          <label class="fld"><span>비밀번호</span>
+            <input id="authPw" type="password" autocomplete="current-password"
+                   maxlength="200" required></label>
+          <p class="pwhint" id="pwHint" hidden>10자 이상 · 대문자 · 소문자 · 숫자 · 기호 중 3가지 이상</p>
+          <label class="chk"><input id="authKeep" type="checkbox">
+            <span>이 기기에서 로그인 유지</span></label>
+          <p class="autherr" id="authErr" role="alert" hidden></p>
+          <button class="btn" id="authGo" type="submit">로그인</button>
+        </form>
+
+        <div class="authsub">
+          <button class="linkbtn" id="authForgot" type="button">비밀번호를 잊었어요</button>
+          <button class="linkbtn" id="authSkip" type="button">계정 없이 이 기기에서만 하기</button>
+        </div>
+      </div>
+      <p class="credit" id="authNote"></p>
     </section>
 
     <!-- 꺅두기런 결과 -->
@@ -120,10 +167,12 @@
 </div>
 
 <!-- 순서대로 읽혀야 합니다 -->
+<script defer src="js/config.js"></script>
 <script defer src="js/boot.js"></script>
 <script defer src="js/data.js"></script>
 <script defer src="js/grow.js"></script>
 <script defer src="js/save.js"></script>
+<script defer src="js/auth.js"></script>
 <script defer src="js/audio.js"></script>
 <script defer src="js/menus.js"></script>
 <script defer src="js/cut.js"></script>

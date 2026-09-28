@@ -112,6 +112,18 @@ index.html 을 브라우저로 더블클릭
 뽑은 모습은 **옷장**에서 갈아입힙니다 — 두기는 한 마리, 모습만 바뀝니다.
 도감을 모으면 클로버와 간식을 받습니다(5·9·13·17종).
 
+## 계정 (선택)
+
+로그인하면 세이브가 서버에 저장돼서 **다른 컴퓨터에서도 이어할 수 있어요.**
+설정하지 않으면 로그인 없이 이 브라우저에만 저장됩니다.
+
+- 비밀번호는 이 게임이 저장하지 않습니다 — 인증 서버가 해시해서 보관해요
+- 접근 토큰은 메모리에만, 재발급 토큰은 기본이 탭을 닫으면 사라지는 저장소입니다
+- "로그인 유지"를 켠 사람만 기기에 남습니다
+
+설정법과 보안 설계는 **[SECURITY.md](SECURITY.md)** 에 정리해뒀습니다.
+`supabase/schema.sql` 을 Supabase SQL Editor에 붙여넣고, `js/config.js` 에 주소와 키를 넣으면 끝이에요.
+
 ## 폰에서
 
 돌봄은 아래 버튼을 그냥 누르면 되고, 방 안에서 가고 싶은 곳을 탭하면 두기가 걸어가요.
@@ -120,8 +132,12 @@ index.html 을 브라우저로 더블클릭
 ## 파일 구조
 
 ```
-index.html          화면 구조 (집 + 모든 화면이 한 페이지)
+index.html          화면 구조 (집 + 모든 화면이 한 페이지) · CSP 선언
 css/style.css       전체 스타일
+js/config.js        서버 주소·키 (직접 채우는 곳)
+js/auth.js          계정 · 클라우드 세이브 · 세이브 검증
+supabase/schema.sql DB 스키마 · RLS 정책 · 검증 트리거
+SECURITY.md         보안 설계 문서
 js/boot.js          캔버스·크기·선 굵기 같은 공용 도구
 js/data.js          모습 17종, 곡 4개, 난이도, 표지 그림
 js/grow.js          마음 레벨 · 집 · 가구 · 먹이 · 돌봄 · 알바 · 코스 · 할 일 · 업적
@@ -138,7 +154,7 @@ assets/*.png        꺅두기 그림
 tools/build_single.py  파일 하나로 묶기
 ```
 
-스크립트는 **읽히는 순서가 중요합니다** (boot → data → grow → save → audio →
+스크립트는 **읽히는 순서가 중요합니다** (config → boot → data → grow → save → auth → audio →
 menus → cut → home → care → run → cafe → app). `index.html` 아래쪽 순서를 바꾸지 마세요.
 
 ### 파일 하나로 묶기

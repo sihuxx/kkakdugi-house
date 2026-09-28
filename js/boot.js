@@ -4,6 +4,18 @@
 /* ===============================================================
    공용 도구 — 캔버스 · 크기 · 선 굵기
    =============================================================== */
+/* 클릭재킹 방지 — 남의 사이트가 iframe 으로 감싸면 아무것도 보여주지 않는다.
+   (frame-ancestors 는 <meta> 로는 적용되지 않아서 여기서 한 번 더 막습니다) */
+if(window.top !== window.self){
+  try{ window.top.location = window.self.location; }catch(e){}
+  document.documentElement.replaceChildren();
+  const w = document.createElement('p');
+  w.textContent = '이 게임은 다른 사이트 안에서는 열 수 없어요.';
+  w.setAttribute('style', 'font:16px sans-serif;padding:24px;color:#4E4038');
+  document.documentElement.appendChild(w);
+  throw new Error('framed');
+}
+
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let g = cv.getContext('2d');
@@ -29,4 +41,24 @@ function roundRect(x, y, w, h, r){
   g.beginPath(); g.moveTo(x + r, y);
   g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+
+/* ===============================================================
+   보안 — 사용자가 넣은 글자는 반드시 이걸 거쳐서 화면에 올린다
+   =============================================================== */
+const ESC_MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;', '`':'&#96;' };
+/* HTML 본문에 넣을 때 */
+function esc(v){ return String(v == null ? '' : v).replace(/[&<>"'`]/g, c => ESC_MAP[c]); }
+/* 속성값에 넣을 때 (따옴표까지 확실히) */
+const escAttr = esc;
+
+/* 이름처럼 사람이 직접 적는 값 — 허용한 글자만 남긴다 (화이트리스트) */
+function cleanName(v, max){
+  return String(v == null ? '' : v)
+    .normalize('NFC')
+    .replace(/[\u0000-\u001F\u007F\u200B-\u200F\u2028\u2029\uFEFF]/g, '')  // 제어·보이지 않는 글자
+    .replace(/[^\uAC00-\uD7A3\u3131-\u318E a-zA-Z0-9._-]/g, '')                // 한글·영문·숫자·일부 기호만
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max || 8);
 }

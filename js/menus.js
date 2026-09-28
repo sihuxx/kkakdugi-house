@@ -396,6 +396,10 @@ function openModal(kind){
     $('modalTitle').textContent = '옷장 · 두기 도감';
     $('modalHint').textContent = '모습을 누르면 자세히 볼 수 있어요';
     buildDex(body);
+  } else if(kind === 'account'){
+    $('modalTitle').textContent = '내 계정';
+    $('modalHint').textContent = '세이브가 서버에 저장되고 있어요';
+    buildAccount(body);
   } else if(kind === 'album'){
     $('modalTitle').textContent = '사진첩';
     $('modalHint').textContent = '방이 마음에 들 때 찍어두면 남아요 (최대 ' + ALBUM_MAX + '장)';
@@ -431,8 +435,8 @@ function buildSettings(body){
   };
   const row = (parent, title, val, inner, hint) => {
     const d = document.createElement('div'); d.className = 'setrow';
-    d.innerHTML = '<div class="lbl"><b>' + title + '</b><span>' + val + '</span></div>' + inner +
-                  (hint ? '<div class="hint">' + hint + '</div>' : '');
+    d.innerHTML = '<div class="lbl"><b>' + esc(title) + '</b><span>' + esc(val) + '</span></div>' + inner +
+                  (hint ? '<div class="hint">' + esc(hint) + '</div>' : '');
     parent.appendChild(d); return d;
   };
   const slider = (parent, title, val, attrs, onInput, hint) => {
@@ -445,9 +449,10 @@ function buildSettings(body){
 
   const g0 = group('두기');
   const nm = row(g0, '이름', S.dugi.name,
-    '<input class="nameinput" type="text" maxlength="6" value="' + S.dugi.name.replace(/"/g, '') + '">');
+    '<input class="nameinput" type="text" maxlength="8" value="' + escAttr(S.dugi.name) + '">');
   nm.querySelector('input').onchange = e => {
-    const v = (e.target.value || '').trim().slice(0, 6) || '두기';
+    const v = cleanName(e.target.value, 8) || '두기';
+    e.target.value = v;
     S.dugi.name = v; save(); refreshBar(); nm.querySelector('.lbl span').textContent = v;
   };
 
@@ -611,9 +616,10 @@ function buildAlbum(body){
     const d = new Date(ph.t);
     const when = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' +
                  String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-    card.innerHTML = '<img alt="' + when + ' 사진">' +
-      '<figcaption><b>' + when + '</b><span>' + ph.note + '</span></figcaption>';
-    card.querySelector('img').src = ph.img;
+    card.innerHTML = '<img alt="' + escAttr(when) + ' 사진">' +
+      '<figcaption><b>' + esc(when) + '</b><span>' + esc(ph.note) + '</span></figcaption>';
+    const im0 = card.querySelector('img');
+    if(typeof ph.img === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(ph.img)) im0.src = ph.img;
     const del = document.createElement('button');
     del.type = 'button'; del.className = 'pdel'; del.setAttribute('aria-label', '사진 지우기');
     del.textContent = '×';
@@ -646,4 +652,43 @@ function showAway(r){
   $('modalClose').textContent = '두기 보러 가기';
   $('modalClose').hidden = false;
   modal.hidden = false;
+}
+
+
+/* ===============================================================
+   내 계정
+   =============================================================== */
+function buildAccount(body){
+  const u = Auth.current();
+  const box = document.createElement('div'); box.className = 'acctbox';
+  const rows = [
+    ['이메일', u ? u.email : '-'],
+    ['메일 인증', u && u.verified ? '완료' : '아직'],
+    ['세이브', '서버에 자동 저장 중']
+  ];
+  rows.forEach(([k, v]) => {
+    const r = document.createElement('p'); r.className = 'acctrow';
+    const b1 = document.createElement('b'); b1.textContent = k;
+    const s1 = document.createElement('span'); s1.textContent = v;   /* 서버 값이라 textContent 로만 */
+    r.appendChild(b1); r.appendChild(s1); box.appendChild(r);
+  });
+  body.appendChild(box);
+
+  const now = document.createElement('button');
+  now.type = 'button'; now.className = 'btn'; now.textContent = '지금 서버에 저장';
+  now.onclick = async () => {
+    now.disabled = true;
+    try{ await Auth.push(S); toast('서버에 저장했어요', ''); }
+    catch(e){ toast('저장에 실패했어요', '잠시 후 다시'); }
+    now.disabled = false;
+  };
+  body.appendChild(now);
+
+  const out = document.createElement('button');
+  out.type = 'button'; out.className = 'btn ghost small'; out.textContent = '로그아웃';
+  out.onclick = async () => {
+    await Auth.signOut();
+    closeModal(); toast('로그아웃했어요', '이 기기 세이브는 그대로예요');
+  };
+  body.appendChild(out);
 }

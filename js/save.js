@@ -57,7 +57,7 @@ let S = freshSave();
     }
   }catch(e){}
 })();
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+let save = function(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} };
 
 const settings = S.settings;
 const look = () => CHARS.find(c => c.id === S.look) || CHARS[0];
@@ -192,7 +192,7 @@ function bumpDaily(kind, n){
 let toastTimer = null;
 function toast(title, line){
   const el = $('toast');
-  el.innerHTML = '<b>' + title + '</b>' + (line ? '<span>' + line + '</span>' : '');
+  el.innerHTML = '<b>' + esc(title) + '</b>' + (line ? '<span>' + esc(line) + '</span>' : '');
   el.hidden = false; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.hidden = true; }, 2600);
