@@ -164,7 +164,7 @@ function runBgmStop(){ if(bgmTimer){ clearInterval(bgmTimer); bgmTimer = null; }
    =============================================================== */
 let state = 'title';                // title · play · pause · over
 let camX = 0, camY = 0, speed = 0, dist = 0, score = 0, jellyN = 0, combo = 0, maxCombo = 0;
-let energy = 0, skill = null, skillT = 0, shield = 0, shake = 0, tick = 0, cleared = false;
+let energy = 0, skill = null, skillT = 0, shake = 0, tick = 0, cleared = false;
 const fx = [];
 const player = { x:0, y:0, vy:0, onGround:true, jumps:0, sliding:false, slideT:0, hp:3, inv:0, dead:false, coyote:0, buf:0 };
 
@@ -176,11 +176,10 @@ function reset(){
   buildMap();
   camX = 0; camY = 0; speed = CO.v0; dist = 0; score = 0; jellyN = 0; combo = 0; maxCombo = 0;
   energy = 0; skill = null; skillT = 0; shake = 0; tick = 0; cleared = false;
-  shield = skillIdOf(me) === 'shield' ? 1 : 0;   // 보호막 두기는 하나 들고 시작
   speed = CO.v0;
   fx.length = 0;
   Object.assign(player, { x:120, y:0, vy:0, onGround:true, jumps:0, sliding:false, slideT:0,
-                          hp: CO.hp + (skillIdOf(me)==='shield' ? 1 : 0), inv:0, dead:false, coyote:0, buf:0 });
+                          hp: CO.hp, inv:0, dead:false, coyote:0, buf:0 });
 }
 
 /* ===== 입력 ===== */
@@ -206,8 +205,7 @@ function setSlide(on){
 function useSkill(){
   if(state !== 'play' || energy < 100) return;
   const id = skillIdOf(me); energy = 0; SFX.skill();
-  if(id === 'shield'){ shield = Math.min(2, shield + 1); toastFx('보호막!'); }
-  else { skill = id; skillT = SKILLS[id].dur; toastFx(SKILLS[id].name); }
+  skill = id; skillT = SKILLS[id].dur; toastFx(SKILLS[id].name);
   for(let i=0;i<18;i++) fx.push({ kind:'star', x:player.x, y:player.y+40,
     vx:(Math.random()-.5)*420, vy:Math.random()*420, life:0.7, t:0, c:skillOf(me).color });
 }
@@ -330,8 +328,6 @@ function update(dt){
 const hits = [];
 function hurt(e){
   hits.push({ x:Math.round(player.x), kind:e.kind, sliding:player.sliding, y:Math.round(player.y) });
-  if(shield > 0){ shield--; player.inv = 1.3; e.gone = true; SFX.hit(); shake = 0.5;
-                  pop(e.x, e.y + e.h/2, '#AD9ED4'); toastFx('보호막이 막았다!'); return; }
   player.hp--; player.inv = 1.5; combo = 0; e.gone = true;
   SFX.hit(); shake = 1; pop(e.x, e.y + e.h/2, '#C9A9A9');
   speed = Math.max(V0, speed - 60);
@@ -593,12 +589,6 @@ function drawPlayer(){
          g.beginPath(); g.ellipse(0, -baseH*0.4, baseH*0.3, baseH*0.36, 0, 0, 7); g.fill(); g.stroke(); }
   g.restore();
 
-  /* 보호막 */
-  if(shield > 0){
-    g.save(); g.globalAlpha = 0.5 + Math.sin(tick*5)*0.18;
-    g.strokeStyle = '#AD9ED4'; g.lineWidth = LW();
-    g.beginPath(); g.ellipse(x, yb - ph*SC*0.5, PW*0.9*SC, ph*0.75*SC, 0, 0, 7); g.stroke(); g.restore();
-  }
   /* 스킬 남은 시간 */
   if(skillT > 0){
     const sk = SKILLS[skill];

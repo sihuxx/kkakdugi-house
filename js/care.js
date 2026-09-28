@@ -30,6 +30,7 @@ seedDust();
 
 /* ===== 다가갈 수 있는 것 ===== */
 function homeSpots(){
+  if(place === 'yard') return YARD.map(o => ({ ...o }));
   const list = [];
   for(const o of LAY.floor){
     const f = FURN(o.id);
@@ -37,7 +38,7 @@ function homeSpots(){
     const p = PLACES.find(q => q.id === o.id);
     if(p && p.act) list.push({ id:o.id, name:p.name, x:o.x, y:o.y, act:p.act });
   }
-  list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'job' });
+  list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' });
   return list;
 }
 const furnPos = id => { const o = spotOf(id); return o ? { x:o.x, y:o.y } : { x:0.5, y:0.5 }; };
@@ -75,6 +76,7 @@ function canCare(kind){
 /* 버튼이나 가구에서 시작 */
 function doCare(kind){
   if(deco) return false;
+  if(place !== 'room'){ toast('집 안에서만 할 수 있어요', ''); sfxNo(); return false; }
   const ok = canCare(kind);
   if(ok !== true){ toast(ok.no, ''); sfxNo(); return false; }
   if(kind === 'feed' || kind === 'wash'){ openMini(kind); return true; }
@@ -179,7 +181,7 @@ function closeMini(done){
     }
   }
   mini = null;
-  $('careBar').hidden = !(mode === 'home');
+  $('careBar').hidden = !(mode === 'home' && place === 'room');
   save(); refreshBar(); paintCareBar();
 }
 function feedPick(f){
@@ -279,13 +281,13 @@ function updateHome(dt){
   }
 
   /* 가까운 것 — 문 앞에 서면 문이 먼저 */
-  let near = null, bd = 0.075;
+  let near = null, bd = (place === 'yard' ? 0.17 : 0.075);
   for(const s of homeSpots()){
     const d = Math.hypot((s.x - home.x) * 1.4, ((s.y || 0) - home.y) * 0.8);
     if(d < bd){ bd = d; near = s; }
   }
-  if(home.y < 0.12 && Math.abs(home.x - LAY.door.x) < 0.10)
-    near = { id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'job' };
+  if(place === 'room' && home.y < 0.12 && Math.abs(home.x - LAY.door.x) < 0.10)
+    near = { id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' };
   home.near = near;
 
   for(let i = home.parts.length - 1; i >= 0; i--){
@@ -296,11 +298,20 @@ function updateHome(dt){
 }
 
 /* 혼자 하는 행동 */
+const YARD_SAY = ['바깥 공기 좋다', '가게 구경할까?', '뽑기 한 번…', '오늘도 알바?', '꺅!'];
 const IDLE_SAY = ['심심해~', '오늘 뭐 하지?', '배고픈가?', '낮잠 잘까', '꺅', '집이 좋아',
                   '알바 가야 하나', '두기두기'];
 function pickIdle(){
   home.idle = 0;
   const d = S.dugi;
+  if(place === 'yard'){
+    home.target = { x:0.08 + Math.random() * 0.84, y:0.25 + Math.random() * 0.68 };
+    home.idleGoal = 'walk';
+    if(Math.random() < 0.45){
+      home.say = YARD_SAY[Math.floor(Math.random() * YARD_SAY.length)]; home.sayT = 2.2;
+    }
+    return;
+  }
   /* 조르는 게 있으면 그 앞에서 기다린다 */
   if(S.req){
     const f = FURNITURE.find(x => x.act === S.req.kind);
@@ -334,7 +345,10 @@ function act(spot){
   if(!spot) return;
   if(spot.act === 'wardrobe') return openModal('wardrobe');
   if(spot.act === 'gacha')    return openModal('gacha');
+  if(spot.act === 'shop')     return openModal('shop');
   if(spot.act === 'job')      return openModal('job');
+  if(spot.act === 'out')      return goYard();
+  if(spot.act === 'in')       return goHome();
   doCare(spot.act);
 }
 
@@ -375,14 +389,16 @@ function homeDown(px, py){
   }
   if(onDugi(px, py)){ home.pet.dist = 0; home.pet.on = true; petOnce(); return; }
   /* 가까운 가구를 누르면 걸어가서 실행 */
-  let spot = null, bd = 0.09;
+  let spot = null, bd = (place === 'yard' ? 0.2 : 0.09);
   for(const s of homeSpots()){
     const d = Math.hypot((s.x - r.x) * 1.3, ((s.y || 0) - r.y) * 0.7);
     if(d < bd){ bd = d; spot = s; }
   }
   if(spot){
-    home.target = { x:spot.x + (spot.act === 'job' ? 0 : 0.04),
-                    y:Math.min(0.95, (spot.y || 0.05) + 0.16) };
+    home.target = place === 'yard'
+      ? { x:spot.x, y:Math.min(0.95, (spot.y || 0.05) + 0.13) }
+      : { x:spot.x + (spot.act === 'job' ? 0 : 0.04),
+          y:Math.min(0.95, (spot.y || 0.05) + 0.16) };
     home.autoAct = spot;
   }else{
     home.target = { x:Math.max(0.03, Math.min(0.97, r.x)),
@@ -585,8 +601,9 @@ function drawPrompt(){
   const n = home.near;
   if(!n || home.act || deco || mini) return;
   const k = uiK();
-  const label = n.act === 'wardrobe' ? '옷장 열기' : n.act === 'gacha' ? '뽑기'
-              : n.act === 'job' ? '알바하러 가기' : CARE[n.act].name;
+  const LABEL = { wardrobe:'옷장 열기', gacha:'뽑기', shop:'상점 들어가기',
+                  job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기' };
+  const label = LABEL[n.act] || CARE[n.act].name;
   g.save();
   g.font = '700 ' + (19 * k) + 'px Gaegu, sans-serif';
   const w = g.measureText('E  ' + label).width + 30 * k, h = 30 * k;
@@ -603,8 +620,27 @@ function drawPrompt(){
   g.restore();
 }
 
+/* 정원 전체 */
+function drawYardScene(){
+  drawYard();
+  const wb = wallBot();
+  const fs = Math.min(roomW() * 0.115, (H - wb) * 0.52);
+  const near = id => home.near && home.near.id === id;
+  const items = YARD.slice().sort((a, b) => a.y - b.y);
+  let drew = false;
+  for(const o of items){
+    if(!drew && o.y > home.y){ drawDugi(); drew = true; }
+    const by = yAt(o.y);
+    drawYardThing(o.id, rx(o.x), by, fs * depthAt(by), near(o.id));
+  }
+  if(!drew) drawDugi();
+  drawParts();
+  drawPrompt();
+}
+
 /* 방 전체 */
 function drawHome(dt){
+  if(place === 'yard'){ drawYardScene(); return; }
   drawRoom();
   const wb = wallBot();
   const fs = Math.min(roomW() * 0.125, (H - wb) * 0.48);

@@ -5,12 +5,15 @@
    집 — 방 그리기와 가구 자리
    =============================================================== */
 
-/* 방 좌표 */
-const roomW   = () => W * HOUSE().wide;
+/* 어디에 있나 — 'room'(집 안) · 'yard'(정원) */
+let place = 'room';
+
+/* 방 좌표 — 정원은 화면 전체를 쓴다 */
+const roomW   = () => W * (place === 'yard' ? 1 : HOUSE().wide);
 const roomL   = () => (W - roomW()) / 2;
 const roomR   = () => roomL() + roomW();
 const rx      = t => roomL() + roomW() * t;
-const wallBot = () => H * HOUSE().tall;
+const wallBot = () => H * (place === 'yard' ? 0.44 : HOUSE().tall);
 const walkTop = () => wallBot() + (H - wallBot()) * 0.06;     // 벽 바로 앞까지 갈 수 있다
 const walkBot = () => H - (H - wallBot()) * 0.06;
 const yAt     = t => walkTop() + t * (walkBot() - walkTop());
@@ -549,6 +552,184 @@ function drawFurn(id, cx, base, s, glow){
       rrect(cx - s * 0.32, base - s * 1.8, s * 0.64, s * 0.2, s * 0.06); g.fill(); g.stroke();
       g.fillStyle = '#C9784F';
       g.beginPath(); g.arc(cx, base - s * 1.7, s * 0.05, 0, 7); g.fill(); g.stroke();
+      break;
+    }
+  }
+  g.restore();
+}
+
+/* ===============================================================
+   정원 — 집 밖. 가게 · 뽑기 기계 · 알바 게시판이 있다
+   =============================================================== */
+const yardDeco = [];
+function seedYard(){
+  yardDeco.length = 0;
+  for(let i = 0; i < 7; i++)
+    yardDeco.push({ x: (i * 0.147 + 0.05) % 1, y: 0.1 + ((i * 0.31) % 0.75),
+                    k: i % 3 === 0 ? 'flower' : 'tuft', c: ['#EFA6B8','#FFE08A','#FFFFFF'][i % 3] });
+}
+seedYard();
+
+function drawYard(){
+  const wb = wallBot();
+  /* 하늘 */
+  const sk = g.createLinearGradient(0, 0, 0, wb);
+  sk.addColorStop(0, '#CFEAF7'); sk.addColorStop(1, '#EAF6FB');
+  g.fillStyle = sk; g.fillRect(0, 0, W, wb);
+  /* 구름 */
+  g.save(); g.fillStyle = '#FFFFFF'; g.globalAlpha = .9;
+  [[0.14, 0.22, 1], [0.52, 0.14, 0.75], [0.82, 0.26, 0.9]].forEach(([cx, cy, sc]) => {
+    const x = W * cx, y = wb * cy, r = wb * 0.11 * sc;
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.arc(x + r * 0.9, y + r * 0.2, r * 0.75, 0, 7);
+    g.arc(x - r * 0.9, y + r * 0.25, r * 0.65, 0, 7); g.fill();
+  });
+  g.restore();
+  /* 먼 언덕 */
+  g.fillStyle = '#C3E3C0';
+  g.beginPath(); g.moveTo(0, wb);
+  g.quadraticCurveTo(W * 0.22, wb - H * 0.12, W * 0.46, wb);
+  g.quadraticCurveTo(W * 0.72, wb - H * 0.16, W, wb);
+  g.closePath(); g.fill();
+  /* 잔디 */
+  const gr = g.createLinearGradient(0, wb, 0, H);
+  gr.addColorStop(0, '#A9D9A2'); gr.addColorStop(1, '#8CC486');
+  g.fillStyle = gr; g.fillRect(0, wb, W, H - wb);
+  /* 울타리 */
+  const fy = wb, fh = (H - wb) * 0.12;
+  g.save(); ink(LW() * 0.8); g.fillStyle = '#E3D2B4';
+  for(let x = 0; x < W; x += W * 0.045){
+    rrect(x, fy - fh, W * 0.018, fh, W * 0.008); g.fill(); g.stroke();
+  }
+  g.beginPath(); g.moveTo(0, fy - fh * 0.58); g.lineTo(W, fy - fh * 0.58); g.stroke();
+  g.restore();
+  /* 흙길 */
+  g.save(); g.fillStyle = '#E4D2AE';
+  g.beginPath();
+  g.moveTo(rx(0.09), wb); g.lineTo(rx(0.17), wb);
+  g.lineTo(rx(0.62), H); g.lineTo(rx(0.30), H);
+  g.closePath(); g.fill();
+  g.globalAlpha = .35; g.fillStyle = '#CDB78F';
+  for(let i = 1; i < 6; i++){
+    const t = i / 6, y = wb + (H - wb) * t;
+    g.beginPath(); g.ellipse(rx(0.13 + t * 0.33), y, W * 0.02, (H - wb) * 0.02, 0, 0, 7); g.fill();
+  }
+  g.restore();
+  /* 풀·꽃 */
+  yardDeco.forEach(d => {
+    const x = rx(d.x), y = yAt(d.y), s = 9 * uiK() * depthAt(y);
+    g.save(); ink(LW() * 0.6);
+    if(d.k === 'flower'){
+      g.strokeStyle = '#6FA86B';
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - s * 1.4); g.stroke();
+      g.fillStyle = d.c; ink(LW() * 0.6);
+      for(let i = 0; i < 5; i++){
+        const a = i / 5 * 6.283;
+        g.beginPath(); g.arc(x + Math.cos(a) * s * 0.42, y - s * 1.4 + Math.sin(a) * s * 0.42, s * 0.34, 0, 7);
+        g.fill(); g.stroke();
+      }
+      g.fillStyle = '#FFE08A'; g.beginPath(); g.arc(x, y - s * 1.4, s * 0.26, 0, 7); g.fill(); g.stroke();
+    }else{
+      g.strokeStyle = '#6FA86B'; g.lineWidth = LW() * 0.8;
+      [-0.5, 0, 0.5].forEach(o => {
+        g.beginPath(); g.moveTo(x + o * s, y);
+        g.quadraticCurveTo(x + o * s * 2, y - s * 0.9, x + o * s * 3.2, y - s * 1.3); g.stroke();
+      });
+    }
+    g.restore();
+  });
+}
+
+/* 정원에 있는 것 하나 */
+function drawYardThing(id, cx, base, s, glow){
+  g.save();
+  if(glow){
+    g.save(); g.globalAlpha = 0.28 + Math.sin(home.t * 5) * 0.16;
+    g.fillStyle = '#FFE08A';
+    g.beginPath(); g.ellipse(cx, base - s * 0.5, s * 1.2, s * 0.95, 0, 0, 7); g.fill(); g.restore();
+  }
+  ink();
+  const label = (txt, y, col) => {
+    g.fillStyle = col || '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '700 ' + (14 * uiK()) + 'px Gaegu, sans-serif';
+    g.fillText(txt, cx, y);
+  };
+  switch(id){
+    case 'house': {                                   /* 우리 집 */
+      shadow(cx, base, s * 0.9);
+      const w = s * 1.7, h = s * 1.35;
+      box(cx - w / 2, base - h, w, h, s * 0.1, '#FFF3E2');
+      g.fillStyle = '#D98E72';                        /* 지붕 */
+      g.beginPath(); g.moveTo(cx - w * 0.62, base - h);
+      g.lineTo(cx, base - h - s * 0.62); g.lineTo(cx + w * 0.62, base - h);
+      g.closePath(); g.fill(); g.stroke();
+      box(cx - s * 0.28, base - s * 0.86, s * 0.56, s * 0.86, s * 0.09, '#C98A5E');   /* 문 */
+      g.fillStyle = '#FFE08A';
+      g.beginPath(); g.arc(cx + s * 0.16, base - s * 0.44, s * 0.05, 0, 7); g.fill(); g.stroke();
+      box(cx + s * 0.44, base - h + s * 0.26, s * 0.38, s * 0.32, s * 0.06, '#CDEBFA'); /* 창 */
+      label('우리 집', base - h - s * 0.82);
+      break;
+    }
+    case 'shop': {                                    /* 가게 */
+      shadow(cx, base, s * 1.0);
+      const w = s * 1.9, h = s * 1.4;
+      box(cx - w / 2, base - h, w, h, s * 0.1, '#FFFBF0');
+      /* 줄무늬 차양 */
+      const ay = base - h + s * 0.34, ah = s * 0.32;
+      for(let i = 0; i < 6; i++){
+        g.fillStyle = i % 2 ? '#FFFBF0' : '#EFA6B8';
+        const x0 = cx - w * 0.56 + (w * 1.12 / 6) * i;
+        g.beginPath(); g.moveTo(x0, ay); g.lineTo(x0 + w * 1.12 / 6, ay);
+        g.lineTo(x0 + w * 1.12 / 6, ay + ah); g.lineTo(x0, ay + ah); g.closePath();
+        g.fill(); g.stroke();
+      }
+      box(cx - w * 0.38, ay + ah + s * 0.12, w * 0.76, s * 0.6, s * 0.07, '#DFF0F8');   /* 진열창 */
+      g.fillStyle = '#E7B075';
+      [-0.2, 0.05, 0.28].forEach((o, i) => {
+        g.beginPath(); g.arc(cx + o * w, ay + ah + s * 0.42, s * 0.11, 0, 7); g.fill(); g.stroke(); });
+      /* 간판 */
+      box(cx - s * 0.62, base - h - s * 0.46, s * 1.24, s * 0.42, s * 0.1, '#FFE08A');
+      label('상점', base - h - s * 0.25);
+      break;
+    }
+    case 'gmach': {                                   /* 뽑기 기계 */
+      shadow(cx, base, s * 0.5);
+      const w = s * 0.86, h = s * 1.25;
+      box(cx - w / 2, base - h * 0.52, w, h * 0.52, s * 0.08, '#EFA6B8');   /* 아래 통 */
+      g.fillStyle = '#CDEBFA';                                             /* 유리 돔 */
+      g.beginPath(); g.arc(cx, base - h * 0.58, w * 0.52, Math.PI, 0); g.fill(); g.stroke();
+      g.save(); g.beginPath(); g.arc(cx, base - h * 0.58, w * 0.52, Math.PI, 0); g.clip();
+      ['#FFE08A','#8FC0D8','#8FBF92','#EFA6B8','#AD9ED4'].forEach((c, i) => {
+        g.fillStyle = c;
+        g.beginPath(); g.arc(cx - w * 0.3 + (i % 3) * w * 0.3, base - h * 0.62 + Math.floor(i / 3) * w * 0.26,
+                             w * 0.14, 0, 7); g.fill();
+      });
+      g.restore();
+      g.beginPath(); g.arc(cx, base - h * 0.58, w * 0.52, Math.PI, 0); g.stroke();
+      g.fillStyle = '#FFF8F0';                                             /* 손잡이 */
+      g.beginPath(); g.arc(cx, base - h * 0.3, w * 0.12, 0, 7); g.fill(); g.stroke();
+      box(cx - w * 0.26, base - h * 0.16, w * 0.52, h * 0.13, s * 0.04, '#F3EAE1');   /* 배출구 */
+      label('뽑기', base - h - s * 0.1);
+      break;
+    }
+    case 'board': {                                   /* 알바 게시판 */
+      shadow(cx, base, s * 0.55);
+      ink(); g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.6;
+      g.beginPath(); g.moveTo(cx - s * 0.3, base); g.lineTo(cx - s * 0.3, base - s * 0.7);
+      g.moveTo(cx + s * 0.3, base); g.lineTo(cx + s * 0.3, base - s * 0.7); g.stroke();
+      ink();
+      box(cx - s * 0.72, base - s * 1.4, s * 1.44, s * 0.78, s * 0.08, '#E3C79C');
+      ['#FFF8F0','#FDF2DE','#FFFFFF'].forEach((c, i) => {
+        g.fillStyle = c;
+        const px = cx - s * 0.52 + i * s * 0.44;
+        rrect(px, base - s * 1.3, s * 0.36, s * 0.42, s * 0.03); g.fill(); g.stroke();
+        g.strokeStyle = '#C2A88A'; g.lineWidth = LW() * 0.5;
+        for(let l = 0; l < 3; l++){
+          g.beginPath(); g.moveTo(px + s * 0.06, base - s * 1.22 + l * s * 0.1);
+          g.lineTo(px + s * 0.3, base - s * 1.22 + l * s * 0.1); g.stroke();
+        }
+        ink();
+      });
+      label('알바', base - s * 1.55);
       break;
     }
   }

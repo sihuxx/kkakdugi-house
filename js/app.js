@@ -11,7 +11,7 @@ function showScreen(el){
   [$('introScreen'), $('resultScreen'), $('runResult'), $('pauseScreen')]
     .forEach(s => { if(s) s.hidden = s !== el; });
   $('pauseBtn').hidden = !(mode === 'play');
-  $('careBar').hidden = !(mode === 'home' && !el && !mini && !deco);
+  $('careBar').hidden = !(mode === 'home' && place === 'room' && !el && !mini && !deco);
 }
 
 /* ===== 위쪽 상태바 ===== */
@@ -35,12 +35,31 @@ function refreshBar(){
 }
 
 function goHome(){
+  const wasOut = (place === 'yard');
+  place = 'room';
   mode = 'home'; deco = false; mini = null;
   showScreen(null);
   $('topbar').hidden = false; $('runPad').hidden = true;
   $('skipBtn').hidden = true; $('tapHint').hidden = true;
-  $('decoBtn').classList.remove('on');
+  $('decoBtn').classList.remove('on'); $('decoBtn').disabled = false;
+  if(wasOut){ home.x = LAY.door.x; home.y = 0.22; home.target = null; home.vx = home.vy = 0; }
   checkDaily(); seedDust(); relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
+}
+
+/* ===== 정원으로 나가기 ===== */
+function goYard(){
+  place = 'yard';
+  mode = 'home'; deco = false; mini = null;
+  closeModal(); showScreen(null);
+  $('topbar').hidden = false; $('runPad').hidden = true;
+  $('careBar').hidden = true;
+  $('decoBtn').classList.remove('on'); $('decoBtn').disabled = true;
+  $('dailyPanel').hidden = true;
+  home.x = 0.12; home.y = 0.28; home.target = null; home.autoAct = null;
+  home.vx = home.vy = 0; home.act = null; home.sweep = false;
+  home.ball.home = true; home.aim = null;
+  toast('정원으로 나왔어요', '가게 · 뽑기 · 알바 게시판이 있어요');
+  refreshBar();
 }
 
 /* ===== 배달 알바 ===== */
@@ -241,9 +260,10 @@ $('setBtn').onclick  = () => openModal('settings');
 $('outBtn').onclick  = () => openModal('job');
 $('dailyBtn').onclick = () => { $('dailyPanel').hidden = !$('dailyPanel').hidden; paintDaily(); };
 $('decoBtn').onclick = () => {
+  if(place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
   deco = !deco; mini = null;
   $('decoBtn').classList.toggle('on', deco);
-  $('careBar').hidden = deco || mode !== 'home';
+  $('careBar').hidden = deco || mode !== 'home' || place !== 'room';
   toast(deco ? '꾸미기 모드' : '꾸미기 끝', deco ? '가구를 끌어서 옮기세요' : '자리를 저장했어요');
   if(!deco) save();
 };

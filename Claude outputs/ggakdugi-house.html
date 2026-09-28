@@ -1150,8 +1150,15 @@ const ZONE_NAME = { kitchen:'주방', living:'거실', bed:'침실' };
 /* 방에 늘 있는 것 */
 const PLACES = [
   { id:'wardrobe', name:'옷장',      zone:'bed',    row:1, act:'wardrobe' },
-  { id:'gacha',    name:'뽑기 기계', zone:'kitchen', row:1, act:'gacha' },
-  { id:'door',     name:'현관',      zone:'living', act:'job', wall:true }
+  { id:'door',     name:'현관',      zone:'living', act:'out', wall:true }
+];
+
+/* ===== 정원 (집 밖) — 자리는 고정 ===== */
+const YARD = [
+  { id:'house', name:'우리 집',     x:0.12, y:0.03, act:'in' },
+  { id:'shop',  name:'가게',        x:0.40, y:0.02, act:'shop' },
+  { id:'gmach', name:'뽑기 기계',   x:0.62, y:0.07, act:'gacha' },
+  { id:'board', name:'알바 게시판', x:0.84, y:0.05, act:'job' }
 ];
 
 /* ===== 먹이 ===== */
@@ -1243,12 +1250,11 @@ const SKILLS = {
   glide:  { name:'둥실둥실',   desc:'4초 동안 천천히 떨어져요',        dur:4.0,  color:'#8FC0D8' },
   magnet: { name:'동전 자석',  desc:'5초 동안 동전이 따라와요',        dur:5.0,  color:'#8FBF92' },
   hop:    { name:'폭신 점프',  desc:'6초 동안 3단 점프가 돼요',        dur:6.0,  color:'#D9C4A0' },
-  slow:   { name:'느긋느긋',   desc:'5초 동안 천천히 · 동전 2배',      dur:5.0,  color:'#AD9ED4' },
-  shield: { name:'꽉 버티기',  desc:'한 번 부딪혀도 안 아픈 보호막',    dur:0,    color:'#F3EAE1' }
+  slow:   { name:'느긋느긋',   desc:'5초 동안 천천히 · 동전 2배',      dur:5.0,  color:'#AD9ED4' }
 };
 const CHAR_SKILL = {
-  wool:'hop', proud:'shield', baby:'magnet', belly:'shield', school:'magnet',
-  holdbaby:'hop', car:'dash', snail:'slow', rabbit:'hop', cat:'magnet', bear:'shield',
+  wool:'hop', proud:'hop', baby:'magnet', belly:'glide', school:'magnet',
+  holdbaby:'hop', car:'dash', snail:'slow', rabbit:'hop', cat:'magnet', bear:'slow',
   icecream:'magnet', clown:'dash', cowboy:'dash', fairy:'glide', huggy:'dash', killer:'dash'
 };
 const skillOf = c => SKILLS[CHAR_SKILL[c.id] || 'magnet'];
@@ -2723,12 +2729,15 @@ function playCutscene(got){
   lastPull = got;
   const top = got.some(r => r.rank === 'SR') ? 'SR' : got.some(r => r.rank === 'R') ? 'R' : 'N';
   modal.hidden = true; modalOpen = null;
-  $('topbar').hidden = true; bgmStop();
+  $('topbar').hidden = true; $('careBar').hidden = true;
+  $('dailyPanel').hidden = true; $('miniClose').hidden = true; bgmStop();
   $('skipBtn').hidden = false; $('tapHint').hidden = false;
   mode = 'cut';
   startCut(top, got, () => {
     $('skipBtn').hidden = true; $('tapHint').hidden = true;
-    mode = 'home'; $('topbar').hidden = false; refreshBar(); bgmStart();
+    mode = 'home'; $('topbar').hidden = false;
+    $('careBar').hidden = (place !== 'room');
+    refreshBar(); bgmStart();
     openModal('gacha');
   });
 }
@@ -3043,12 +3052,15 @@ function drawCut(dt){
    집 — 방 그리기와 가구 자리
    =============================================================== */
 
-/* 방 좌표 */
-const roomW   = () => W * HOUSE().wide;
+/* 어디에 있나 — 'room'(집 안) · 'yard'(정원) */
+let place = 'room';
+
+/* 방 좌표 — 정원은 화면 전체를 쓴다 */
+const roomW   = () => W * (place === 'yard' ? 1 : HOUSE().wide);
 const roomL   = () => (W - roomW()) / 2;
 const roomR   = () => roomL() + roomW();
 const rx      = t => roomL() + roomW() * t;
-const wallBot = () => H * HOUSE().tall;
+const wallBot = () => H * (place === 'yard' ? 0.44 : HOUSE().tall);
 const walkTop = () => wallBot() + (H - wallBot()) * 0.06;     // 벽 바로 앞까지 갈 수 있다
 const walkBot = () => H - (H - wallBot()) * 0.06;
 const yAt     = t => walkTop() + t * (walkBot() - walkTop());
@@ -3593,6 +3605,184 @@ function drawFurn(id, cx, base, s, glow){
   g.restore();
 }
 
+/* ===============================================================
+   정원 — 집 밖. 가게 · 뽑기 기계 · 알바 게시판이 있다
+   =============================================================== */
+const yardDeco = [];
+function seedYard(){
+  yardDeco.length = 0;
+  for(let i = 0; i < 7; i++)
+    yardDeco.push({ x: (i * 0.147 + 0.05) % 1, y: 0.1 + ((i * 0.31) % 0.75),
+                    k: i % 3 === 0 ? 'flower' : 'tuft', c: ['#EFA6B8','#FFE08A','#FFFFFF'][i % 3] });
+}
+seedYard();
+
+function drawYard(){
+  const wb = wallBot();
+  /* 하늘 */
+  const sk = g.createLinearGradient(0, 0, 0, wb);
+  sk.addColorStop(0, '#CFEAF7'); sk.addColorStop(1, '#EAF6FB');
+  g.fillStyle = sk; g.fillRect(0, 0, W, wb);
+  /* 구름 */
+  g.save(); g.fillStyle = '#FFFFFF'; g.globalAlpha = .9;
+  [[0.14, 0.22, 1], [0.52, 0.14, 0.75], [0.82, 0.26, 0.9]].forEach(([cx, cy, sc]) => {
+    const x = W * cx, y = wb * cy, r = wb * 0.11 * sc;
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.arc(x + r * 0.9, y + r * 0.2, r * 0.75, 0, 7);
+    g.arc(x - r * 0.9, y + r * 0.25, r * 0.65, 0, 7); g.fill();
+  });
+  g.restore();
+  /* 먼 언덕 */
+  g.fillStyle = '#C3E3C0';
+  g.beginPath(); g.moveTo(0, wb);
+  g.quadraticCurveTo(W * 0.22, wb - H * 0.12, W * 0.46, wb);
+  g.quadraticCurveTo(W * 0.72, wb - H * 0.16, W, wb);
+  g.closePath(); g.fill();
+  /* 잔디 */
+  const gr = g.createLinearGradient(0, wb, 0, H);
+  gr.addColorStop(0, '#A9D9A2'); gr.addColorStop(1, '#8CC486');
+  g.fillStyle = gr; g.fillRect(0, wb, W, H - wb);
+  /* 울타리 */
+  const fy = wb, fh = (H - wb) * 0.12;
+  g.save(); ink(LW() * 0.8); g.fillStyle = '#E3D2B4';
+  for(let x = 0; x < W; x += W * 0.045){
+    rrect(x, fy - fh, W * 0.018, fh, W * 0.008); g.fill(); g.stroke();
+  }
+  g.beginPath(); g.moveTo(0, fy - fh * 0.58); g.lineTo(W, fy - fh * 0.58); g.stroke();
+  g.restore();
+  /* 흙길 */
+  g.save(); g.fillStyle = '#E4D2AE';
+  g.beginPath();
+  g.moveTo(rx(0.09), wb); g.lineTo(rx(0.17), wb);
+  g.lineTo(rx(0.62), H); g.lineTo(rx(0.30), H);
+  g.closePath(); g.fill();
+  g.globalAlpha = .35; g.fillStyle = '#CDB78F';
+  for(let i = 1; i < 6; i++){
+    const t = i / 6, y = wb + (H - wb) * t;
+    g.beginPath(); g.ellipse(rx(0.13 + t * 0.33), y, W * 0.02, (H - wb) * 0.02, 0, 0, 7); g.fill();
+  }
+  g.restore();
+  /* 풀·꽃 */
+  yardDeco.forEach(d => {
+    const x = rx(d.x), y = yAt(d.y), s = 9 * uiK() * depthAt(y);
+    g.save(); ink(LW() * 0.6);
+    if(d.k === 'flower'){
+      g.strokeStyle = '#6FA86B';
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - s * 1.4); g.stroke();
+      g.fillStyle = d.c; ink(LW() * 0.6);
+      for(let i = 0; i < 5; i++){
+        const a = i / 5 * 6.283;
+        g.beginPath(); g.arc(x + Math.cos(a) * s * 0.42, y - s * 1.4 + Math.sin(a) * s * 0.42, s * 0.34, 0, 7);
+        g.fill(); g.stroke();
+      }
+      g.fillStyle = '#FFE08A'; g.beginPath(); g.arc(x, y - s * 1.4, s * 0.26, 0, 7); g.fill(); g.stroke();
+    }else{
+      g.strokeStyle = '#6FA86B'; g.lineWidth = LW() * 0.8;
+      [-0.5, 0, 0.5].forEach(o => {
+        g.beginPath(); g.moveTo(x + o * s, y);
+        g.quadraticCurveTo(x + o * s * 2, y - s * 0.9, x + o * s * 3.2, y - s * 1.3); g.stroke();
+      });
+    }
+    g.restore();
+  });
+}
+
+/* 정원에 있는 것 하나 */
+function drawYardThing(id, cx, base, s, glow){
+  g.save();
+  if(glow){
+    g.save(); g.globalAlpha = 0.28 + Math.sin(home.t * 5) * 0.16;
+    g.fillStyle = '#FFE08A';
+    g.beginPath(); g.ellipse(cx, base - s * 0.5, s * 1.2, s * 0.95, 0, 0, 7); g.fill(); g.restore();
+  }
+  ink();
+  const label = (txt, y, col) => {
+    g.fillStyle = col || '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '700 ' + (14 * uiK()) + 'px Gaegu, sans-serif';
+    g.fillText(txt, cx, y);
+  };
+  switch(id){
+    case 'house': {                                   /* 우리 집 */
+      shadow(cx, base, s * 0.9);
+      const w = s * 1.7, h = s * 1.35;
+      box(cx - w / 2, base - h, w, h, s * 0.1, '#FFF3E2');
+      g.fillStyle = '#D98E72';                        /* 지붕 */
+      g.beginPath(); g.moveTo(cx - w * 0.62, base - h);
+      g.lineTo(cx, base - h - s * 0.62); g.lineTo(cx + w * 0.62, base - h);
+      g.closePath(); g.fill(); g.stroke();
+      box(cx - s * 0.28, base - s * 0.86, s * 0.56, s * 0.86, s * 0.09, '#C98A5E');   /* 문 */
+      g.fillStyle = '#FFE08A';
+      g.beginPath(); g.arc(cx + s * 0.16, base - s * 0.44, s * 0.05, 0, 7); g.fill(); g.stroke();
+      box(cx + s * 0.44, base - h + s * 0.26, s * 0.38, s * 0.32, s * 0.06, '#CDEBFA'); /* 창 */
+      label('우리 집', base - h - s * 0.82);
+      break;
+    }
+    case 'shop': {                                    /* 가게 */
+      shadow(cx, base, s * 1.0);
+      const w = s * 1.9, h = s * 1.4;
+      box(cx - w / 2, base - h, w, h, s * 0.1, '#FFFBF0');
+      /* 줄무늬 차양 */
+      const ay = base - h + s * 0.34, ah = s * 0.32;
+      for(let i = 0; i < 6; i++){
+        g.fillStyle = i % 2 ? '#FFFBF0' : '#EFA6B8';
+        const x0 = cx - w * 0.56 + (w * 1.12 / 6) * i;
+        g.beginPath(); g.moveTo(x0, ay); g.lineTo(x0 + w * 1.12 / 6, ay);
+        g.lineTo(x0 + w * 1.12 / 6, ay + ah); g.lineTo(x0, ay + ah); g.closePath();
+        g.fill(); g.stroke();
+      }
+      box(cx - w * 0.38, ay + ah + s * 0.12, w * 0.76, s * 0.6, s * 0.07, '#DFF0F8');   /* 진열창 */
+      g.fillStyle = '#E7B075';
+      [-0.2, 0.05, 0.28].forEach((o, i) => {
+        g.beginPath(); g.arc(cx + o * w, ay + ah + s * 0.42, s * 0.11, 0, 7); g.fill(); g.stroke(); });
+      /* 간판 */
+      box(cx - s * 0.62, base - h - s * 0.46, s * 1.24, s * 0.42, s * 0.1, '#FFE08A');
+      label('상점', base - h - s * 0.25);
+      break;
+    }
+    case 'gmach': {                                   /* 뽑기 기계 */
+      shadow(cx, base, s * 0.5);
+      const w = s * 0.86, h = s * 1.25;
+      box(cx - w / 2, base - h * 0.52, w, h * 0.52, s * 0.08, '#EFA6B8');   /* 아래 통 */
+      g.fillStyle = '#CDEBFA';                                             /* 유리 돔 */
+      g.beginPath(); g.arc(cx, base - h * 0.58, w * 0.52, Math.PI, 0); g.fill(); g.stroke();
+      g.save(); g.beginPath(); g.arc(cx, base - h * 0.58, w * 0.52, Math.PI, 0); g.clip();
+      ['#FFE08A','#8FC0D8','#8FBF92','#EFA6B8','#AD9ED4'].forEach((c, i) => {
+        g.fillStyle = c;
+        g.beginPath(); g.arc(cx - w * 0.3 + (i % 3) * w * 0.3, base - h * 0.62 + Math.floor(i / 3) * w * 0.26,
+                             w * 0.14, 0, 7); g.fill();
+      });
+      g.restore();
+      g.beginPath(); g.arc(cx, base - h * 0.58, w * 0.52, Math.PI, 0); g.stroke();
+      g.fillStyle = '#FFF8F0';                                             /* 손잡이 */
+      g.beginPath(); g.arc(cx, base - h * 0.3, w * 0.12, 0, 7); g.fill(); g.stroke();
+      box(cx - w * 0.26, base - h * 0.16, w * 0.52, h * 0.13, s * 0.04, '#F3EAE1');   /* 배출구 */
+      label('뽑기', base - h - s * 0.1);
+      break;
+    }
+    case 'board': {                                   /* 알바 게시판 */
+      shadow(cx, base, s * 0.55);
+      ink(); g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.6;
+      g.beginPath(); g.moveTo(cx - s * 0.3, base); g.lineTo(cx - s * 0.3, base - s * 0.7);
+      g.moveTo(cx + s * 0.3, base); g.lineTo(cx + s * 0.3, base - s * 0.7); g.stroke();
+      ink();
+      box(cx - s * 0.72, base - s * 1.4, s * 1.44, s * 0.78, s * 0.08, '#E3C79C');
+      ['#FFF8F0','#FDF2DE','#FFFFFF'].forEach((c, i) => {
+        g.fillStyle = c;
+        const px = cx - s * 0.52 + i * s * 0.44;
+        rrect(px, base - s * 1.3, s * 0.36, s * 0.42, s * 0.03); g.fill(); g.stroke();
+        g.strokeStyle = '#C2A88A'; g.lineWidth = LW() * 0.5;
+        for(let l = 0; l < 3; l++){
+          g.beginPath(); g.moveTo(px + s * 0.06, base - s * 1.22 + l * s * 0.1);
+          g.lineTo(px + s * 0.3, base - s * 1.22 + l * s * 0.1); g.stroke();
+        }
+        ink();
+      });
+      label('알바', base - s * 1.55);
+      break;
+    }
+  }
+  g.restore();
+}
+
 "use strict";
 /* 두기 — 행동과 돌봄 — 꺅두기 하우스 */
 
@@ -3625,6 +3815,7 @@ seedDust();
 
 /* ===== 다가갈 수 있는 것 ===== */
 function homeSpots(){
+  if(place === 'yard') return YARD.map(o => ({ ...o }));
   const list = [];
   for(const o of LAY.floor){
     const f = FURN(o.id);
@@ -3632,7 +3823,7 @@ function homeSpots(){
     const p = PLACES.find(q => q.id === o.id);
     if(p && p.act) list.push({ id:o.id, name:p.name, x:o.x, y:o.y, act:p.act });
   }
-  list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'job' });
+  list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' });
   return list;
 }
 const furnPos = id => { const o = spotOf(id); return o ? { x:o.x, y:o.y } : { x:0.5, y:0.5 }; };
@@ -3670,6 +3861,7 @@ function canCare(kind){
 /* 버튼이나 가구에서 시작 */
 function doCare(kind){
   if(deco) return false;
+  if(place !== 'room'){ toast('집 안에서만 할 수 있어요', ''); sfxNo(); return false; }
   const ok = canCare(kind);
   if(ok !== true){ toast(ok.no, ''); sfxNo(); return false; }
   if(kind === 'feed' || kind === 'wash'){ openMini(kind); return true; }
@@ -3774,7 +3966,7 @@ function closeMini(done){
     }
   }
   mini = null;
-  $('careBar').hidden = !(mode === 'home');
+  $('careBar').hidden = !(mode === 'home' && place === 'room');
   save(); refreshBar(); paintCareBar();
 }
 function feedPick(f){
@@ -3874,13 +4066,13 @@ function updateHome(dt){
   }
 
   /* 가까운 것 — 문 앞에 서면 문이 먼저 */
-  let near = null, bd = 0.075;
+  let near = null, bd = (place === 'yard' ? 0.17 : 0.075);
   for(const s of homeSpots()){
     const d = Math.hypot((s.x - home.x) * 1.4, ((s.y || 0) - home.y) * 0.8);
     if(d < bd){ bd = d; near = s; }
   }
-  if(home.y < 0.12 && Math.abs(home.x - LAY.door.x) < 0.10)
-    near = { id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'job' };
+  if(place === 'room' && home.y < 0.12 && Math.abs(home.x - LAY.door.x) < 0.10)
+    near = { id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' };
   home.near = near;
 
   for(let i = home.parts.length - 1; i >= 0; i--){
@@ -3891,11 +4083,20 @@ function updateHome(dt){
 }
 
 /* 혼자 하는 행동 */
+const YARD_SAY = ['바깥 공기 좋다', '가게 구경할까?', '뽑기 한 번…', '오늘도 알바?', '꺅!'];
 const IDLE_SAY = ['심심해~', '오늘 뭐 하지?', '배고픈가?', '낮잠 잘까', '꺅', '집이 좋아',
                   '알바 가야 하나', '두기두기'];
 function pickIdle(){
   home.idle = 0;
   const d = S.dugi;
+  if(place === 'yard'){
+    home.target = { x:0.08 + Math.random() * 0.84, y:0.25 + Math.random() * 0.68 };
+    home.idleGoal = 'walk';
+    if(Math.random() < 0.45){
+      home.say = YARD_SAY[Math.floor(Math.random() * YARD_SAY.length)]; home.sayT = 2.2;
+    }
+    return;
+  }
   /* 조르는 게 있으면 그 앞에서 기다린다 */
   if(S.req){
     const f = FURNITURE.find(x => x.act === S.req.kind);
@@ -3929,7 +4130,10 @@ function act(spot){
   if(!spot) return;
   if(spot.act === 'wardrobe') return openModal('wardrobe');
   if(spot.act === 'gacha')    return openModal('gacha');
+  if(spot.act === 'shop')     return openModal('shop');
   if(spot.act === 'job')      return openModal('job');
+  if(spot.act === 'out')      return goYard();
+  if(spot.act === 'in')       return goHome();
   doCare(spot.act);
 }
 
@@ -3970,14 +4174,16 @@ function homeDown(px, py){
   }
   if(onDugi(px, py)){ home.pet.dist = 0; home.pet.on = true; petOnce(); return; }
   /* 가까운 가구를 누르면 걸어가서 실행 */
-  let spot = null, bd = 0.09;
+  let spot = null, bd = (place === 'yard' ? 0.2 : 0.09);
   for(const s of homeSpots()){
     const d = Math.hypot((s.x - r.x) * 1.3, ((s.y || 0) - r.y) * 0.7);
     if(d < bd){ bd = d; spot = s; }
   }
   if(spot){
-    home.target = { x:spot.x + (spot.act === 'job' ? 0 : 0.04),
-                    y:Math.min(0.95, (spot.y || 0.05) + 0.16) };
+    home.target = place === 'yard'
+      ? { x:spot.x, y:Math.min(0.95, (spot.y || 0.05) + 0.13) }
+      : { x:spot.x + (spot.act === 'job' ? 0 : 0.04),
+          y:Math.min(0.95, (spot.y || 0.05) + 0.16) };
     home.autoAct = spot;
   }else{
     home.target = { x:Math.max(0.03, Math.min(0.97, r.x)),
@@ -4180,8 +4386,9 @@ function drawPrompt(){
   const n = home.near;
   if(!n || home.act || deco || mini) return;
   const k = uiK();
-  const label = n.act === 'wardrobe' ? '옷장 열기' : n.act === 'gacha' ? '뽑기'
-              : n.act === 'job' ? '알바하러 가기' : CARE[n.act].name;
+  const LABEL = { wardrobe:'옷장 열기', gacha:'뽑기', shop:'상점 들어가기',
+                  job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기' };
+  const label = LABEL[n.act] || CARE[n.act].name;
   g.save();
   g.font = '700 ' + (19 * k) + 'px Gaegu, sans-serif';
   const w = g.measureText('E  ' + label).width + 30 * k, h = 30 * k;
@@ -4198,8 +4405,27 @@ function drawPrompt(){
   g.restore();
 }
 
+/* 정원 전체 */
+function drawYardScene(){
+  drawYard();
+  const wb = wallBot();
+  const fs = Math.min(roomW() * 0.115, (H - wb) * 0.52);
+  const near = id => home.near && home.near.id === id;
+  const items = YARD.slice().sort((a, b) => a.y - b.y);
+  let drew = false;
+  for(const o of items){
+    if(!drew && o.y > home.y){ drawDugi(); drew = true; }
+    const by = yAt(o.y);
+    drawYardThing(o.id, rx(o.x), by, fs * depthAt(by), near(o.id));
+  }
+  if(!drew) drawDugi();
+  drawParts();
+  drawPrompt();
+}
+
 /* 방 전체 */
 function drawHome(dt){
+  if(place === 'yard'){ drawYardScene(); return; }
   drawRoom();
   const wb = wallBot();
   const fs = Math.min(roomW() * 0.125, (H - wb) * 0.48);
@@ -5093,7 +5319,7 @@ function runBgmStop(){ if(bgmTimer){ clearInterval(bgmTimer); bgmTimer = null; }
    =============================================================== */
 let state = 'title';                // title · play · pause · over
 let camX = 0, camY = 0, speed = 0, dist = 0, score = 0, jellyN = 0, combo = 0, maxCombo = 0;
-let energy = 0, skill = null, skillT = 0, shield = 0, shake = 0, tick = 0, cleared = false;
+let energy = 0, skill = null, skillT = 0, shake = 0, tick = 0, cleared = false;
 const fx = [];
 const player = { x:0, y:0, vy:0, onGround:true, jumps:0, sliding:false, slideT:0, hp:3, inv:0, dead:false, coyote:0, buf:0 };
 
@@ -5105,11 +5331,10 @@ function reset(){
   buildMap();
   camX = 0; camY = 0; speed = CO.v0; dist = 0; score = 0; jellyN = 0; combo = 0; maxCombo = 0;
   energy = 0; skill = null; skillT = 0; shake = 0; tick = 0; cleared = false;
-  shield = skillIdOf(me) === 'shield' ? 1 : 0;   // 보호막 두기는 하나 들고 시작
   speed = CO.v0;
   fx.length = 0;
   Object.assign(player, { x:120, y:0, vy:0, onGround:true, jumps:0, sliding:false, slideT:0,
-                          hp: CO.hp + (skillIdOf(me)==='shield' ? 1 : 0), inv:0, dead:false, coyote:0, buf:0 });
+                          hp: CO.hp, inv:0, dead:false, coyote:0, buf:0 });
 }
 
 /* ===== 입력 ===== */
@@ -5135,8 +5360,7 @@ function setSlide(on){
 function useSkill(){
   if(state !== 'play' || energy < 100) return;
   const id = skillIdOf(me); energy = 0; SFX.skill();
-  if(id === 'shield'){ shield = Math.min(2, shield + 1); toastFx('보호막!'); }
-  else { skill = id; skillT = SKILLS[id].dur; toastFx(SKILLS[id].name); }
+  skill = id; skillT = SKILLS[id].dur; toastFx(SKILLS[id].name);
   for(let i=0;i<18;i++) fx.push({ kind:'star', x:player.x, y:player.y+40,
     vx:(Math.random()-.5)*420, vy:Math.random()*420, life:0.7, t:0, c:skillOf(me).color });
 }
@@ -5259,8 +5483,6 @@ function update(dt){
 const hits = [];
 function hurt(e){
   hits.push({ x:Math.round(player.x), kind:e.kind, sliding:player.sliding, y:Math.round(player.y) });
-  if(shield > 0){ shield--; player.inv = 1.3; e.gone = true; SFX.hit(); shake = 0.5;
-                  pop(e.x, e.y + e.h/2, '#AD9ED4'); toastFx('보호막이 막았다!'); return; }
   player.hp--; player.inv = 1.5; combo = 0; e.gone = true;
   SFX.hit(); shake = 1; pop(e.x, e.y + e.h/2, '#C9A9A9');
   speed = Math.max(V0, speed - 60);
@@ -5522,12 +5744,6 @@ function drawPlayer(){
          g.beginPath(); g.ellipse(0, -baseH*0.4, baseH*0.3, baseH*0.36, 0, 0, 7); g.fill(); g.stroke(); }
   g.restore();
 
-  /* 보호막 */
-  if(shield > 0){
-    g.save(); g.globalAlpha = 0.5 + Math.sin(tick*5)*0.18;
-    g.strokeStyle = '#AD9ED4'; g.lineWidth = LW();
-    g.beginPath(); g.ellipse(x, yb - ph*SC*0.5, PW*0.9*SC, ph*0.75*SC, 0, 0, 7); g.stroke(); g.restore();
-  }
   /* 스킬 남은 시간 */
   if(skillT > 0){
     const sk = SKILLS[skill];
@@ -5902,7 +6118,7 @@ function showScreen(el){
   [$('introScreen'), $('resultScreen'), $('runResult'), $('pauseScreen')]
     .forEach(s => { if(s) s.hidden = s !== el; });
   $('pauseBtn').hidden = !(mode === 'play');
-  $('careBar').hidden = !(mode === 'home' && !el && !mini && !deco);
+  $('careBar').hidden = !(mode === 'home' && place === 'room' && !el && !mini && !deco);
 }
 
 /* ===== 위쪽 상태바 ===== */
@@ -5926,12 +6142,31 @@ function refreshBar(){
 }
 
 function goHome(){
+  const wasOut = (place === 'yard');
+  place = 'room';
   mode = 'home'; deco = false; mini = null;
   showScreen(null);
   $('topbar').hidden = false; $('runPad').hidden = true;
   $('skipBtn').hidden = true; $('tapHint').hidden = true;
-  $('decoBtn').classList.remove('on');
+  $('decoBtn').classList.remove('on'); $('decoBtn').disabled = false;
+  if(wasOut){ home.x = LAY.door.x; home.y = 0.22; home.target = null; home.vx = home.vy = 0; }
   checkDaily(); seedDust(); relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
+}
+
+/* ===== 정원으로 나가기 ===== */
+function goYard(){
+  place = 'yard';
+  mode = 'home'; deco = false; mini = null;
+  closeModal(); showScreen(null);
+  $('topbar').hidden = false; $('runPad').hidden = true;
+  $('careBar').hidden = true;
+  $('decoBtn').classList.remove('on'); $('decoBtn').disabled = true;
+  $('dailyPanel').hidden = true;
+  home.x = 0.12; home.y = 0.28; home.target = null; home.autoAct = null;
+  home.vx = home.vy = 0; home.act = null; home.sweep = false;
+  home.ball.home = true; home.aim = null;
+  toast('정원으로 나왔어요', '가게 · 뽑기 · 알바 게시판이 있어요');
+  refreshBar();
 }
 
 /* ===== 배달 알바 ===== */
@@ -6132,9 +6367,10 @@ $('setBtn').onclick  = () => openModal('settings');
 $('outBtn').onclick  = () => openModal('job');
 $('dailyBtn').onclick = () => { $('dailyPanel').hidden = !$('dailyPanel').hidden; paintDaily(); };
 $('decoBtn').onclick = () => {
+  if(place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
   deco = !deco; mini = null;
   $('decoBtn').classList.toggle('on', deco);
-  $('careBar').hidden = deco || mode !== 'home';
+  $('careBar').hidden = deco || mode !== 'home' || place !== 'room';
   toast(deco ? '꾸미기 모드' : '꾸미기 끝', deco ? '가구를 끌어서 옮기세요' : '자리를 저장했어요');
   if(!deco) save();
 };

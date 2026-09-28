@@ -688,12 +688,15 @@ function playCutscene(got){
   lastPull = got;
   const top = got.some(r => r.rank === 'SR') ? 'SR' : got.some(r => r.rank === 'R') ? 'R' : 'N';
   modal.hidden = true; modalOpen = null;
-  $('topbar').hidden = true; bgmStop();
+  $('topbar').hidden = true; $('careBar').hidden = true;
+  $('dailyPanel').hidden = true; $('miniClose').hidden = true; bgmStop();
   $('skipBtn').hidden = false; $('tapHint').hidden = false;
   mode = 'cut';
   startCut(top, got, () => {
     $('skipBtn').hidden = true; $('tapHint').hidden = true;
-    mode = 'home'; $('topbar').hidden = false; refreshBar(); bgmStart();
+    mode = 'home'; $('topbar').hidden = false;
+    $('careBar').hidden = (place !== 'room');
+    refreshBar(); bgmStart();
     openModal('gacha');
   });
 }

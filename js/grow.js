@@ -128,8 +128,15 @@ const ZONE_NAME = { kitchen:'주방', living:'거실', bed:'침실' };
 /* 방에 늘 있는 것 */
 const PLACES = [
   { id:'wardrobe', name:'옷장',      zone:'bed',    row:1, act:'wardrobe' },
-  { id:'gacha',    name:'뽑기 기계', zone:'kitchen', row:1, act:'gacha' },
-  { id:'door',     name:'현관',      zone:'living', act:'job', wall:true }
+  { id:'door',     name:'현관',      zone:'living', act:'out', wall:true }
+];
+
+/* ===== 정원 (집 밖) — 자리는 고정 ===== */
+const YARD = [
+  { id:'house', name:'우리 집',     x:0.12, y:0.03, act:'in' },
+  { id:'shop',  name:'가게',        x:0.40, y:0.02, act:'shop' },
+  { id:'gmach', name:'뽑기 기계',   x:0.62, y:0.07, act:'gacha' },
+  { id:'board', name:'알바 게시판', x:0.84, y:0.05, act:'job' }
 ];
 
 /* ===== 먹이 ===== */
@@ -221,12 +228,11 @@ const SKILLS = {
   glide:  { name:'둥실둥실',   desc:'4초 동안 천천히 떨어져요',        dur:4.0,  color:'#8FC0D8' },
   magnet: { name:'동전 자석',  desc:'5초 동안 동전이 따라와요',        dur:5.0,  color:'#8FBF92' },
   hop:    { name:'폭신 점프',  desc:'6초 동안 3단 점프가 돼요',        dur:6.0,  color:'#D9C4A0' },
-  slow:   { name:'느긋느긋',   desc:'5초 동안 천천히 · 동전 2배',      dur:5.0,  color:'#AD9ED4' },
-  shield: { name:'꽉 버티기',  desc:'한 번 부딪혀도 안 아픈 보호막',    dur:0,    color:'#F3EAE1' }
+  slow:   { name:'느긋느긋',   desc:'5초 동안 천천히 · 동전 2배',      dur:5.0,  color:'#AD9ED4' }
 };
 const CHAR_SKILL = {
-  wool:'hop', proud:'shield', baby:'magnet', belly:'shield', school:'magnet',
-  holdbaby:'hop', car:'dash', snail:'slow', rabbit:'hop', cat:'magnet', bear:'shield',
+  wool:'hop', proud:'hop', baby:'magnet', belly:'glide', school:'magnet',
+  holdbaby:'hop', car:'dash', snail:'slow', rabbit:'hop', cat:'magnet', bear:'slow',
   icecream:'magnet', clown:'dash', cowboy:'dash', fairy:'glide', huggy:'dash', killer:'dash'
 };
 const skillOf = c => SKILLS[CHAR_SKILL[c.id] || 'magnet'];
