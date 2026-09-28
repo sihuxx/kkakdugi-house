@@ -922,3 +922,23 @@ function drawGuest(){
   g.fillText(txt, cx, by + th / 2 + 1);
   g.restore();
 }
+
+
+/* 자정을 넘기면 날씨·손님·할 일이 새로 정해진다 */
+let watchKey = 0, watchPart = '';
+function dayWatch(){
+  const k = dayKey(), pt = dayPart();
+  if(k !== watchKey){
+    watchKey = k;
+    if(typeof rollGuest === 'function') rollGuest();
+    if(typeof payUpkeep === 'function'){
+      const u = payUpkeep();
+      if(u) toast('관리비 ' + u.cost + ' 클로버', u.short ? '모자라서 ' + u.paid + '만 냈어요' : HOUSE().name);
+    }
+    if(typeof checkDaily === 'function') checkDaily();
+    seedWeather();
+    if(typeof paintDaily === 'function') paintDaily();
+    if(typeof refreshBar === 'function') refreshBar();
+  }
+  if(pt !== watchPart){ watchPart = pt; if(typeof refreshBar === 'function') refreshBar(); }
+}

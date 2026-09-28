@@ -237,7 +237,24 @@ function miniScrub(px, py, moved){
 /* ===============================================================
    진행
    =============================================================== */
+/* ===== 시간이 흐른다 — 로비에 있는 동안에도 ===== */
+const DRAIN = { full:-4.6, clean:-3.2, fun:-3.6, energy:-1.8 };   /* 시간당 */
+let drainAcc = 0;
+function tickLife(dt){
+  if(mini || home.act) dt *= 0.5;                 /* 뭔가 하는 중이면 천천히 */
+  drainAcc += dt;
+  if(drainAcc < 5) return;                        /* 5초에 한 번만 계산 */
+  const hrs = drainAcc / 3600; drainAcc = 0;
+  for(const k in DRAIN) addStat(k, DRAIN[k] * hrs);
+  /* 더러워지면 먼지가 쌓이고, 배가 고프면 조른다 */
+  if(S.dugi.clean < 65 && home.dusts.length < 5 && Math.random() < 0.12) seedDust();
+  if(!S.req && Math.random() < 0.05) newRequest();
+  refreshBar();
+}
+
 function updateHome(dt){
+  tickLife(dt);
+  dayWatch();
   home.t += dt;
   if(home.bubbleT > 0) home.bubbleT -= dt;
   if(home.sayT > 0) home.sayT -= dt;

@@ -8,8 +8,11 @@ const CUTC={
   R: {s1:'#DCEFFA',s2:'#FFF8F0',orb:'#8FC0D8',ray:'rgba(169,217,240,.22)',
       plate:'#DFF0FA',label:'귀한 예감!',intro:4.4,rev:2.9},
   SR:{s1:'#FFDFE9',s2:'#FFF7D6',orb:'#FF9EB5',ray:'rgba(255,158,181,.26)',
-      plate:'#FFE3EC',label:'아주 귀함!',intro:5.2,rev:3.6}
+      plate:'#FFE3EC',label:'진귀!',intro:5.2,rev:3.6},
+  UR:{s1:'#FFF0C4',s2:'#FFF8E4',orb:'#E0B84E',ray:'rgba(224,184,78,.32)',
+      plate:'#FFF1CE',label:'전설!!',intro:6.2,rev:4.2}
 };
+const HIRANK = rk => rk === 'SR' || rk === 'UR';
 let cut=null;
 
 function startCut(rank, results, onDone){
@@ -41,7 +44,7 @@ function nextReveal(){
   revealSound(cut.results[cut.idx].rank);
 }
 function revealSound(rank){
-  if(rank==='SR'){ arp([784,1175],0.13,0.16,'square'); setTimeout(shimmer,140); }
+  if(HIRANK(rank)){ arp([784,1175,1568],0.12,0.18,'square'); setTimeout(shimmer,140); }
   else if(rank==='R') arp([659,988],0.12,0.13);
   else arp([587,880],0.11,0.11);
 }
@@ -85,7 +88,7 @@ function drawIntro(dt){
   const heat=Math.max(0,Math.min(1,(p-0.34)/0.52));
 
   let sx=0,sy=0;
-  if(p>0.60 && p<0.90){ const k=(cut.rank==='SR'?8:cut.rank==='R'?5:2.5)*heat;
+  if(p>0.60 && p<0.90){ const k=(HIRANK(cut.rank)?8:cut.rank==='R'?5:2.5)*heat;
     sx=(Math.random()-.5)*k; sy=(Math.random()-.5)*k; }
   g.save(); g.translate(sx,sy);
 
@@ -150,7 +153,7 @@ function drawIntro(dt){
     for(let i=0;i<46;i++){ const a=Math.random()*6.283, v=220+Math.random()*560;
       cut.sparks.push({x:ox,y:oy,r:3+Math.random()*5,a:1,vx:Math.cos(a)*v,vy:Math.sin(a)*v}); }
     cut.rings.push({r:10,a:1},{r:10,a:1,d:0.14});
-    if(cut.rank==='SR'){ arp([660,880,1175,1568],0.075,0.16,'square'); shimmer(); }
+    if(HIRANK(cut.rank)){ arp([660,880,1175,1568],0.075,0.16,'square'); shimmer(); }
     else if(cut.rank==='R') arp([740,988],0.09,0.13); else arp([680],0,0.11);
   }
   cut.rings.forEach(r=>{ if(r.d>0){ r.d-=dt; return; } r.r+=dt*Math.max(W,H)*1.5; r.a-=dt*1.3; });
@@ -167,7 +170,7 @@ function drawIntro(dt){
       g.save(); g.translate(W/2,H*0.26); g.scale(0.7+0.45*pop,0.7+0.45*pop); g.rotate(-0.04);
       g.textAlign='center'; g.font='700 '+Math.round(Math.min(W,H)*0.11)+'px "Gaegu", sans-serif';
       g.lineWidth=LW(); g.strokeStyle='#5A4A40'; g.strokeText(C.label,0,0);
-      g.fillStyle=cut.rank==='SR'?'#FFD36E':'#FFF8F0'; g.fillText(C.label,0,0);
+      g.fillStyle=HIRANK(cut.rank)?'#FFD36E':'#FFF8F0'; g.fillText(C.label,0,0);
       g.restore();
     }
   }
@@ -184,18 +187,18 @@ function drawReveal(dt){
   const cx=W*0.60, gy=H*0.86;
 
   let sx=0,sy=0;
-  if(r.rank==='SR' && q>0.12 && q<0.24){ sx=(Math.random()-.5)*10; sy=(Math.random()-.5)*10; }
+  if(HIRANK(r.rank) && q>0.12 && q<0.24){ sx=(Math.random()-.5)*10; sy=(Math.random()-.5)*10; }
   g.save(); g.translate(sx,sy);
 
   const grd=g.createLinearGradient(0,0,0,H);
   grd.addColorStop(0,C.s1); grd.addColorStop(1,C.s2);
   g.fillStyle=grd; g.fillRect(-20,-20,W+40,H+40);
-  rays(cx,H*0.42,cut.t*0.45,C.ray,0.30, r.rank==='SR'?18:12);
+  rays(cx,H*0.42,cut.t*0.45,C.ray,0.30, HIRANK(r.rank)?18:12);
 
   // 캐릭터 등장
   const inP=Math.min(1,q/0.30);
   let x=cx, y=gy, rot=0, sc=1;
-  if(r.rank==='SR'){                       // 정면에서 쾅
+  if(HIRANK(r.rank)){                       // 정면에서 쾅
     sc=1+2.0*(1-easeOut(inP)); rot=0.18*(1-inP);
   } else {                                 // 옆에서 슝
     x=cx+(W*0.55)*(1-easeBack(inP)); rot=0.35*(1-inP);

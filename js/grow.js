@@ -204,13 +204,11 @@ const CARE = {
 const CARE_ORDER = ['feed', 'wash', 'play', 'sleep', 'water', 'clean'];
 
 /* ===== 알바 ===== */
-const CAREER_NEED = [0, 3, 8, 16, 28, 45, 70, 100, 140, 200];    // 몇 번 일했나
+const CAREER_NEED = [0, 2, 5, 9, 14, 20, 27, 36, 48, 62];    // 몇 번 일했나
 const careerLv = n => { let l = 1; CAREER_NEED.forEach((v, i) => { if(n >= v) l = i + 1; }); return l; };
 const careerPay = n => 1 + 0.05 * (careerLv(n) - 1);
 
 const JOBS = [
-  { id:'dish', game:'rhythm', name:'설거지 알바', place:'분식집 주방',
-    desc:'노래에 맞춰 접시를 씻어요', pay:'깨끗이 씻을수록 시급이 올라요', color:'#8FC0D8' },
   { id:'deliver', game:'run', name:'배달 알바', place:'동네 골목',
     desc:'장애물을 피해 달려서 배달', pay:'동전을 줍고 제시간에 도착하면 보너스', color:'#EFA6B8' },
   { id:'cafe', game:'cafe', name:'카페 알바', place:'골목 카페',
@@ -218,16 +216,6 @@ const JOBS = [
 ];
 const JOB = id => JOBS.find(j => j.id === id);
 
-/* 배달 코스 — 경력이 쌓이면 열린다 */
-const COURSES = [
-  { id:'town',  name:'동네 한 바퀴', lv:1, hp:3, v0:400, vmax:600, dense:1.00, pay:1.00,
-    sky:['#DCF0FB', '#F4FAF3'], desc:'기본 코스' },
-  { id:'hill',  name:'언덕길',      lv:3, hp:2, v0:440, vmax:650, dense:1.30, pay:1.35,
-    sky:['#FFE9D6', '#FFF6EC'], desc:'발판과 구덩이가 많아요' },
-  { id:'night', name:'야간 빗길',   lv:5, hp:2, v0:470, vmax:700, dense:1.5, pay:1.75,
-    sky:['#3E4668', '#7E7FA6'], desc:'미끄럽고 어두워요', slippery:true, dark:true }
-];
-const COURSE = id => COURSES.find(c => c.id === id) || COURSES[0];
 
 /* ===== 오늘의 할 일 ===== */
 const DAILY_POOL = [
@@ -238,7 +226,8 @@ const DAILY_POOL = [
   { id:'d_job',   txt:'알바 한 번 다녀오기', need:1, kind:'job',        pay:80 },
   { id:'d_wash',  txt:'깨끗하게 씻기기',    need:1, kind:'care:wash',  pay:45 },
   { id:'d_water', txt:'화분에 물 주기',     need:1, kind:'care:water', pay:35 },
-  { id:'d_coin',  txt:'클로버 300 모으기',  need:300, kind:'earn',     pay:70 }
+  { id:'d_coin',  txt:'클로버 300 모으기',  need:300, kind:'earn',     pay:70 },
+  { id:'d_guest', txt:'손님에게 간식 주기',  need:1, kind:'guest',     pay:65 }
 ];
 
 /* ===== 업적 ===== */

@@ -9,7 +9,29 @@
 const DugiRun = (function(){
 "use strict";
 
-let SC = 1, GYs = 0, me = CHARS[0], stScale = 1, onEnd = null, CO = COURSES[0];
+/* 배경 테마 — 매 판 하나를 뽑는다 */
+const THEMES = [
+  { id:'town',   name:'동네 골목', sky:['#BFE3F5','#E9F6FC'], hill:'#CFE7C6', bush:'#B7DBAE',
+    dirt:'#E6D5B4', grass:'#8FBF92', prop:'house', house:['#F4E3C8','#EBD9F0','#DCEFF7'] },
+  { id:'park',   name:'공원 길',   sky:['#CFEEDC','#EFF9F2'], hill:'#BFE0B8', bush:'#A6D39D',
+    dirt:'#DFCFA8', grass:'#82BE86', prop:'tree' },
+  { id:'beach',  name:'바닷가',    sky:['#CDEAFA','#EFF8FD'], hill:'#BFE3DC', bush:'#A8DCD2',
+    dirt:'#F0E0B6', grass:'#A6D8C6', prop:'palm' },
+  { id:'sunset', name:'노을 길',   sky:['#FFC28E','#FFE6C8'], hill:'#E8BE9E', bush:'#D8AE93',
+    dirt:'#DDB88C', grass:'#C2B481', prop:'house', house:['#F6D6B4','#EFC9C0','#E8DCC0'] },
+  { id:'night',  name:'밤 골목',   sky:['#3E4668','#727AA0'], hill:'#5A6480', bush:'#4E5A72',
+    dirt:'#9A8B74', grass:'#6E8C72', prop:'lamp', house:['#7C7C96','#6E7690','#86809A'], dark:true }
+];
+function rollRun(){
+  const th = THEMES[Math.floor(Math.random() * THEMES.length)];
+  return { theme:th, sky:th.sky, dark:!!th.dark,
+           hp: 3,
+           v0:   395 + Math.round(Math.random() * 70),
+           vmax: 610 + Math.round(Math.random() * 110),
+           dense: 0.9 + Math.random() * 0.85,
+           slippery: Math.random() < 0.18 };
+}
+let SC = 1, GYs = 0, me = CHARS[0], stScale = 1, onEnd = null, CO = rollRun();
 function sync(){ SC = H / 540; GYs = H * 0.80; }
 
 const clamp = (v,a,b) => v<a?a : v>b?b : v;
@@ -58,9 +80,24 @@ const CHUNK = {
              jarc(x+1600,5,0,300,172); spike(x+2280); big(x+2420,78);                                   return 2560; },
   goal(x){   seg(x,1000);  jline(x+180,56,5,62); ent('goal', x+520, 0, { w:70, h:230 });                return 1000; }
 };
-const MAP = ['warm','hop','duck','gap1','twin','rest','stair','mix','gap2','zig','shelf','rush','rest','finale','goal'];
+const MIDDLE = ['hop','duck','gap1','twin','rest','stair','mix','gap2','zig','shelf','rush'];
+/* 같은 맵을 매번 다르게 — 순서를 섞고 길이도 조금씩 달라진다 */
+function rollMap(){
+  const pool = MIDDLE.slice();
+  for(let i = pool.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const n = 8 + Math.floor(Math.random() * 3);          // 8~10 덩어리
+  const mid = pool.slice(0, n);
+  /* 숨 돌릴 구간을 중간에 하나 끼워 넣는다 */
+  mid.splice(Math.floor(mid.length / 2), 0, 'rest');
+  return ['warm', ...mid, 'finale', 'goal'];
+}
+let MAP = rollMap();
 
 function buildMap(){
+  MAP = rollMap();
   segs = []; ents = [];
   let x = 0;
   for(const k of MAP) x += CHUNK[k](x);
@@ -367,7 +404,7 @@ function drawSky(){
   /* 먼 언덕 */
   const hillY = GYs + camY*SC*0.55, bushY = GYs + camY*SC*0.82;
   const hw = 620;
-  g.fillStyle = '#CFE7C6';
+  g.fillStyle = CO.theme.hill;
   const ho = (camX*0.42) % hw;
   for(let i=-1;i<W/(hw*SC)+2;i++){
     const x = i*hw*SC - ho*SC;
@@ -382,7 +419,7 @@ function drawSky(){
     const x = i*tw2*SC - ho2*SC + 40*SC;
     const hh = (120 + ((i*37)%3)*34)*SC, wwid = 150*SC;
     const top = bushY - hh;
-    g.fillStyle = ['#F4E3C8','#EBD9F0','#DCEFF7'][Math.abs(i)%3];
+    g.fillStyle = (CO.theme.house || ['#F4E3C8','#EBD9F0','#DCEFF7'])[Math.abs(i)%3];
     g.beginPath(); g.rect(x, top, wwid, hh); g.fill();
     g.strokeStyle = 'rgba(120,95,75,.45)'; g.lineWidth = LW()*0.7; g.stroke();
     g.fillStyle = '#C9A06A';
@@ -394,7 +431,7 @@ function drawSky(){
   }
   /* 가까운 덤불 */
   const bw = 380;
-  g.fillStyle = '#B7DBAE';
+  g.fillStyle = CO.theme.bush;
   const bo = (camX*0.72) % bw;
   for(let i=-1;i<W/(bw*SC)+2;i++){
     const x = i*bw*SC - bo*SC;
@@ -408,7 +445,7 @@ function drawGround(){
   const base = sy(0);
   if(base < H){
     const gr = g.createLinearGradient(0, base, 0, H);
-    gr.addColorStop(0, '#E9DFCB'); gr.addColorStop(1, '#F6F1E4');
+    gr.addColorStop(0, CO.theme.dirt); gr.addColorStop(1, CO.dark ? '#6B6350' : '#F6F1E4');
     g.fillStyle = gr; g.fillRect(0, base, W, H - base);
   }
   for(const s of segs){
@@ -416,10 +453,10 @@ function drawGround(){
     if(x1 < -40 || x0 > W + 40) continue;
     const y = sy(s.y), h = H - y + 40;
     /* 흙 */
-    g.fillStyle = '#E6D5B4';
+    g.fillStyle = CO.theme.dirt;
     g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.lineTo(x1, y+h); g.lineTo(x0, y+h); g.closePath(); g.fill();
     /* 풀 */
-    g.fillStyle = '#8FBF92';
+    g.fillStyle = CO.theme.grass;
     g.fillRect(x0, y, x1-x0, 13*SC);
     g.strokeStyle = '#5A4A40'; g.lineWidth = LW(); g.lineJoin = 'round';
     g.beginPath();
@@ -612,14 +649,15 @@ function drawFx(){
 
 function drawHud(){
   const k = Math.max(0.85, Math.min(1.6, Math.min(W/960, H/540)));
+  const TXT = CO.dark ? '#FFF6E2' : '#5A4A40';      /* 밤에는 글씨를 밝게 */
   g.save(); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   /* 점수 */
-  g.fillStyle = '#5A4A40';
+  g.fillStyle = TXT;
   g.font = `700 ${34*k}px Gaegu, sans-serif`;
   g.fillText(Math.floor(score).toLocaleString(), 16*k, 40*k);
   /* 동전 */
   coin(26*k, 58*k, 11*k, false);
-  g.fillStyle = '#5A4A40'; g.font = `700 ${20*k}px Gaegu, sans-serif`;
+  g.fillStyle = TXT; g.font = `700 ${20*k}px Gaegu, sans-serif`;
   g.fillText('× ' + jellyN + (combo > 2 ? '   ' + combo + ' 연속!' : ''), 41*k, 65*k);
   /* 체력 */
   for(let i=0;i<Math.max(CO.hp, player.hp);i++){
@@ -633,7 +671,7 @@ function drawHud(){
   g.beginPath(); g.roundRect(gx, gy, gw, 16*k, 8*k); g.fill(); g.stroke();
   g.fillStyle = energy >= 100 ? sk.color : '#CFE0CB';
   g.beginPath(); g.roundRect(gx+2.5*k, gy+2.5*k, (gw-5*k)*(energy/100), 11*k, 6*k); g.fill();
-  g.fillStyle = '#5A4A40'; g.font = `700 ${14*k}px Gaegu, sans-serif`;
+  g.fillStyle = TXT; g.font = `700 ${14*k}px Gaegu, sans-serif`;
   g.fillText(energy >= 100 ? (sk.name + '  [E]') : sk.name, gx, gy + 32*k);
   if(energy >= 100){
     g.globalAlpha = 0.5 + Math.sin(tick*6)*0.4; g.strokeStyle = sk.color; g.lineWidth = LW();
@@ -685,7 +723,7 @@ function draw(){
 function start(o){
   me = o.look || CHARS[0];
   stScale = 1;
-  CO = COURSE(o.course || 'town');
+  CO = rollRun();
   onEnd = o.onEnd;
   sync(); reset(); hits.length = 0; state = 'play';
   held.jump = held.slide = false;
@@ -727,6 +765,7 @@ function pointer(yFrac, down){
 function quit(){ state = 'over'; runBgmStop(); goHome(); }
 return { start, frame, key, pad, pointer, quit, resize: sync,
          state: () => state, peek: () => ({ state, player, ents, segs, speed, energy, skill, hits,
+           theme: CO.theme.id, mapend: MAPEND, chunks: MAP.length,
                                             score, jellyN, dist, maxCombo, MAPEND, GOALX }),
          debug: { doJump, setSlide, useSkill } };
 })();

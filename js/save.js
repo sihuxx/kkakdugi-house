@@ -7,12 +7,6 @@
 const SAVE_KEY = 'ggakdugi.v3';
 const START_LOOKS = ['proud', 'wool', 'baby'];
 
-const DEFAULT_KEYS = ['KeyA', 'KeyS', 'KeyK', 'KeyL'];
-const SKINS = {
-  basic:     { name:'기본',      col:['#8FBF92', '#8FC0D8', '#EFA6B8', '#D9C4A0'] },
-  strawberry:{ name:'딸기우유',  col:['#EFA6B8', '#FFD6E0', '#FF9DB1', '#FFE3EC'] },
-  mint:      { name:'민트소다',  col:['#7BD8C4', '#A9E6DC', '#5FC9B2', '#CFF2EA'] }
-};
 
 function freshSave(){
   return {
@@ -20,7 +14,7 @@ function freshSave(){
     clover: 500,
     look: 'proud',
     own: [...START_LOOKS],
-    pity: 0,
+    pity: 0, pityU: 0,
     house: 0,
     wall: 'w0', floor: 'f0',
     walls: ['w0'], floors: ['f0'],
@@ -29,19 +23,18 @@ function freshSave(){
     furn: [...BASE_FURN],
     pos: {},                       // 꾸미기 모드에서 옮긴 자리
     bag: {},                       // 소모품
-    career: { dish:0, deliver:0, cafe:0 },
-    best: {}, runBest: 0, cafeBest: 0,
-    course: 'town',
+    career: { deliver:0, cafe:0 },
+    runBest: 0, cafeBest: 0,
     stat: { pet:0, job:0, earn:0 },
     daily: null,
     seen: 0,                       // 마지막으로 논 시각
     album: [],                     // 사진첩
     guest: null,                   // 오늘 찾아온 손님
     guestDay: 0,
-    claimed: [], skins: ['basic'],
+    upkeepDay: 0,
+    claimed: [],
     named: false,
-    settings: { keys:[...DEFAULT_KEYS], speed:1.0, offset:0, skin:'basic',
-                volMusic:0.8, volBgm:0.6, volSfx:0.9 }
+    settings: { volBgm:0.6, volSfx:0.9 }
   };
 }
 
@@ -53,7 +46,7 @@ let S = freshSave();
       S = Object.assign(freshSave(), raw);
       S.dugi = Object.assign(freshSave().dugi, raw.dugi || {});
       S.settings = Object.assign(freshSave().settings, raw.settings || {});
-      S.career = Object.assign({ dish:0, deliver:0, cafe:0 }, raw.career || {});
+      S.career = Object.assign({ deliver:0, cafe:0 }, raw.career || {});
       S.stat = Object.assign({ pet:0, job:0, earn:0 }, raw.stat || {});
       const ids = new Set(CHARS.map(c => c.id));
       S.own = (S.own || []).filter(id => ids.has(id));
@@ -85,7 +78,7 @@ function condition(){
 /* 알바 시급 = 컨디션 + 마음 레벨 + 가구 + 그 알바 경력 */
 function payMult(jobId){
   const career = jobId ? careerPay(S.career[jobId] || 0) : 1;
-  return (0.62 + 0.38 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career * WEATHER().pay;
+  return (0.80 + 0.30 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career * WEATHER().pay;
 }
 
 function addStat(k, v){
@@ -208,17 +201,16 @@ function toast(title, line){
 /* ===== 도감 보상 ===== */
 const DEX_REWARDS = [
   { id:'d5',  n:5,  clover:300,  txt:'클로버 300' },
-  { id:'d9',  n:9,  skin:'strawberry', txt:'노트 스킨 · 딸기우유' },
-  { id:'d13', n:13, clover:500, skin:'mint', txt:'민트소다 스킨 + 클로버 500' },
+  { id:'d9',  n:9,  clover:700, txt:'클로버 700' },
+  { id:'d13', n:13, clover:1200, item:'snack', txt:'클로버 1200 + 간식 3개' },
   { id:'d17', n:17, clover:1500, txt:'클로버 1500' }
 ];
-function unlockSkin(id){ if(!S.skins.includes(id)) S.skins.push(id); }
 function checkRewards(){
   DEX_REWARDS.forEach(r => {
     if(S.own.length >= r.n && !S.claimed.includes(r.id)){
       S.claimed.push(r.id);
       if(r.clover) addClover(r.clover);
-      if(r.skin) unlockSkin(r.skin);
+      if(r.item) S.bag[r.item] = (S.bag[r.item] || 0) + 3;
       toast('도감 ' + r.n + '종 달성!', r.txt + ' 받았어요');
     }
   });
@@ -269,6 +261,22 @@ function awayReport(){
 
   save();
   return { mins, hrs, lines, gift, capped: mins > AWAY_CAP };
+}
+
+/* ===== 관리비 — 집이 클수록 매일 조금씩 나간다 ===== */
+const UPKEEP = [0, 70, 160];
+function payUpkeep(){
+  const key = dayKey();
+  if(S.upkeepDay === key) return null;
+  const first = !S.upkeepDay;
+  S.upkeepDay = key;
+  if(first){ save(); return null; }
+  const cost = UPKEEP[Math.min(UPKEEP.length - 1, S.house || 0)] || 0;
+  if(cost <= 0){ save(); return null; }
+  const paid = Math.min(cost, S.clover);
+  S.clover -= paid;
+  save(); refreshBar();
+  return { cost, paid, short: cost - paid };
 }
 
 /* ===== 손님 ===== */

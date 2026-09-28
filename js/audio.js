@@ -14,7 +14,7 @@ function initAudio(){
 /* 설정의 볼륨을 실제 믹서에 반영 */
 function applyVolumes(){
   if(!ctx) return;
-  musicGain.gain.value = 0.5*settings.volMusic;
+  musicGain.gain.value = 0.5 * (settings.volSfx != null ? settings.volSfx : 0.9);
   sfxGain.gain.value   = 1.0*settings.volSfx;
   if(BGM.on && BGM.gain) BGM.gain.gain.setTargetAtTime(0.5*settings.volBgm, ctx.currentTime, 0.1);
 }

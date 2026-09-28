@@ -51,7 +51,6 @@
       </div>
     </header>
 
-    <button id="pauseBtn" type="button" hidden>일시정지</button>
     <button id="skipBtn" type="button" hidden>건너뛰기</button>
     <p id="tapHint" hidden>아무 곳이나 누르면 다음으로</p>
 
@@ -64,29 +63,6 @@
       <button class="btn" id="introGo">시작!</button>
       <p class="credit">집에서는 <span class="kbd">WASD</span> 로 걷고, 두기를 <b>문질러 쓰다듬으면</b> 마음이 올라요 ·
         현관으로 나가면 알바를 해서 클로버를 벌 수 있어요</p>
-    </section>
-
-    <!-- 리듬게임 결과 -->
-    <section class="screen" id="resultScreen" hidden>
-      <img class="mascot" id="resultArt" alt="">
-      <div class="panel">
-        <p class="grade" id="gradeText">세잎</p>
-        <p class="score" id="scoreText">0</p>
-        <div class="tally">
-          <div><b>PERFECT</b><span id="tPerfect">0</span></div>
-          <div><b>GREAT</b><span id="tGreat">0</span></div>
-          <div><b>GOOD</b><span id="tGood">0</span></div>
-          <div><b>MISS</b><span id="tMiss">0</span></div>
-          <div><b>최대 콤보</b><span id="tCombo">0</span></div>
-          <div><b>정확도</b><span id="tAcc">0%</span></div>
-        </div>
-        <p class="best" id="bestText"></p>
-        <p class="reward" id="rewardText"></p>
-      </div>
-      <div class="row">
-        <button class="btn" id="againBtn">한 번 더</button>
-        <button class="btn ghost" id="homeBtn">집으로</button>
-      </div>
     </section>
 
     <!-- 꺅두기런 결과 -->
@@ -110,16 +86,6 @@
       </div>
     </section>
 
-    <!-- 일시정지 -->
-    <section class="screen" id="pauseScreen" hidden>
-      <h1 style="font-size:clamp(24px,4.6vw,38px)">잠깐 쉬는 중</h1>
-      <p class="tagline" id="pauseInfo"></p>
-      <div class="row">
-        <button class="btn" id="resumeBtn">이어서</button>
-        <button class="btn ghost small" id="quitBtn">집으로</button>
-      </div>
-    </section>
-
     <!-- 공용 모달 -->
     <div class="modal" id="modal" hidden>
       <div class="sheet">
@@ -130,8 +96,7 @@
       </div>
     </div>
 
-    <!-- 카운트다운 · 알림 -->
-    <div id="countdown" hidden><b id="cdNum">3</b></div>
+    <!-- 알림 -->
     <div id="toast" hidden></div>
 
     <!-- 오늘의 할 일 -->
@@ -159,14 +124,11 @@
 <script defer src="js/data.js"></script>
 <script defer src="js/grow.js"></script>
 <script defer src="js/save.js"></script>
-<script defer src="js/chart.js"></script>
 <script defer src="js/audio.js"></script>
-<script defer src="js/world.js"></script>
 <script defer src="js/menus.js"></script>
 <script defer src="js/cut.js"></script>
 <script defer src="js/home.js"></script>
 <script defer src="js/care.js"></script>
-<script defer src="js/rhythm.js"></script>
 <script defer src="js/run.js"></script>
 <script defer src="js/cafe.js"></script>
 <script defer src="js/app.js"></script>

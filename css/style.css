@@ -661,3 +661,32 @@ body.fs #stage{border-radius:0;box-shadow:none;}
 .albumtop .btn{font-size:15px;padding:8px 20px;}
 .sheet.away h2, .sheet.away .hint{text-align:center;}
 .sheet.away .awaybox{margin:4px 0 6px;}
+
+/* 전설 등급 */
+.dcard.r-UR{background:linear-gradient(#FFFCF8,#FFF1CE);}
+.gcard.r-UR{background:linear-gradient(#FFFCF8,#FFF1CE);}
+.orb.r-UR{--oc:#E0B84E;}
+.rgroup .rname.r-UR{color:#A8801E;}
+
+/* 좁은 화면에서 상단바가 방을 덜 가리게 */
+@container (max-width: 1180px){
+  #topbar{gap:8px;padding:8px 10px;}
+  #topbar .nm b{font-size:20px;}
+  #topbar .tools button{padding:6px 10px;font-size:12px;}
+  .stats{gap:8px;}
+}
+@container (max-width: 860px){
+  #topbar .exp small{display:none;}
+  #topbar .who{min-width:104px;}
+  .stat .track{width:28px;}
+  #topbar .wallet{padding:4px 10px 4px 8px;}
+  #topbar .wallet b{font-size:16px;}
+}
+@container (max-width: 640px){
+  #topbar .lovewrap i{display:none;}
+  #topbar .tools{gap:4px;}
+  #topbar .tools button{padding:5px 8px;font-size:11.5px;border-radius:11px;}
+}
+.dcard.r-UR{background:linear-gradient(#FFFDF8,#FFEFBE);
+            box-shadow:0 0 0 2px #E8C86A inset, 0 6px 16px rgba(120,95,75,.10);}
+.gcard.r-UR{background:linear-gradient(#FFFDF8,#FFEFBE);}

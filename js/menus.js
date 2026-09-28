@@ -10,14 +10,14 @@ const CLOVER_SVG = '<svg class="cv" viewBox="0 0 20 20" aria-hidden="true">' +
   '<circle cx="10" cy="5.6" r="3.5"/><circle cx="14.4" cy="10" r="3.5"/>' +
   '<circle cx="10" cy="14.4" r="3.5"/><circle cx="5.6" cy="10" r="3.5"/></g>' +
   '<path d="M10 11 L10 19" stroke="#8FBF92" stroke-width="1.8" fill="none"/></svg>';
-const STARS = { base:1, N:1, R:2, SR:3, SSR:4 };
+const STARS = { base:1, N:1, R:2, SR:3, UR:4 };
 const starRow = rk => '<span class="stars">' + '★'.repeat(STARS[rk]) + '</span>';
 let freshIds = new Set();
 
 /* ===== 뽑기 로직 ===== */
 const PULL1 = 110, PULL10 = 1000;
-const REFUND = { N:30, R:60, SR:120 };
-const RATE = [['N', 65], ['R', 27], ['SR', 8]];
+const REFUND = { N:30, R:70, SR:180, UR:500 };
+const RATE = [['N', 58], ['R', 28], ['SR', 11], ['UR', 3]];
 const POOL = rk => CHARS.filter(c => c.rank === rk);
 function rollRank(force){
   if(force) return force;
@@ -33,8 +33,11 @@ function pull(n){
   for(let i = 0; i < n; i++){
     const force = (n === 10 && i === 9 && !got.some(x => x.rank !== 'N')) ? 'R' : null;
     let rk = rollRank(force);
-    S.pity = rk === 'SR' ? 0 : S.pity + 1;
-    if(S.pity >= 80){ rk = 'SR'; S.pity = 0; }
+    /* 천장 — 90번 안에 진귀 이상, 250번 안에 전설 */
+    S.pityU = (rk === 'UR') ? 0 : (S.pityU || 0) + 1;
+    S.pity  = (rk === 'SR' || rk === 'UR') ? 0 : S.pity + 1;
+    if(S.pityU >= 250){ rk = 'UR'; S.pity = S.pityU = 0; }
+    else if(S.pity >= 90){ rk = 'SR'; S.pity = 0; }
     const pool = POOL(rk), c = pool[Math.floor(Math.random() * pool.length)];
     const isNew = !owns(c.id);
     if(isNew){ S.own.push(c.id); freshIds.add(c.id); }
@@ -67,7 +70,7 @@ function buildDex(body, onPick){
     '<span>' + (nx ? '다음 보상 — ' + nx.n + '종에서 ' + nx.txt : '보상 전부 받음!') + '</span></div>';
   body.appendChild(bar);
   const wrap = document.createElement('div'); wrap.className = 'dex';
-  ['base', 'SR', 'R', 'N', 'SSR'].forEach(rk => {
+  ['base', 'UR', 'SR', 'R', 'N'].forEach(rk => {
     const list = CHARS.filter(x => x.rank === rk), soon = COMING.filter(x => x.rank === rk);
     if(!list.length && !soon.length) return;
     const grp = document.createElement('div'); grp.className = 'rgroup';
@@ -336,69 +339,9 @@ function buildJobs(body){
       '<span class="go">일하러 가기</span>';
     row.appendChild(b2);
     drawJobIcon(b2.querySelector('canvas'), j.id);
-    b2.onclick = () => {
-      if(j.game === 'rhythm') openModal('song');
-      else if(j.game === 'run') openModal('course');
-      else startCafe();
-    };
+    b2.onclick = () => { if(j.game === 'run') startRun(); else startCafe(); };
   });
 }
-/* 배달 코스 고르기 */
-function buildCourses(body){
-  const lv = careerLv(S.career.deliver || 0);
-  const row = document.createElement('div'); row.className = 'jobrow'; body.appendChild(row);
-  COURSES.forEach(c => {
-    const locked = lv < c.lv;
-    const b2 = document.createElement('button');
-    b2.type = 'button'; b2.className = 'jobcard' + (locked ? ' locked' : '');
-    b2.innerHTML = '<span class="sign" style="background:' +
-        (locked ? '#D8D2C4' : c.id === 'night' ? '#7E7FA6' : c.id === 'hill' ? '#E0A45C' : '#8FC0D8') +
-        '">' + (locked ? '경력 Lv' + c.lv + '부터' : '코스') + '</span>' +
-      '<canvas width="208" height="130"></canvas>' +
-      '<span class="nm">' + c.name + '</span>' +
-      '<span class="meta">' + c.desc + '</span>' +
-      '<span class="lvrow">체력 ' + c.hp + ' · 속도 ' + Math.round(c.v0 / 4) +
-        ' · 시급 x' + c.pay.toFixed(2) + '</span>' +
-      '<span class="go">' + (locked ? '잠김' : '출발!') + '</span>';
-    row.appendChild(b2);
-    drawCourseIcon(b2.querySelector('canvas'), c.id);
-    b2.onclick = () => {
-      if(locked){ sfxNo(); toast('아직 못 가요', '배달 경력 Lv' + c.lv + '부터'); return; }
-      S.course = c.id; save(); startRun();
-    };
-  });
-}
-function drawCourseIcon(cvs, id){
-  const c = cvs.getContext('2d'), sw = cvs.width, sh = cvs.height;
-  const og = g, oW = W, oH = H; g = c; W = sw; H = sh;
-  const CO = COURSE(id);
-  const gr = c.createLinearGradient(0, 0, 0, sh);
-  gr.addColorStop(0, CO.sky[0]); gr.addColorStop(1, CO.sky[1]);
-  c.fillStyle = gr; c.fillRect(0, 0, sw, sh);
-  ink(3);
-  g.fillStyle = '#CFE7C6';
-  if(id === 'hill'){
-    g.beginPath(); g.moveTo(0, sh * 0.8); g.lineTo(sw * 0.3, sh * 0.8);
-    g.lineTo(sw * 0.45, sh * 0.6); g.lineTo(sw * 0.7, sh * 0.6);
-    g.lineTo(sw * 0.85, sh * 0.82); g.lineTo(sw, sh * 0.82); g.lineTo(sw, sh); g.lineTo(0, sh);
-    g.closePath(); g.fill(); g.stroke();
-  }else{
-    g.fillRect(0, sh * 0.78, sw, sh * 0.22);
-    g.beginPath(); g.moveTo(0, sh * 0.78); g.lineTo(sw, sh * 0.78); g.stroke();
-    if(id === 'night'){
-      g.fillStyle = 'rgba(255,255,255,.5)';
-      for(let i = 0; i < 12; i++) g.fillRect(Math.random() * sw, Math.random() * sh * 0.6, 2, 2);
-      g.fillStyle = '#FFE9A8'; g.beginPath(); g.arc(sw * 0.8, sh * 0.22, 12, 0, 7); g.fill(); g.stroke();
-    }
-  }
-  g.fillStyle = '#D98E6A';
-  rrect(sw * 0.4, sh * 0.42, sw * 0.2, sh * 0.22, 5); g.fill(); g.stroke();
-  g.fillStyle = '#FFE08A';
-  [[0.18, 0.7], [0.74, 0.66]].forEach(([x, y]) => {
-    g.beginPath(); g.arc(sw * x, sh * y, 7, 0, 7); g.fill(); g.stroke(); });
-  g = og; W = oW; H = oH;
-}
-/* 알바 카드 그림 */
 function drawJobIcon(cvs, id){
   const c = cvs.getContext('2d'), sw = cvs.width, sh = cvs.height;
   const og = g, oW = W, oH = H;
@@ -446,7 +389,7 @@ function openModal(kind){
   modalOpen = kind;
   const body = $('modalBody'); body.innerHTML = '';
   const sheet = modal.querySelector('.sheet');
-  sheet.className = 'sheet' + (['wardrobe','gacha','shop','song','job','course','daily','album'].includes(kind) ? ' wide' : '');
+  sheet.className = 'sheet' + (['wardrobe','gacha','shop','job','daily','album'].includes(kind) ? ' wide' : '');
   $('modalClose').textContent = '확인'; $('modalClose').hidden = false;
 
   if(kind === 'wardrobe'){
@@ -465,19 +408,10 @@ function openModal(kind){
     $('modalTitle').textContent = '클로버 뽑기';
     $('modalHint').textContent = '';
     buildGacha(body);
-  } else if(kind === 'course'){
-    $('modalTitle').textContent = '배달 코스';
-    $('modalHint').textContent = '경력이 쌓이면 어려운 코스가 열려요 (시급도 높아요)';
-    buildCourses(body);
   } else if(kind === 'job'){
     $('modalTitle').textContent = '알바하러 가기';
     $('modalHint').textContent = '일하고 오면 클로버와 경험치를 벌어와요';
     buildJobs(body);
-  } else if(kind === 'song'){
-    $('modalTitle').textContent = '노래 고르기';
-    $('modalHint').textContent = '곡을 누르면 앞부분이 들려요 · 난이도를 눌러 고르세요';
-    $('modalClose').textContent = '닫기';
-    buildSongList(body);
   } else if(kind === 'settings'){
     $('modalTitle').textContent = '설정';
     $('modalHint').textContent = '';
@@ -489,56 +423,6 @@ function openModal(kind){
 function closeModal(){ modalOpen = null; modal.hidden = true; refreshBar(); }
 
 /* ===== 노래 목록 ===== */
-function buildSongList(body){
-  const list = document.createElement('div'); list.className = 'songlist'; body.appendChild(list);
-  const rows = [];
-  const paint = () => rows.forEach(({ el, s }) => {
-    el.classList.toggle('on', s === song);
-    el.querySelectorAll('.lv').forEach(b =>
-      b.setAttribute('aria-pressed', s === song && b.dataset.d === diff.id));
-    const bs = S.best[bestKey(s, diff)];
-    el.querySelector('.sbest').textContent = bs ? '최고 ' + bs.toLocaleString('ko-KR') : '기록 없음';
-  });
-  SONGS.forEach(s => {
-    const el = document.createElement('div'); el.className = 'songrow';
-    const levels = DIFFS.map(d => {
-      const n = buildChart(s, d.id).length;
-      return '<button class="lv d-' + d.id + '" data-d="' + d.id + '" type="button">' +
-             '<b>' + d.name + '</b><span>Lv ' + Math.max(1, Math.round(n / s.end * 6)) + '</span></button>';
-    }).join('');
-    el.innerHTML = '<span class="cover">' + COVERS[s.id] + '</span>' +
-      '<span class="sinfo"><span class="stitle">' + s.title + '</span>' +
-      '<span class="smeta">' + s.mood + ' · ' + s.bpm + ' BPM · ' + Math.round(s.end) + '초</span>' +
-      '<span class="sbest"></span></span>' +
-      '<span class="levels">' + levels + '</span>';
-    el.querySelector('.cover').onclick = () => { song = s; paint(); preview(s); };
-    el.querySelector('.sinfo').onclick = () => { song = s; paint(); preview(s); };
-    el.querySelectorAll('.lv').forEach(b => b.onclick = () => {
-      song = s; diff = DIFFS.find(d => d.id === b.dataset.d); paint(); preview(s); });
-    list.appendChild(el); rows.push({ el, s });
-  });
-  paint();
-  const bar = document.createElement('div'); bar.className = 'row'; bar.style.marginTop = '4px';
-  const go = document.createElement('button');
-  go.className = 'btn'; go.id = 'goBtn'; go.type = 'button'; go.textContent = '이 곡으로 출발!';
-  go.onclick = () => { closeModal(); startGame(); };
-  const back = document.createElement('button');
-  back.className = 'btn ghost small'; back.type = 'button'; back.textContent = '닫기';
-  back.onclick = closeModal;
-  bar.appendChild(go); bar.appendChild(back); body.appendChild(bar);
-  $('modalClose').hidden = true;
-}
-
-/* ===== 설정 ===== */
-let keyWait = -1;
-const KEY_LABEL = { ArrowLeft:'←', ArrowRight:'→', ArrowUp:'↑', ArrowDown:'↓', Space:'공백',
-                    Semicolon:';', Quote:"'", Comma:',', Period:'.', Slash:'/' };
-function keyLabel(code){
-  if(KEY_LABEL[code]) return KEY_LABEL[code];
-  if(code.startsWith('Key')) return code.slice(3);
-  if(code.startsWith('Digit')) return code.slice(5);
-  return code;
-}
 function buildSettings(body){
   const wrap = document.createElement('div'); wrap.className = 'setlist'; body.appendChild(wrap);
   const group = title => {
@@ -567,51 +451,17 @@ function buildSettings(body){
     S.dugi.name = v; save(); refreshBar(); nm.querySelector('.lbl span').textContent = v;
   };
 
-  const g1 = group('리듬게임 조작');
-  const kr = row(g1, '키 바꾸기', '누르고 새 키를 눌러요',
-    '<div class="keyrow">' + settings.keys.map((k, i2) =>
-      '<button class="keybtn" data-i="' + i2 + '" type="button">' + keyLabel(k) +
-      '<small>' + (i2 + 1) + '번째</small></button>').join('') + '</div>');
-  kr.querySelectorAll('.keybtn').forEach(btn => {
-    btn.onclick = () => { kr.querySelectorAll('.keybtn').forEach(b => b.classList.remove('wait'));
-                          btn.classList.add('wait'); btn.textContent = '...'; keyWait = +btn.dataset.i; };
-  });
-  slider(g1, '노트 속도', 'x' + settings.speed.toFixed(1),
-    'min="0.6" max="2" step="0.1" value="' + settings.speed + '"',
-    v => { settings.speed = v; save(); return 'x' + v.toFixed(1); },
-    '올릴수록 노트가 짧게 보여서 타이밍이 또렷해져요.');
-  slider(g1, '싱크 보정', settings.offset + ' ms',
-    'min="-150" max="150" step="5" value="' + settings.offset + '"',
-    v => { settings.offset = v; save(); return v + ' ms'; },
-    '노트가 소리보다 빠르면 −쪽, 늦으면 +쪽.');
-
   const g2 = group('소리');
-  [['volMusic', '노래'], ['volBgm', '배경음'], ['volSfx', '효과음']].forEach(([k, label]) => {
+  [['volBgm', '배경음'], ['volSfx', '효과음']].forEach(([k, label]) => {
     slider(g2, label, Math.round(settings[k] * 100) + '%',
       'min="0" max="100" step="5" value="' + Math.round(settings[k] * 100) + '"',
       v => { settings[k] = v / 100; applyVolumes(); save(); if(k === 'volSfx') uiClick(); return v + '%'; });
   });
 
-  const g3 = group('꾸미기');
-  const need = { basic:0, strawberry:9, mint:13 };
-  const sk = row(g3, '노트 색', '도감을 모으면 늘어나요',
-    '<div class="skinrow">' + Object.entries(SKINS).map(([id, s]) => {
-      const has = S.skins.includes(id);
-      return '<button class="skinbtn" data-s="' + id + '" type="button"' + (has ? '' : ' disabled') +
-        ' aria-pressed="' + (settings.skin === id) + '"><span class="nm">' + s.name + '</span>' +
-        '<span class="swatch">' + s.col.map(c2 => '<i style="background:' + c2 + '"></i>').join('') + '</span>' +
-        '<small>' + (has ? '보유' : '도감 ' + need[id] + '종') + '</small></button>';
-    }).join('') + '</div>');
-  sk.querySelectorAll('.skinbtn').forEach(btn => {
-    if(btn.disabled) return;
-    btn.onclick = () => { settings.skin = btn.dataset.s; applySkin(); save(); openModal('settings'); };
-  });
-
   const rs = document.createElement('button');
   rs.className = 'btn ghost small'; rs.type = 'button'; rs.textContent = '기본값으로';
-  rs.onclick = () => { settings.keys = [...DEFAULT_KEYS]; settings.speed = 1; settings.offset = 0;
-    settings.volMusic = 0.8; settings.volBgm = 0.6; settings.volSfx = 0.9; settings.skin = 'basic';
-    applySkin(); applyVolumes(); save(); openModal('settings'); };
+  rs.onclick = () => { settings.volBgm = 0.6; settings.volSfx = 0.9;
+    applyVolumes(); save(); openModal('settings'); };
   wrap.appendChild(rs);
 }
 
@@ -620,7 +470,9 @@ let lastPull = null;
 const RANKSOUND = {
   N: () => arp([680], 0, 0.10),
   R: () => arp([740, 988], 0.09, 0.12),
-  SR: () => { arp([660, 880, 1175, 1568], 0.075, 0.15, 'square'); shimmer(); }
+  SR: () => { arp([660, 880, 1175, 1568], 0.075, 0.15, 'square'); shimmer(); },
+  UR: () => { arp([523, 784, 1047, 1319, 1568, 2093], 0.07, 0.2, 'square');
+              shimmer(); setTimeout(shimmer, 220); }
 };
 function buildGacha(body){
   const wrap = document.createElement('div'); wrap.className = 'gacha';

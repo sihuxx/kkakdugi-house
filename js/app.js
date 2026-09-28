@@ -4,13 +4,12 @@
 /* ===============================================================
    셸 — 화면 전환 · 입력 · 메인 루프
    =============================================================== */
-let mode = 'home';          // home · play · pause · result · cut · run · runresult · cafe · caferesult
+let mode = 'home';          // home · cut · run · runresult · cafe · caferesult
 let last = performance.now();
 
 function showScreen(el){
-  [$('introScreen'), $('resultScreen'), $('runResult'), $('pauseScreen')]
+  [$('introScreen'), $('runResult')]
     .forEach(s => { if(s) s.hidden = s !== el; });
-  $('pauseBtn').hidden = !(mode === 'play');
   $('careBar').hidden = !(mode === 'home' && place === 'room' && !el && !mini && !deco);
 }
 
@@ -72,14 +71,14 @@ function startRun(){
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'run'; $('topbar').hidden = true; $('careBar').hidden = true; showScreen(null);
   $('runPad').hidden = !(W < 760 || matchMedia('(pointer:coarse)').matches);
-  DugiRun.start({ look: look(), course: S.course, onEnd: runEnd });
+  DugiRun.start({ look: look(), onEnd: runEnd });
 }
 function runEnd(r){
   mode = 'runresult';
   $('runPad').hidden = true;
-  const co = COURSE(S.course), before = S.career.deliver || 0;
+  const before = S.career.deliver || 0;
   const pay = Math.round((r.jelly * 3.6 + r.dist / 110 + (r.cleared ? 90 + r.hp * 45 : 0))
-                         * co.pay * payMult('deliver'));
+                         * payMult('deliver'));
   const grade = r.cleared ? (r.score > 6000 ? 'S' : r.score > 4500 ? 'A' : r.score > 3200 ? 'B' : 'C') : '-';
   $('runTitle').textContent = r.cleared ? '배달 완료!' : '배달 실패…';
   $('runArt').src = SRC[look().run];
@@ -90,7 +89,7 @@ function runEnd(r){
   $('rGrade').textContent = grade;
   if(r.score > (S.runBest || 0)){ S.runBest = Math.round(r.score); $('runBest').textContent = '새 기록!'; }
   else $('runBest').textContent = '최고 기록 ' + (S.runBest || 0).toLocaleString('ko-KR');
-  payOut(pay, 'deliver', 'runReward', co.name);
+  payOut(pay, 'deliver', 'runReward', '배달 알바');
   careerUp('deliver', before);
   showScreen($('runResult'));
   bgmStart();
@@ -186,25 +185,12 @@ addEventListener('keydown', e => {
     else if(e.code === 'Space' || e.code === 'Enter'){ e.preventDefault(); advanceCut(); }
     return;
   }
-  if(keyWait >= 0 && modalOpen === 'settings'){
-    e.preventDefault();
-    if(e.code !== 'Escape'){ settings.keys[keyWait] = e.code; save(); }
-    keyWait = -1; openModal('settings'); return;
-  }
-  if(mode === 'play' && !modalOpen){
-    const ln = laneOfCode(e.code);
-    if(ln !== undefined){ e.preventDefault(); laneHold[ln] = true; hit(ln); return; }
-  }
-  if(e.code === 'Escape'){
-    if(modalOpen) closeModal();
-    else if(mode === 'play') pause();
-    else if(mode === 'pause') resumePlay();
-  }
+
+  if(e.code === 'Escape' && modalOpen) closeModal();
 });
 addEventListener('keyup', e => {
   if(mode === 'run'){ DugiRun.key(e.code, false); return; }
   if(KMAP[e.code]) keys[KMAP[e.code]] = false;
-  const ln = laneOfCode(e.code); if(ln !== undefined) laneHold[ln] = false;
 });
 addEventListener('blur', () => { for(const k in keys) keys[k] = false; });
 
@@ -223,9 +209,6 @@ cv.addEventListener('pointerdown', e => {
     if(mini && mini.kind === 'feed'){ miniClick(p.x, p.y); return; }
     homeDown(p.x, p.y); return;
   }
-  if(mode !== 'play') return;
-  const ln = Math.max(0, Math.min(3, Math.floor((p.x - fieldX()) / laneW())));
-  touchLane[e.pointerId] = ln; laneHold[ln] = true; hit(ln);
 });
 cv.addEventListener('pointermove', e => {
   if(mode !== 'home') return;
@@ -235,25 +218,20 @@ cv.addEventListener('pointermove', e => {
 cv.addEventListener('pointerup', e => {
   ptrDown = false;
   if(mode === 'run'){ DugiRun.pointer(0, false); return; }
-  if(mode === 'home'){ homeUp(); return; }
-  const ln = touchLane[e.pointerId];
-  if(ln !== undefined){ laneHold[ln] = false; delete touchLane[e.pointerId]; }
+  if(mode === 'home') homeUp();
 });
 cv.addEventListener('pointercancel', e => {
   ptrDown = false;
-  if(mode === 'home'){ homeUp(); return; }
-  const ln = touchLane[e.pointerId];
-  if(ln !== undefined){ laneHold[ln] = false; delete touchLane[e.pointerId]; }
+  if(mode === 'home') homeUp();
 });
-document.addEventListener('visibilitychange', () => { if(document.hidden && mode === 'play') pause(); });
 
 document.addEventListener('pointerdown', e => {
   audioKick();
-  if(e.target.closest('button,.songrow,.dcard,.lv,.cover,.sinfo,.shopcard,.jobcard,.tab')) uiClick();
+  if(e.target.closest('button,.dcard,.shopcard,.jobcard,.tab,.photo')) uiClick();
 }, true);
 function audioKick(){
   initAudio();
-  if(mode !== 'pause' && !cdTimer && ctx.state === 'suspended') ctx.resume();
+  if(ctx.state === 'suspended') ctx.resume();
   if(mode === 'home' || mode === 'result' || mode === 'runresult' || mode === 'caferesult') bgmStart();
 }
 
@@ -274,11 +252,6 @@ $('decoBtn').onclick = () => {
 };
 $('modalClose').onclick = closeModal;
 modal.addEventListener('pointerdown', e => { if(e.target === modal) closeModal(); });
-$('pauseBtn').onclick = () => pause();
-$('resumeBtn').onclick = () => resumePlay();
-$('quitBtn').onclick = () => quitPlay();
-$('againBtn').onclick = () => startGame();
-$('homeBtn').onclick = () => goHome();
 $('runAgain').onclick = () => { if(mode === 'caferesult') startCafe(); else startRun(); };
 $('runHome').onclick = () => goHome();
 $('introGo').onclick = () => finishIntro();
@@ -311,7 +284,6 @@ function frame(ts){
     if(mode === 'cut' && cut){ drawCut(dt); }
     else if(mode === 'run' || mode === 'runresult'){ DugiRun.frame(dt, mode === 'run'); }
     else if(mode === 'cafe' || mode === 'caferesult'){ CafeGame.frame(dt, mode === 'cafe'); }
-    else if(mode === 'play' || mode === 'pause' || mode === 'result'){ stepPlay(dt, ts); }
     else { updateHome(dt); drawHome(dt); }
     $('miniClose').hidden = !(mode === 'home' && mini);
   }catch(err){
@@ -321,9 +293,7 @@ function frame(ts){
 }
 
 /* ===== 시작 ===== */
-seedScenery();
 resize();
-applySkin();
 checkDaily();
 if(S.named){
   const away = awayReport();
