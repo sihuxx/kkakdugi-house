@@ -58,7 +58,7 @@ async function api(path, opt){
     'apikey': ANON,
     'Content-Type': 'application/json'
   }, opt.headers || {});
-  if(opt.auth !== false && access) headers['Authorization'] = 'Bearer ' + access;
+  headers['Authorization'] = 'Bearer ' + ((opt.auth !== false && access) ? access : ANON);
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 15000);
   let res;

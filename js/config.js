@@ -3,13 +3,14 @@
    둘 다 비어 있으면 게임은 '로컬 모드'로 돌아갑니다 (브라우저에만 저장).
 
    · SUPABASE_URL      프로젝트 URL          (Settings → API)
-   · SUPABASE_ANON_KEY anon / public key     (Settings → API)
+   · SUPABASE_ANON_KEY publishable key       (Settings → API Keys)
 
-   ⚠ anon key 는 브라우저에 그대로 노출됩니다. 이건 정상이고 설계상 안전합니다.
+   ⚠ publishable key 는 브라우저에 그대로 노출됩니다. 이건 정상이고 설계상 안전합니다.
       "누가 무엇을 읽고 쓸 수 있는가" 는 이 키가 아니라 서버의 RLS 정책이 정합니다.
-      service_role key 는 절대 여기에 넣지 마세요. 그건 모든 권한을 가진 열쇠입니다.
+      sb_secret_ 로 시작하는 secret key 는 절대 여기에 넣지 마세요.
+      그건 RLS 를 전부 무시하는 마스터키입니다.
    =============================================================== */
 window.DUGI_CONFIG = {
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: ''
+  SUPABASE_URL: 'https://nmmekqyjrqkmwmygzedm.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_KhM75NPu2tvm4L-SXxNJgA_RSDsYL_j'
 };

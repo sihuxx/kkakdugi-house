@@ -4,14 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- 보안: 외부에서 스크립트를 끼워 넣지 못하게 막습니다.
-     connect-src 는 본인 Supabase 주소만 남기고 좁히세요. -->
+     connect-src 에 우리 서버 주소 하나만 적어서, 다른 어디로도
+     데이터가 나갈 수 없게 막아둡니다. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
   script-src 'self';
   style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob:;
-  connect-src 'self' https://*.supabase.co https://*.supabase.in;
+  connect-src 'self' https://nmmekqyjrqkmwmygzedm.supabase.co;
   form-action 'none';
   base-uri 'none';
   object-src 'none'">

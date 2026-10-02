@@ -158,6 +158,27 @@ create policy "본인 것만 읽기" on public.saves
 
 ---
 
+## 키가 노출됐을 때 (사고 대응)
+
+키는 종류에 따라 대응이 다릅니다.
+
+| 키 | 노출되면 | 대응 |
+| --- | --- | --- |
+| `sb_publishable_...` | **문제 없음** | 원래 브라우저에 실려 배포되는 값. RLS가 막아줍니다 |
+| `sb_secret_...` (구 service_role) | **치명적** — RLS를 전부 무시하고 모든 사용자 데이터 열람·삭제 가능 | **즉시 폐기** |
+| Database Password | DB 직접 접속 가능 | 즉시 변경 |
+
+**secret key가 노출된 경우** (개발 중 실제로 한 번 겪었고, 아래 절차로 처리했습니다)
+
+1. Project Settings → API Keys → Secret keys → 해당 키 **Revoke**
+2. **Create new secret key** 로 재발급
+3. 그 키를 쓰던 곳(서버·CI·환경변수)을 새 키로 교체
+4. Logs & Analytics → API 로그에서 노출 기간 동안 이상한 접근이 있었는지 확인
+
+> 이 게임은 secret key를 **어디에서도 쓰지 않습니다.** 브라우저만으로 돌아가기 때문에
+> 애초에 필요가 없고, 그래서 노출돼도 폐기만 하면 끝납니다.
+> "쓰지 않는 권한은 아예 만들지 않는다"가 제일 싼 방어입니다.
+
 ## 설정하는 법
 
 1. [supabase.com](https://supabase.com) 에서 프로젝트를 만듭니다 (무료)
@@ -165,9 +186,13 @@ create policy "본인 것만 읽기" on public.saves
 3. **Authentication → Providers → Email** 에서 *Confirm email* 을 **켭니다**
    (끄면 아무 메일로나 가입할 수 있습니다)
 4. **Authentication → URL Configuration** 에서 Site URL을 실제 배포 주소로 지정
-5. **Settings → API** 의 `Project URL`과 `anon public` 키를 `js/config.js` 에 넣습니다
-6. `index.html` 의 CSP에서 `connect-src` 를 본인 프로젝트 주소로 좁힙니다
-   (`https://abcd1234.supabase.co` 처럼)
+5. **Settings → API Keys** 의 `Project URL`과 **publishable** 키를 `js/config.js` 에 넣습니다
+   (`sb_secret_` 로 시작하는 키는 절대 넣지 않습니다)
+6. `index.html` 의 CSP에서 `connect-src` 를 본인 프로젝트 주소 하나로 좁힙니다
+7. Authentication → Sign In / Providers → Email 에서
+   **Minimum password length 10**, **Secure password change**,
+   **Require current password when updating** 를 켭니다
+   (브라우저 코드의 비밀번호 규칙과 서버 기준을 맞춥니다)
 
 설정하지 않으면 게임은 **로컬 모드**로 돌아갑니다 — 로그인 없이 브라우저에만 저장됩니다.
 
