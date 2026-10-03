@@ -17,8 +17,9 @@ let cut=null;
 
 function startCut(rank, results, onDone){
   const cast=[];
-  const pool=CHARS.filter(c=>c.id!==char.id);
-  const pick=[char].concat(pool.sort(()=>Math.random()-0.5).slice(0,5));
+  const mine=look();                       /* 지금 입고 있는 모습이 앞장선다 */
+  const pool=CHARS.filter(c=>c.id!==mine.id);
+  const pick=[mine].concat(pool.sort(()=>Math.random()-0.5).slice(0,5));
   pick.forEach((c,i)=>{
     const depth=0.55+Math.random()*0.55;
     cast.push({c, depth,

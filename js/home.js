@@ -86,10 +86,16 @@ function spotOf(id){ return LAY.floor.find(o => o.id === id) || LAY.wall.find(o 
    시간대 — 실제 시각에 따라 방 분위기가 바뀐다
    =============================================================== */
 const DAYPARTS = {
-  morn:  { name:'아침', sky:['#DCEFFB','#F0F8FC'], mul:'#E7EFF9', pool:0.16, glow:0    },
-  day:   { name:'낮',   sky:['#CDEBFA','#EAF6FB'], mul:null,      pool:0.14, glow:0    },
-  eve:   { name:'저녁', sky:['#FFCF9C','#FFAE85'], mul:'#FAD6B4', pool:0.26, glow:0.20 },
-  night: { name:'밤',   sky:['#4E5680','#6E7296'], mul:'#5B60A2', pool:0.34, glow:0.52 }
+  /* sky  : 바깥 하늘색 (위→아래)   mul : 화면 전체에 곱할 색
+     glow : 불빛 번짐 세기          lamp: 바깥 해·달 색 (null 이면 안 그림) */
+  morn:  { name:'아침', sky:['#CFE6FB','#FDF0E2'], mul:'#E7EFF9', pool:0.16, glow:0.10,
+           lamp:'#FFE9B0', star:0 },
+  day:   { name:'낮',   sky:['#CDEBFA','#EAF6FB'], mul:null,      pool:0.14, glow:0,
+           lamp:'#FFF3C4', star:0 },
+  eve:   { name:'저녁', sky:['#FFC58C','#FFAE85'], mul:'#FAD6B4', pool:0.26, glow:0.20,
+           lamp:'#FFB778', star:0 },
+  night: { name:'밤',   sky:['#3F4876','#6A6E97'], mul:'#5B60A2', pool:0.34, glow:0.52,
+           lamp:'#EAF0FF', star:1 }
 };
 function dayPart(){
   const h = new Date().getHours();
@@ -112,8 +118,11 @@ function lightPool(a){
   rg.addColorStop(1, 'rgba(255,226,152,0)');
   g.save(); g.fillStyle = rg; g.fillRect(0, 0, W, H); g.restore();
 }
-/* 방 전체에 시간대 색 + 구석 어둠 */
-function drawDayTint(){
+/* 바깥에서 해·달이 뜨는 자리 — 위쪽 상태바에 가리지 않게 그 아래로 */
+function skySpot(){ return { x: W * 0.80, y: wallBot() * 0.68 }; }
+
+/* 화면 전체에 시간대 색 + 구석 어둠 — 바깥에서는 빛의 근원이 해·달이다 */
+function drawDayTint(outdoor){
   const D = DAY();
   g.save();
   if(D.mul){                                   /* 곱하기 — 진짜로 어두워진다 */
@@ -121,8 +130,9 @@ function drawDayTint(){
     g.fillStyle = D.mul; g.fillRect(0, 0, W, H);
     g.globalCompositeOperation = 'source-over';
   }
-  if(D.glow){                                  /* 조명 주변만 다시 밝게 */
-    const L = lampSpot(), cy = L.y + (H - L.y) * 0.45;
+  if(D.glow){                                  /* 조명(바깥이면 해·달) 주변만 다시 밝게 */
+    const L = outdoor ? skySpot() : lampSpot();
+    const cy = outdoor ? L.y : L.y + (H - L.y) * 0.45;
     const rg = g.createRadialGradient(L.x, cy, 8, L.x, cy, Math.min(W, H) * 0.78);
     rg.addColorStop(0,   'rgba(255,214,132,' + D.glow + ')');
     rg.addColorStop(0.45,'rgba(255,214,132,' + (D.glow * 0.3).toFixed(3) + ')');
@@ -634,12 +644,46 @@ seedYard();
 
 function drawYard(){
   const wb = wallBot();
-  /* 하늘 */
+  const D = DAY();
+  /* 하늘 — 시간대에 따라 색이 바뀐다 */
   const sk = g.createLinearGradient(0, 0, 0, wb);
-  sk.addColorStop(0, '#CFEAF7'); sk.addColorStop(1, '#EAF6FB');
+  sk.addColorStop(0, D.sky[0]); sk.addColorStop(1, D.sky[1]);
   g.fillStyle = sk; g.fillRect(0, 0, W, wb);
-  /* 구름 */
-  g.save(); g.fillStyle = '#FFFFFF'; g.globalAlpha = .9;
+
+  /* 별 — 밤에만 */
+  if(D.star){
+    g.save(); g.fillStyle = '#FFFFFF';
+    for(let i = 0; i < 34; i++){
+      const sx = ((i * 97) % 100) / 100 * W;
+      const sy = wb * (0.46 + ((i * 53) % 100) / 100 * 0.48);   /* 상태바 아래쪽에 */
+      const tw = 0.35 + 0.45 * Math.abs(Math.sin(home.t * 0.8 + i));
+      g.globalAlpha = tw;
+      g.beginPath(); g.arc(sx, sy, (i % 3 === 0 ? 1.7 : 1.1) * uiK(), 0, 7); g.fill();
+    }
+    g.restore();
+  }
+
+  /* 해 · 달 */
+  if(D.lamp){
+    const L = skySpot();
+    g.save();
+    const hal = g.createRadialGradient(L.x, L.y, 2, L.x, L.y, wb * 0.34);
+    hal.addColorStop(0, D.lamp); hal.addColorStop(1, 'rgba(255,255,255,0)');
+    g.globalAlpha = 0.55; g.fillStyle = hal;
+    g.beginPath(); g.arc(L.x, L.y, wb * 0.34, 0, 7); g.fill();
+    g.globalAlpha = 1; g.fillStyle = D.lamp;
+    g.beginPath(); g.arc(L.x, L.y, wb * 0.085, 0, 7); g.fill();
+    if(D.star){                                  /* 달 — 한 입 베어 문 모양 */
+      g.globalCompositeOperation = 'destination-out';
+      g.beginPath(); g.arc(L.x - wb * 0.038, L.y - wb * 0.026, wb * 0.072, 0, 7); g.fill();
+      g.globalCompositeOperation = 'source-over';
+    }
+    g.restore();
+  }
+
+  /* 구름 — 밤에는 흐릿하게 */
+  g.save(); g.fillStyle = D.star ? '#8E93BE' : '#FFFFFF';
+  g.globalAlpha = D.star ? .45 : .9;
   [[0.14, 0.22, 1], [0.52, 0.14, 0.75], [0.82, 0.26, 0.9]].forEach(([cx, cy, sc]) => {
     const x = W * cx, y = wb * cy, r = wb * 0.11 * sc;
     g.beginPath(); g.arc(x, y, r, 0, 7); g.arc(x + r * 0.9, y + r * 0.2, r * 0.75, 0, 7);

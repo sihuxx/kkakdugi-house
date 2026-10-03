@@ -656,6 +656,8 @@ function drawYardScene(){
   }
   if(!drew) drawDugi();
   drawParts();
+  drawDayTint(true);                 /* 정원에도 아침·낮·저녁·밤을 입힌다 */
+  if(deco) drawZoneLabels();
   drawPrompt();
 }
 

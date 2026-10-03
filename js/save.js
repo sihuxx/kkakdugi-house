@@ -23,14 +23,15 @@ function freshSave(){
     furn: [...BASE_FURN],
     pos: {},                       // 꾸미기 모드에서 옮긴 자리
     bag: {},                       // 소모품
-    career: { deliver:0, cafe:0 },
-    runBest: 0, cafeBest: 0,
+    career: { deliver:0, cafe:0, draw:0 },
+    runBest: 0, cafeBest: 0, drawBest: 0,
     stat: { pet:0, job:0, earn:0 },
     daily: null,
     seen: 0,                       // 마지막으로 논 시각
     album: [],                     // 사진첩
     guest: null,                   // 오늘 찾아온 손님
     guestDay: 0,
+    freeDay: '',                   // 오늘 무료 뽑기를 썼나
     upkeepDay: 0,
     claimed: [],
     named: false,
@@ -46,7 +47,7 @@ let S = freshSave();
       S = Object.assign(freshSave(), raw);
       S.dugi = Object.assign(freshSave().dugi, raw.dugi || {});
       S.settings = Object.assign(freshSave().settings, raw.settings || {});
-      S.career = Object.assign({ deliver:0, cafe:0 }, raw.career || {});
+      S.career = Object.assign({ deliver:0, cafe:0, draw:0 }, raw.career || {});
       S.stat = Object.assign({ pet:0, job:0, earn:0 }, raw.stat || {});
       const ids = new Set(CHARS.map(c => c.id));
       S.own = (S.own || []).filter(id => ids.has(id));
@@ -78,7 +79,9 @@ function condition(){
 /* 알바 시급 = 컨디션 + 마음 레벨 + 가구 + 그 알바 경력 */
 function payMult(jobId){
   const career = jobId ? careerPay(S.career[jobId] || 0) : 1;
-  return (0.80 + 0.30 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay')) * career * WEATHER().pay;
+  return (0.80 + 0.30 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay'))
+         * (1 + collectBonus())                 /* 모습 등급 + 도감 수집 */
+         * career * WEATHER().pay;
 }
 
 function addStat(k, v){
@@ -116,6 +119,17 @@ function afterOuting(jobId){
   bumpDaily('job', 1); 
   newRequest(true);
   save();
+}
+/* 알바비 정산 — 알바 전부가 같이 쓴다 */
+function payOut(pay, jobId, elId, label){
+  pay = Math.max(0, Math.round(pay));
+  addClover(pay); addLove(4); afterOuting(jobId); save(); refreshBar(); sfxCoin(4);
+  const lv = careerLv(S.career[jobId] || 0);
+  const el = $(elId); if(!el) return;
+  el.innerHTML = '<span class="paytop">오늘의 알바비</span>' + CLOVER_SVG +
+    '<b>+' + pay + '</b> 클로버 · 마음 <b>+4</b>' +
+    '<small>' + esc(label || '') + ' · 경력 Lv' + lv + ' (' + (S.career[jobId] || 0) + '번째)' +
+    ' · 배부름 −16 · 기운 −20 · 깨끗함 −14</small>';
 }
 function careerUp(jobId, before){
   const a = careerLv(before), b = careerLv(S.career[jobId] || 0);
@@ -200,10 +214,14 @@ function toast(title, line){
 
 /* ===== 도감 보상 ===== */
 const DEX_REWARDS = [
-  { id:'d5',  n:5,  clover:300,  txt:'클로버 300' },
-  { id:'d9',  n:9,  clover:700, txt:'클로버 700' },
-  { id:'d13', n:13, clover:1200, item:'snack', txt:'클로버 1200 + 간식 3개' },
-  { id:'d17', n:17, clover:1500, txt:'클로버 1500' }
+  { id:'d3',  n:3,  clover:400,  txt:'클로버 400' },
+  { id:'d5',  n:5,  clover:800,  txt:'클로버 800' },
+  { id:'d9',  n:9,  clover:1600, txt:'클로버 1600' },
+  { id:'d13', n:13, clover:2600, item:'snack', txt:'클로버 2600 + 간식 3개' },
+  { id:'d17', n:17, clover:3600, txt:'클로버 3600' },
+  { id:'d22', n:22, clover:5200, item:'snack', txt:'클로버 5200 + 간식 3개' },
+  { id:'d27', n:27, clover:7000, txt:'클로버 7000' },
+  { id:'d31', n:31, clover:12000, txt:'클로버 12000 · 전부 모았어요!' }
 ];
 function checkRewards(){
   DEX_REWARDS.forEach(r => {

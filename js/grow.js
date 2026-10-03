@@ -205,6 +205,16 @@ const CARE_ORDER = ['feed', 'wash', 'play', 'sleep', 'water', 'clean'];
 
 /* ===== 알바 ===== */
 const CAREER_NEED = [0, 2, 5, 9, 14, 20, 27, 36, 48, 62];    // 몇 번 일했나
+/* ===== 모습 보너스 — 뽑기로 얻은 게 실제로 쓸모 있도록 =====
+   좋은 등급을 입고 있으면 알바비가 오르고, 많이 모을수록 또 오릅니다.
+   (모으는 재미가 수치로 돌아오게 하는 자리) */
+const LOOK_PAY = { base:0, N:0.03, R:0.07, SR:0.13, UR:0.22 };
+const DEX_PAY_EACH = 0.01;      /* 한 종류당 +1% */
+const DEX_PAY_CAP  = 0.30;      /* 최대 +30% */
+const lookPay = () => LOOK_PAY[(look().rank)] || 0;
+const dexPay  = () => Math.min(DEX_PAY_CAP, (S.own ? S.own.length : 0) * DEX_PAY_EACH);
+const collectBonus = () => lookPay() + dexPay();
+
 const careerLv = n => { let l = 1; CAREER_NEED.forEach((v, i) => { if(n >= v) l = i + 1; }); return l; };
 const careerPay = n => 1 + 0.05 * (careerLv(n) - 1);
 
@@ -212,22 +222,25 @@ const JOBS = [
   { id:'deliver', game:'run', name:'배달 알바', place:'동네 골목',
     desc:'장애물을 피해 달려서 배달', pay:'동전을 줍고 제시간에 도착하면 보너스', color:'#EFA6B8' },
   { id:'cafe', game:'cafe', name:'카페 알바', place:'골목 카페',
-    desc:'손님 주문을 외워서 담기', pay:'길게 외울수록 팁이 커져요', color:'#D9C4A0' }
+    desc:'손님 주문을 외워서 담기', pay:'길게 외울수록 팁이 커져요', color:'#D9C4A0' },
+  { id:'draw', game:'catch', name:'두기 캐치마인드', place:'광장 · 같이 하기',
+    desc:'한 명이 그리고 나머지가 맞히기', pay:'빨리 맞힐수록 점수가 커져요',
+    color:'#8FC0D8', multi:true }
 ];
 const JOB = id => JOBS.find(j => j.id === id);
 
 
 /* ===== 오늘의 할 일 ===== */
 const DAILY_POOL = [
-  { id:'d_feed',  txt:'밥 두 번 주기',      need:2, kind:'care:feed',  pay:60 },
-  { id:'d_pet',   txt:'30번 쓰다듬기',      need:30, kind:'pet',       pay:50 },
-  { id:'d_play',  txt:'공놀이 한 번',       need:1, kind:'care:play',  pay:45 },
-  { id:'d_clean', txt:'방 청소하기',        need:1, kind:'care:clean', pay:40 },
-  { id:'d_job',   txt:'알바 한 번 다녀오기', need:1, kind:'job',        pay:80 },
-  { id:'d_wash',  txt:'깨끗하게 씻기기',    need:1, kind:'care:wash',  pay:45 },
-  { id:'d_water', txt:'화분에 물 주기',     need:1, kind:'care:water', pay:35 },
-  { id:'d_coin',  txt:'클로버 300 모으기',  need:300, kind:'earn',     pay:70 },
-  { id:'d_guest', txt:'손님에게 간식 주기',  need:1, kind:'guest',     pay:65 }
+  { id:'d_feed',  txt:'밥 두 번 주기',      need:2, kind:'care:feed',  pay:150 },
+  { id:'d_pet',   txt:'30번 쓰다듬기',      need:30, kind:'pet',       pay:130 },
+  { id:'d_play',  txt:'공놀이 한 번',       need:1, kind:'care:play',  pay:120 },
+  { id:'d_clean', txt:'방 청소하기',        need:1, kind:'care:clean', pay:110 },
+  { id:'d_job',   txt:'알바 한 번 다녀오기', need:1, kind:'job',        pay:220 },
+  { id:'d_wash',  txt:'깨끗하게 씻기기',    need:1, kind:'care:wash',  pay:120 },
+  { id:'d_water', txt:'화분에 물 주기',     need:1, kind:'care:water', pay:100 },
+  { id:'d_coin',  txt:'클로버 300 모으기',  need:300, kind:'earn',     pay:180 },
+  { id:'d_guest', txt:'손님에게 간식 주기',  need:1, kind:'guest',     pay:170 }
 ];
 
 /* ===== 업적 ===== */

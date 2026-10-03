@@ -12,7 +12,7 @@
   style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob:;
-  connect-src 'self' https://nmmekqyjrqkmwmygzedm.supabase.co;
+  connect-src 'self' https://nmmekqyjrqkmwmygzedm.supabase.co wss://nmmekqyjrqkmwmygzedm.supabase.co;
   form-action 'none';
   base-uri 'none';
   object-src 'none'">
@@ -54,6 +54,7 @@
         <span class="lookname">모습 · <b id="barLook">양 두기</b><br>집 · <b id="barHouse">낡은 방</b></span>
         <nav class="tools">
           <button id="outBtn"   type="button" title="알바하러 가기">알바</button>
+          <button id="gachaBtn" type="button" title="뽑기">뽑기</button>
           <button id="shopBtn"  type="button" title="상점">상점</button>
           <button id="dexBtn"   type="button" title="옷장·도감">옷장</button>
           <button id="decoBtn"  type="button" title="가구 옮기기">꾸미기</button>
@@ -112,6 +113,40 @@
       </div>
       <p class="credit" id="authNote"></p>
     </section>
+
+    <!-- 캐치마인드 — 방 만들기 · 들어가기 -->
+    <section class="screen" id="cmLobby" hidden>
+      <h1 style="font-size:clamp(24px,4.4vw,38px)">두기 캐치마인드<span class="sub">같이 그리고 맞히기</span></h1>
+      <p class="lead">한 명이 그리고 나머지가 맞혀요.<br>친구와 방 코드를 주고받으면 바로 시작!</p>
+
+      <div class="authbox">
+        <button class="btn" id="cmMake" type="button">새 방 만들기</button>
+        <p class="cmor"><span>또는 받은 코드로</span></p>
+        <form id="cmJoinForm" novalidate>
+          <label class="fld"><span>방 코드 6자리</span>
+            <input id="cmCode" class="codein" type="text" inputmode="latin"
+                   maxlength="6" spellcheck="false" autocomplete="off" placeholder="ACDEFG"></label>
+          <button class="btn ghost" id="cmJoin" type="submit">들어가기</button>
+        </form>
+        <p class="autherr" id="cmErr" role="alert" hidden></p>
+      </div>
+      <p class="credit">2명부터 시작할 수 있어요 · 그리는 사람은 채팅을 못 씁니다<br>
+        정답 단어는 그리는 사람 화면에만 있어요</p>
+      <button class="linkbtn" id="cmBack" type="button">알바 목록으로</button>
+    </section>
+
+    <!-- 캐치마인드 — 사람·채팅 -->
+    <aside id="cmPanel" hidden>
+      <div id="cmPlayers"></div>
+      <div id="cmLog" aria-live="polite"></div>
+      <form id="cmForm" autocomplete="off">
+        <input id="cmInput" type="text" maxlength="24" autocomplete="off"
+               spellcheck="false" aria-label="정답 입력" placeholder="정답을 적어보세요">
+        <button type="submit" id="cmSend">보내기</button>
+      </form>
+      <p id="cmNet" hidden></p>
+      <button type="button" id="cmQuit">나가기</button>
+    </aside>
 
     <!-- 꺅두기런 결과 -->
     <section class="screen" id="runResult" hidden>
@@ -174,6 +209,7 @@
 <script defer src="js/grow.js"></script>
 <script defer src="js/save.js"></script>
 <script defer src="js/auth.js"></script>
+<script defer src="js/net.js"></script>
 <script defer src="js/audio.js"></script>
 <script defer src="js/menus.js"></script>
 <script defer src="js/cut.js"></script>
@@ -181,6 +217,7 @@
 <script defer src="js/care.js"></script>
 <script defer src="js/run.js"></script>
 <script defer src="js/cafe.js"></script>
+<script defer src="js/catch.js"></script>
 <script defer src="js/app.js"></script>
 </body>
 </html>

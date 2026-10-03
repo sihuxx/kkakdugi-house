@@ -5,10 +5,11 @@
    셸 — 화면 전환 · 입력 · 메인 루프
    =============================================================== */
 let mode = 'home';          // home · auth · cut · run · runresult · cafe · caferesult
+                            // · cmlobby · catch · catchresult
 let last = performance.now();
 
 function showScreen(el){
-  [$('introScreen'), $('authScreen'), $('runResult')]
+  [$('introScreen'), $('authScreen'), $('runResult'), $('cmLobby')]
     .forEach(s => { if(s) s.hidden = s !== el; });
   $('careBar').hidden = !(mode === 'home' && place === 'room' && !el && !mini && !deco);
 }
@@ -26,6 +27,8 @@ function refreshBar(){
   if(wxEl) wxEl.innerHTML = '<i class="wx wx-' + wx.id + '"></i>' + wx.name + ' · ' + dp.name;
   $('expFill').style.width = Math.round(loveProg(d.love) * 100) + '%';
   $('expCap').textContent = lv >= LOVE_MAX ? '최고 단짝!' : ('다음 레벨까지 ' + Math.ceil(loveNext(d.love)));
+  const gb = $('gachaBtn');
+  if(gb) gb.classList.toggle('alert', typeof freeLeft === 'function' && freeLeft());
   const hearts = Math.min(5, Math.round(lv / 2));
   $('loveHearts').innerHTML = [0,1,2,3,4].map(i => '<i class="' + (i < hearts ? 'on' : '') + '">♥</i>').join('');
   STATS.forEach(s => {
@@ -42,6 +45,8 @@ function goHome(){
   mode = 'home'; deco = false; mini = null;
   showScreen(null);
   $('topbar').hidden = false; $('runPad').hidden = true;
+  $('cmPanel').hidden = true;
+  try{ if(typeof Net !== 'undefined' && Net.roomCode()) Net.leave(); }catch(e){}
   $('skipBtn').hidden = true; $('tapHint').hidden = true;
   $('decoBtn').classList.remove('on'); $('decoBtn').disabled = false;
   if(wasOut){ home.x = LAY.door.x; home.y = 0.22; home.target = null; home.vx = home.vy = 0; }
@@ -77,7 +82,7 @@ function runEnd(r){
   mode = 'runresult';
   $('runPad').hidden = true;
   const before = S.career.deliver || 0;
-  const pay = Math.round((r.jelly * 3.6 + r.dist / 110 + (r.cleared ? 90 + r.hp * 45 : 0))
+  const pay = Math.round((r.jelly * 7 + r.dist / 60 + (r.cleared ? 200 + r.hp * 90 : 0))
                          * payMult('deliver'));
   const grade = r.cleared ? (r.score > 6000 ? 'S' : r.score > 4500 ? 'A' : r.score > 3200 ? 'B' : 'C') : '-';
   $('runTitle').textContent = r.cleared ? '배달 완료!' : '배달 실패…';
@@ -105,7 +110,7 @@ function startCafe(){
 function cafeEnd(r){
   mode = 'caferesult';
   const before = S.career.cafe || 0;
-  const pay = Math.round((r.score / 9 + r.tip * 12 + 40) * payMult('cafe'));
+  const pay = Math.round((r.score / 8 + r.tip * 17 + 90) * payMult('cafe'));
   $('runTitle').textContent = r.rounds >= 5 ? '오늘도 수고!' : '조금 아쉬워요';
   $('runArt').src = SRC[look().run];
   $('runScore').textContent = Math.round(r.score).toLocaleString('ko-KR');
@@ -121,6 +126,87 @@ function cafeEnd(r){
   showScreen($('runResult'));
   bgmStart();
 }
+
+/* ===============================================================
+   캐치마인드 — 여럿이 하는 알바
+   =============================================================== */
+function cmErr(t){
+  const el = $('cmErr');
+  el.textContent = t || ''; el.hidden = !t;
+}
+function startCatch(){
+  closeModal(); initAudio();
+  if(ctx && ctx.state === 'suspended') ctx.resume();
+  if(!Net.enabled()){
+    toast('서버가 연결되지 않았어요', '혼자 하는 알바를 해주세요');
+    openModal('job'); return;
+  }
+  mode = 'cmlobby';
+  $('topbar').hidden = true; $('careBar').hidden = true; $('runPad').hidden = true;
+  $('cmPanel').hidden = true;
+  cmErr(''); $('cmCode').value = '';
+  showScreen($('cmLobby'));
+}
+function enterRoom(code){
+  const btn = $('cmJoin'), mk = $('cmMake');
+  btn.disabled = mk.disabled = true; cmErr('연결하는 중…');
+  Net.join(code, { name: S.dugi.name, look: S.look }, err => {
+    btn.disabled = mk.disabled = false;
+    if(err){ cmErr(String(err.message || '들어가지 못했어요')); return; }
+    cmErr('');
+    mode = 'catch';
+    bgmStop();
+    showScreen(null);
+    $('topbar').hidden = true; $('careBar').hidden = true;
+    $('cmPanel').hidden = false;
+    CatchMind.layout();
+    CatchMind.enter({ name: S.dugi.name, look: S.look, onEnd: catchEnd });
+  });
+}
+function catchEnd(r){
+  $('cmPanel').hidden = true;
+  if(!r){ mode = 'home'; goHome(); openModal('job'); return; }
+  mode = 'catchresult';
+  const before = S.career.draw || 0;
+  /* 점수는 남의 브라우저가 센 것이라 그대로 믿지 않는다 — 값도 자르고 보상에도 상한 */
+  const score = Math.min(100000, Math.max(0, Math.round(r.score) || 0));
+  const raw = Math.round((score * 0.45 + 110) * payMult('draw'));
+  const pay = Math.min(CatchMind.REWARD_CAP, raw);
+  $('runTitle').textContent = r.rank === 1 ? '1등!' : r.rank + '등이에요';
+  $('runArt').src = SRC[look().run];
+  $('runScore').textContent = score.toLocaleString('ko-KR');
+  $('rDist').textContent = r.rank + ' / ' + r.total + '등';
+  $('rJelly').textContent = r.total + '명';
+  $('rCombo').textContent = (r.board[0] ? r.board[0].name : '-');
+  $('rGrade').textContent = r.rank === 1 ? 'S' : r.rank <= Math.ceil(r.total / 2) ? 'A' : 'B';
+  if(score > (S.drawBest || 0)){ S.drawBest = score; $('runBest').textContent = '새 기록!'; }
+  else $('runBest').textContent = '최고 점수 ' + (S.drawBest || 0).toLocaleString('ko-KR');
+  $('runAgain').textContent = '한 번 더';
+  payOut(pay, 'draw', 'runReward', '두기 캐치마인드');
+  careerUp('draw', before);
+  showScreen($('runResult'));
+  bgmStart();
+}
+$('cmMake').onclick = () => enterRoom(Net.makeCode());
+$('cmJoinForm').onsubmit = e => {
+  e.preventDefault();
+  const c = Net.tidyCode($('cmCode').value);
+  if(!Net.okCode(c)){ cmErr('방 코드 6자리를 확인해주세요'); return; }
+  enterRoom(c);
+};
+$('cmCode').addEventListener('input', e => {
+  const v = Net.tidyCode(e.target.value);
+  if(e.target.value !== v) e.target.value = v;
+  cmErr('');
+});
+$('cmBack').onclick = () => { mode = 'home'; goHome(); openModal('job'); };
+$('cmQuit').onclick = () => { if(confirm('방에서 나갈까요?')) CatchMind.quit(); };
+$('cmForm').onsubmit = e => {
+  e.preventDefault();
+  const v = $('cmInput').value;
+  $('cmInput').value = '';
+  CatchMind.say(v);
+};
 
 /* ===== 처음 시작 ===== */
 function askName(){
@@ -172,6 +258,12 @@ addEventListener('keydown', e => {
     if(e.code === 'Escape'){ CafeGame.quit(); return; }
     CafeGame.key(e.code); return;
   }
+  if(mode === 'catch'){
+    const typing = /^(INPUT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
+    if(e.code === 'Escape'){ if(typing) $('cmInput').blur(); else CatchMind.quit(); return; }
+    if(!typing) CatchMind.key(e.code);
+    return;
+  }
   if(mode === 'home' && !modalOpen){
     if(mini && e.code === 'Escape'){ closeMini(); return; }
     if(KMAP[e.code] && !mini){ e.preventDefault(); keys[KMAP[e.code]] = true; home.target = null; return; }
@@ -204,6 +296,7 @@ cv.addEventListener('pointerdown', e => {
   const p = canvasXY(e);
   if(mode === 'run'){ DugiRun.pointer(p.y / H, true); return; }
   if(mode === 'cafe'){ CafeGame.pointer(p.x, p.y); return; }
+  if(mode === 'catch'){ e.preventDefault(); CatchMind.down(p.x, p.y); return; }
   if(mode === 'cut'){ advanceCut(); return; }
   if(mode === 'home'){
     if(mini && mini.kind === 'feed'){ miniClick(p.x, p.y); return; }
@@ -211,6 +304,7 @@ cv.addEventListener('pointerdown', e => {
   }
 });
 cv.addEventListener('pointermove', e => {
+  if(mode === 'catch'){ const q = canvasXY(e); CatchMind.move(q.x, q.y, ptrDown); return; }
   if(mode !== 'home') return;
   const p = canvasXY(e);
   homeMove(p.x, p.y, ptrDown);
@@ -218,10 +312,12 @@ cv.addEventListener('pointermove', e => {
 cv.addEventListener('pointerup', e => {
   ptrDown = false;
   if(mode === 'run'){ DugiRun.pointer(0, false); return; }
+  if(mode === 'catch'){ CatchMind.up(); return; }
   if(mode === 'home') homeUp();
 });
 cv.addEventListener('pointercancel', e => {
   ptrDown = false;
+  if(mode === 'catch'){ CatchMind.up(); return; }
   if(mode === 'home') homeUp();
 });
 
@@ -232,10 +328,12 @@ document.addEventListener('pointerdown', e => {
 function audioKick(){
   initAudio();
   if(ctx.state === 'suspended') ctx.resume();
-  if(mode === 'home' || mode === 'result' || mode === 'runresult' || mode === 'caferesult') bgmStart();
+  if(mode === 'home' || mode === 'result' || mode === 'runresult' ||
+     mode === 'caferesult' || mode === 'catchresult') bgmStart();
 }
 
 /* 버튼 */
+$('gachaBtn').onclick = () => openModal('gacha');
 $('shopBtn').onclick = () => openModal('shop');
 $('dexBtn').onclick  = () => openModal('wardrobe');
 $('setBtn').onclick  = () => openModal('settings');
@@ -252,7 +350,11 @@ $('decoBtn').onclick = () => {
 };
 $('modalClose').onclick = closeModal;
 modal.addEventListener('pointerdown', e => { if(e.target === modal) closeModal(); });
-$('runAgain').onclick = () => { if(mode === 'caferesult') startCafe(); else startRun(); };
+$('runAgain').onclick = () => {
+  if(mode === 'caferesult') startCafe();
+  else if(mode === 'catchresult') startCatch();
+  else startRun();
+};
 $('runHome').onclick = () => goHome();
 $('introGo').onclick = () => finishIntro();
 $('introName').addEventListener('keydown', e => { if(e.key === 'Enter') finishIntro(); });
@@ -284,6 +386,8 @@ function frame(ts){
     if(mode === 'cut' && cut){ drawCut(dt); }
     else if(mode === 'run' || mode === 'runresult'){ DugiRun.frame(dt, mode === 'run'); }
     else if(mode === 'cafe' || mode === 'caferesult'){ CafeGame.frame(dt, mode === 'cafe'); }
+    else if(mode === 'catch' || mode === 'catchresult'){ CatchMind.frame(dt, mode === 'catch'); }
+    else if(mode === 'cmlobby'){ g.fillStyle = '#F3EAE1'; g.fillRect(0, 0, W, H); }
     else { updateHome(dt); drawHome(dt); }
     $('miniClose').hidden = !(mode === 'home' && mini);
   }catch(err){

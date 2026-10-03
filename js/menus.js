@@ -16,8 +16,9 @@ let freshIds = new Set();
 
 /* ===== 뽑기 로직 ===== */
 const PULL1 = 110, PULL10 = 1000;
-const REFUND = { N:30, R:70, SR:180, UR:500 };
+const REFUND = { N:55, R:130, SR:340, UR:900 };     /* 겹쳐도 손해가 아니게 */
 const RATE = [['N', 58], ['R', 28], ['SR', 11], ['UR', 3]];
+const PITY_SR = 90, PITY_UR = 250;                  /* 천장 */
 const POOL = rk => CHARS.filter(c => c.rank === rk);
 function rollRank(force){
   if(force) return force;
@@ -25,9 +26,11 @@ function rollRank(force){
   for(const [rk, p] of RATE){ if(r < p) return rk; r -= p; }
   return 'N';
 }
-function pull(n){
-  const cost = n === 10 ? PULL10 : PULL1;
+function freeLeft(){ return S.freeDay !== today(); }
+function pull(n, free){
+  const cost = free ? 0 : (n === 10 ? PULL10 : PULL1);
   if(S.clover < cost) return null;
+  if(free){ S.freeDay = today(); }
   addClover(-cost);
   const got = [];
   for(let i = 0; i < n; i++){
@@ -36,8 +39,8 @@ function pull(n){
     /* 천장 — 90번 안에 진귀 이상, 250번 안에 전설 */
     S.pityU = (rk === 'UR') ? 0 : (S.pityU || 0) + 1;
     S.pity  = (rk === 'SR' || rk === 'UR') ? 0 : S.pity + 1;
-    if(S.pityU >= 250){ rk = 'UR'; S.pity = S.pityU = 0; }
-    else if(S.pity >= 90){ rk = 'SR'; S.pity = 0; }
+    if(S.pityU >= PITY_UR){ rk = 'UR'; S.pity = S.pityU = 0; }
+    else if(S.pity >= PITY_SR){ rk = 'SR'; S.pity = 0; }
     const pool = POOL(rk), c = pool[Math.floor(Math.random() * pool.length)];
     const isNew = !owns(c.id);
     if(isNew){ S.own.push(c.id); freshIds.add(c.id); }
@@ -322,15 +325,18 @@ function drawFurnIcon(cvs, id){
 function buildJobs(body){
   const info = document.createElement('p'); info.className = 'outinfo';
   info.innerHTML = '컨디션 <b>' + Math.round(condition() * 100) + '%</b> · 마음 <b>Lv' +
-                   loveLv(S.dugi.love) + '</b>' +
-                   '<br><small>잘 먹고 잘 잔 두기가 일도 잘해요. 일하고 오면 배고프고 지저분해집니다.</small>';
+                   loveLv(S.dugi.love) + '</b> · 수집 보너스 <b>+' +
+                   Math.round(collectBonus() * 100) + '%</b>' +
+                   '<br><small>잘 먹고 잘 잔 두기가 일도 잘해요. 일하고 오면 배고프고 지저분해집니다.' +
+                   '<br>좋은 등급을 입고 많이 모을수록 알바비가 올라요 (옷장 · 뽑기)</small>';
   body.appendChild(info);
   const row = document.createElement('div'); row.className = 'jobrow'; body.appendChild(row);
   JOBS.forEach(j => {
     const n = S.career[j.id] || 0, lv = careerLv(n);
     const b2 = document.createElement('button');
     b2.type = 'button'; b2.className = 'jobcard';
-    b2.innerHTML = '<span class="sign" style="background:' + j.color + '">' + j.place + '</span>' +
+    b2.innerHTML = '<span class="sign" style="background:' + j.color + '">' +
+        (j.multi ? '여럿이 · ' : '') + j.place + '</span>' +
       '<canvas width="208" height="156"></canvas>' +
       '<span class="nm">' + j.name + '</span>' +
       '<span class="meta">' + j.desc + '</span>' +
@@ -339,7 +345,11 @@ function buildJobs(body){
       '<span class="go">일하러 가기</span>';
     row.appendChild(b2);
     drawJobIcon(b2.querySelector('canvas'), j.id);
-    b2.onclick = () => { if(j.game === 'run') startRun(); else startCafe(); };
+    b2.onclick = () => {
+      if(j.game === 'run') startRun();
+      else if(j.game === 'catch') startCatch();
+      else startCafe();
+    };
   });
 }
 function drawJobIcon(cvs, id){
@@ -348,7 +358,31 @@ function drawJobIcon(cvs, id){
   g = c; W = sw; H = sh;
   c.clearRect(0, 0, sw, sh);
   ink(3.4);
-  if(id === 'dish'){
+  if(id === 'draw'){
+    g.fillStyle = '#EAF6FB'; g.fillRect(0, 0, sw, sh);
+    g.fillStyle = '#FFFCF8';                                   // 도화지
+    rrect(sw * 0.1, sh * 0.14, sw * 0.62, sh * 0.66, 10); g.fill(); g.stroke();
+    g.strokeStyle = '#8FC0D8'; g.lineWidth = 5;                // 끄적인 그림
+    g.beginPath();
+    g.moveTo(sw * 0.2, sh * 0.6); g.quadraticCurveTo(sw * 0.3, sh * 0.26, sw * 0.42, sh * 0.58);
+    g.quadraticCurveTo(sw * 0.52, sh * 0.3, sw * 0.62, sh * 0.6);
+    g.stroke();
+    g.strokeStyle = '#EFA6B8';
+    g.beginPath(); g.arc(sw * 0.38, sh * 0.42, sw * 0.1, 0, 7); g.stroke();
+    g.strokeStyle = '#5A4A40'; g.lineWidth = 3.4;
+    g.fillStyle = '#E7B075';                                   // 연필
+    g.save(); g.translate(sw * 0.74, sh * 0.5); g.rotate(0.5);
+    rrect(-sw * 0.05, -sh * 0.3, sw * 0.1, sh * 0.5, 4); g.fill(); g.stroke();
+    g.fillStyle = '#FFE0C4';
+    g.beginPath(); g.moveTo(-sw * 0.05, sh * 0.2); g.lineTo(0, sh * 0.32);
+    g.lineTo(sw * 0.05, sh * 0.2); g.closePath(); g.fill(); g.stroke();
+    g.restore();
+    g.fillStyle = '#FFF8F0';                                   // 말풍선
+    rrect(sw * 0.56, sh * 0.02, sw * 0.4, sh * 0.26, 9); g.fill(); g.stroke();
+    g.fillStyle = '#8A7264'; g.textAlign = 'center';
+    g.font = '700 22px Gaegu, sans-serif';
+    g.fillText('???', sw * 0.76, sh * 0.2);
+  }else if(id === 'dish'){
     g.fillStyle = '#EAF6FB'; g.fillRect(0, 0, sw, sh);
     g.fillStyle = '#C6DCE6';                                   // 싱크대
     rrect(sw * 0.1, sh * 0.52, sw * 0.8, sh * 0.34, 10); g.fill(); g.stroke();
@@ -481,37 +515,67 @@ const RANKSOUND = {
 };
 function buildGacha(body){
   const wrap = document.createElement('div'); wrap.className = 'gacha';
+  const srLeft = Math.max(0, PITY_SR - (S.pity || 0));
+  const urLeft = Math.max(0, PITY_UR - (S.pityU || 0));
+  const free = freeLeft();
   wrap.innerHTML =
     '<div class="gtop">' + CLOVER_SVG + '<b id="gWallet">' + S.clover.toLocaleString('ko-KR') + '</b>' +
-      '<span>흔함 55% · 귀함 32% · 아주 귀함 13%</span></div>' +
+      '<span>' + RATE.map(([rk, p]) => RARITY[rk].name + ' ' + p + '%').join(' · ') + '</span></div>' +
+
+    /* 천장 — 몇 번 더 뽑으면 확정인지 눈에 보이게 */
+    '<div class="pity">' +
+      '<div class="prow"><b>진귀 ★★★ 확정까지</b>' +
+        '<span class="ptrack"><i style="width:' +
+          Math.round((S.pity || 0) / PITY_SR * 100) + '%"></i></span>' +
+        '<em>' + srLeft + '번</em></div>' +
+      '<div class="prow ur"><b>전설 ★★★★ 확정까지</b>' +
+        '<span class="ptrack"><i style="width:' +
+          Math.round((S.pityU || 0) / PITY_UR * 100) + '%"></i></span>' +
+        '<em>' + urLeft + '번</em></div>' +
+    '</div>' +
+
     '<div class="gstage" id="gStage"><p class="gidle">클로버를 넣고 새 모습을 만나보세요<br>' +
-      '<small>10연차에는 귀함 이상이 하나 확정 · 겹치면 클로버로 돌려받아요</small></p></div>' +
+      '<small>10연차에는 귀함 이상이 하나 확정 · 겹치면 클로버로 돌려받아요<br>' +
+      '좋은 모습을 입고 다니면 알바비가 오릅니다</small></p></div>' +
+
     '<div class="gbtns">' +
+      '<button class="btn small" id="gFree"' + (free ? '' : ' disabled') + '>' +
+        (free ? '오늘의 무료 1회' : '무료는 내일 또') + '</button>' +
       '<button class="btn small" id="g1">1회 · ' + PULL1 + '</button>' +
       '<button class="btn" id="g10">10연차 · ' + PULL10 + '</button>' +
-    '</div>';
+    '</div>' +
+
+    /* 지금 받고 있는 수집 보너스 */
+    '<p class="gbonus">지금 알바비 보너스 ' +
+      '<b>+' + Math.round(collectBonus() * 100) + '%</b> ' +
+      '<small>모습 ' + RARITY[look().rank].name + ' +' + Math.round(lookPay() * 100) + '%' +
+      ' · 도감 ' + S.own.length + '종 +' + Math.round(dexPay() * 100) + '%' +
+      (dexPay() >= DEX_PAY_CAP ? ' (최대)' : '') + '</small></p>';
   body.appendChild(wrap);
-  const run = n => {
+
+  const run = (n, isFree) => {
     initAudio(); if(ctx.state === 'suspended') ctx.resume();
-    const got = pull(n);
+    const got = pull(n, isFree);
     if(!got){
       const st = $('gStage'); st.classList.remove('hasbanner');
-      st.innerHTML = '<p class="gidle">클로버가 모자라요<br><small>외출해서 미니게임을 하면 쌓입니다</small></p>';
+      st.innerHTML = '<p class="gidle">클로버가 모자라요<br><small>알바를 다녀오면 쌓입니다</small></p>';
       sfxNo(); return;
     }
     playCutscene(got);
   };
+  $('gFree').onclick = () => { if(freeLeft()) run(1, true); };
   $('g1').onclick = () => run(1);
   $('g10').onclick = () => run(10);
   if(lastPull) renderPullResult(lastPull);
 }
+const RANK_RC = { R:'#8FC0D8', SR:'#FF9EB5', UR:'#E8C86A' };
 function decorate(el, rank){
-  if(rank === 'N') return;
+  if(rank === 'N' || rank === 'base') return;
   const ring = document.createElement('span');
-  ring.className = 'ring'; ring.style.setProperty('--rc', rank === 'SR' ? '#FF9EB5' : '#8FC0D8');
+  ring.className = 'ring'; ring.style.setProperty('--rc', RANK_RC[rank] || '#8FC0D8');
   el.appendChild(ring);
-  if(rank === 'SR'){
-    for(let k = 0; k < 9; k++){
+  if(rank === 'SR' || rank === 'UR'){
+    for(let k = 0; k < (rank === 'UR' ? 14 : 9); k++){
       const s = document.createElement('span'); s.className = 'spark';
       const a = k / 9 * 6.283, d = 42 + Math.random() * 34;
       s.style.setProperty('--dx', (Math.cos(a) * d).toFixed(1) + 'px');
@@ -521,19 +585,25 @@ function decorate(el, rank){
     }
   }
 }
+const topRank = got => got.some(r => r.rank === 'UR') ? 'UR'
+                     : got.some(r => r.rank === 'SR') ? 'SR'
+                     : got.some(r => r.rank === 'R')  ? 'R' : 'N';
 function renderPullResult(got){
   const st = $('gStage'); if(!st) return;
-  const top = got.some(r => r.rank === 'SR') ? 'SR' : got.some(r => r.rank === 'R') ? 'R' : 'N';
-  st.innerHTML = ''; st.classList.toggle('hasbanner', top === 'SR');
-  if(top === 'SR'){
-    const bn = document.createElement('div'); bn.className = 'banner'; bn.textContent = '아주 귀함 등장!';
+  const top = topRank(got);
+  st.innerHTML = ''; st.classList.toggle('hasbanner', top === 'SR' || top === 'UR');
+  if(top === 'SR' || top === 'UR'){
+    const bn = document.createElement('div');
+    bn.className = 'banner' + (top === 'UR' ? ' ur' : '');
+    bn.textContent = top === 'UR' ? '전설 등장!!' : '진귀 등장!';
     st.appendChild(bn);
   }
   const grid = document.createElement('div'); grid.className = 'gresult'; st.appendChild(grid);
   const step = got.length > 1 ? 95 : 0;
   got.forEach((r, i) => {
     const el = document.createElement('div');
-    el.className = 'gcard r-' + r.rank + (r.rank === 'SR' ? ' shine' : '');
+    el.className = 'gcard r-' + r.rank +
+                   (r.rank === 'SR' || r.rank === 'UR' ? ' shine' : '');
     el.style.animationDelay = (i * step / 1000) + 's';
     el.innerHTML = starRow(r.rank) +
       (r.isNew ? '<span class="newbadge">NEW</span>' : '') +
@@ -542,12 +612,13 @@ function renderPullResult(got){
       (r.isNew ? '<span class="meta">처음 만남!</span>'
                : '<span class="meta dup">겹침 +' + r.refund + '</span>');
     grid.appendChild(el);
-    setTimeout(() => { decorate(el, r.rank); if(r.rank !== 'N') RANKSOUND[r.rank](); }, i * step + 60);
+    setTimeout(() => { decorate(el, r.rank);
+      if(RANKSOUND[r.rank]) RANKSOUND[r.rank](); }, i * step + 60);
   });
 }
 function playCutscene(got){
   lastPull = got;
-  const top = got.some(r => r.rank === 'SR') ? 'SR' : got.some(r => r.rank === 'R') ? 'R' : 'N';
+  const top = topRank(got);
   modal.hidden = true; modalOpen = null;
   $('topbar').hidden = true; $('careBar').hidden = true;
   $('dailyPanel').hidden = true; $('miniClose').hidden = true; bgmStop();

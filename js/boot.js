@@ -30,7 +30,11 @@ function resize(){
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-addEventListener('resize', () => { resize(); if(typeof DugiRun !== 'undefined') DugiRun.resize(); });
+addEventListener('resize', () => {
+  resize();
+  if(typeof DugiRun !== 'undefined') DugiRun.resize();
+  if(typeof CatchMind !== 'undefined') CatchMind.layout();
+});
 
 const uiK = () => Math.max(0.85, Math.min(1.7, Math.min(W / 960, H / 540)));
 /* 게임 안의 모든 선은 이 굵기 하나로 통일 */
