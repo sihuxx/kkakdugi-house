@@ -4,7 +4,7 @@
 /* ===============================================================
    셸 — 화면 전환 · 입력 · 메인 루프
    =============================================================== */
-let mode = 'home';          // home · auth · cut · run · runresult · cafe · caferesult
+let mode = 'home';          // home · auth · cut · run · runresult · mine · mineresult
                             // · cmlobby · catch · catchresult
 let last = performance.now();
 
@@ -100,29 +100,41 @@ function runEnd(r){
   bgmStart();
 }
 
-/* ===== 카페 알바 ===== */
-function startCafe(){
+/* ===== 광산 알바 ===== */
+function startMine(){
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
-  mode = 'cafe'; $('topbar').hidden = true; $('careBar').hidden = true; showScreen(null);
-  CafeGame.start({ onEnd: cafeEnd });
+  mode = 'mine'; $('topbar').hidden = true; $('careBar').hidden = true; showScreen(null);
+  $('runPad').hidden = true;
+  MineGame.start({ onEnd: mineEnd });
 }
-function cafeEnd(r){
-  mode = 'caferesult';
-  const before = S.career.cafe || 0;
-  const pay = Math.round((r.score / 8 + r.tip * 17 + 90) * payMult('cafe'));
-  $('runTitle').textContent = r.rounds >= 5 ? '오늘도 수고!' : '조금 아쉬워요';
+function mineEnd(r){
+  mode = 'mineresult';
+  const before = S.career.mine || 0;
+  const pay = Math.round(r.clover * payMult('mine'));
+  /* 보물상자에서 주운 건 들고 나왔을 때만 내 것이 된다 */
+  const names = [];
+  (r.haul || []).forEach(id => {
+    const it = ITEM(id); if(!it) return;
+    S.bag[id] = (S.bag[id] || 0) + 1; names.push(it.name);
+  });
+  $('runTitle').textContent = r.collapsed ? '무너졌어요…'
+                            : r.bottom    ? '바닥까지 갔다!'
+                            : r.depth >= 12 ? '제법 깊이 갔네요'
+                                            : '무사히 올라왔어요';
   $('runArt').src = SRC[look().run];
-  $('runScore').textContent = Math.round(r.score).toLocaleString('ko-KR');
-  $('rDist').textContent = r.rounds + '명';
-  $('rJelly').textContent = r.tip + '잔';
-  $('rCombo').textContent = 3 - r.miss + ' / 3';
-  $('rGrade').textContent = r.rounds >= 7 ? 'S' : r.rounds >= 5 ? 'A' : r.rounds >= 3 ? 'B' : 'C';
-  if(r.score > (S.cafeBest || 0)){ S.cafeBest = Math.round(r.score); $('runBest').textContent = '새 기록!'; }
-  else $('runBest').textContent = '최고 기록 ' + (S.cafeBest || 0).toLocaleString('ko-KR');
+  $('runScore').textContent = Math.round(pay).toLocaleString('ko-KR');
+  $('rDist').textContent = r.depth + ' m';
+  $('rJelly').textContent = names.length ? names.join(', ') : '없음';
+  $('rCombo').textContent = r.collapsed ? '−' + (r.lost || 0).toLocaleString('ko-KR') : '지킴';
+  $('rGrade').textContent = r.collapsed ? '-' : r.depth >= 25 ? 'S' : r.depth >= 17 ? 'A'
+                          : r.depth >= 10 ? 'B' : 'C';
+  const best = S.mineBest || 0;
+  $('runBest').textContent = r.depth >= best ? '가장 깊이 내려갔어요! ' + r.depth + 'm'
+                                             : '최고 기록 ' + best + 'm';
   $('runAgain').textContent = '한 번 더';
-  payOut(pay, 'cafe', 'runReward', '카페 알바');
-  careerUp('cafe', before);
+  payOut(pay, 'mine', 'runReward', '두기 광산 · ' + r.depth + 'm');
+  careerUp('mine', before);
   showScreen($('runResult'));
   bgmStart();
 }
@@ -254,9 +266,10 @@ addEventListener('keydown', e => {
     if(['Space','ArrowUp','ArrowDown','KeyW','KeyS','KeyE'].includes(e.code)) e.preventDefault();
     return;
   }
-  if(mode === 'cafe'){
-    if(e.code === 'Escape'){ CafeGame.quit(); return; }
-    CafeGame.key(e.code); return;
+  if(mode === 'mine'){
+    if(['Space','ArrowUp','ArrowDown','Enter'].includes(e.code)) e.preventDefault();
+    if(!e.repeat) MineGame.key(e.code);
+    return;
   }
   if(mode === 'catch'){
     const typing = /^(INPUT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
@@ -295,7 +308,7 @@ cv.addEventListener('pointerdown', e => {
   audioKick(); ptrDown = true;
   const p = canvasXY(e);
   if(mode === 'run'){ DugiRun.pointer(p.y / H, true); return; }
-  if(mode === 'cafe'){ CafeGame.pointer(p.x, p.y); return; }
+  if(mode === 'mine'){ MineGame.pointer(p.x, p.y); return; }
   if(mode === 'catch'){ e.preventDefault(); CatchMind.down(p.x, p.y); return; }
   if(mode === 'cut'){ advanceCut(); return; }
   if(mode === 'home'){
@@ -329,7 +342,7 @@ function audioKick(){
   initAudio();
   if(ctx.state === 'suspended') ctx.resume();
   if(mode === 'home' || mode === 'result' || mode === 'runresult' ||
-     mode === 'caferesult' || mode === 'catchresult') bgmStart();
+     mode === 'mineresult' || mode === 'catchresult') bgmStart();
 }
 
 /* 버튼 */
@@ -351,7 +364,7 @@ $('decoBtn').onclick = () => {
 $('modalClose').onclick = closeModal;
 modal.addEventListener('pointerdown', e => { if(e.target === modal) closeModal(); });
 $('runAgain').onclick = () => {
-  if(mode === 'caferesult') startCafe();
+  if(mode === 'mineresult') startMine();
   else if(mode === 'catchresult') startCatch();
   else startRun();
 };
@@ -385,7 +398,7 @@ function frame(ts){
   try{
     if(mode === 'cut' && cut){ drawCut(dt); }
     else if(mode === 'run' || mode === 'runresult'){ DugiRun.frame(dt, mode === 'run'); }
-    else if(mode === 'cafe' || mode === 'caferesult'){ CafeGame.frame(dt, mode === 'cafe'); }
+    else if(mode === 'mine' || mode === 'mineresult'){ MineGame.frame(dt, mode === 'mine'); }
     else if(mode === 'catch' || mode === 'catchresult'){ CatchMind.frame(dt, mode === 'catch'); }
     else if(mode === 'cmlobby'){ g.fillStyle = '#F3EAE1'; g.fillRect(0, 0, W, H); }
     else { updateHome(dt); drawHome(dt); }

@@ -219,7 +219,7 @@ function sanitizeSave(raw){
   out.floors  = Array.isArray(raw.floors) ? raw.floors.filter(x => FLOORS.some(f => f.id === x)).slice(0, 50) : ['f0'];
   out.named   = !!raw.named;
   out.runBest  = num(raw.runBest, 0, 99999999, 0);
-  out.cafeBest = num(raw.cafeBest, 0, 99999999, 0);
+  out.mineBest = num(raw.mineBest, 0, 999, 0);
   out.drawBest = num(raw.drawBest, 0, 99999999, 0);
   out.seen     = num(raw.seen, 0, 4102444800000, 0);
   out.guestDay = num(raw.guestDay, 0, 99999999, 0);
@@ -238,7 +238,7 @@ function sanitizeSave(raw){
     plant:  num(d.plant, 0, 10, 0)
   };
   const c = (raw.career && typeof raw.career === 'object') ? raw.career : {};
-  out.career = { deliver: num(c.deliver, 0, 999999, 0), cafe: num(c.cafe, 0, 999999, 0),
+  out.career = { deliver: num(c.deliver, 0, 999999, 0), mine: num(c.mine, 0, 999999, 0),
                  draw: num(c.draw, 0, 999999, 0) };
   const st = (raw.stat && typeof raw.stat === 'object') ? raw.stat : {};
   out.stat = { pet: num(st.pet, 0, 99999999, 0), job: num(st.job, 0, 999999, 0),

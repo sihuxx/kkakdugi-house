@@ -348,7 +348,7 @@ function buildJobs(body){
     b2.onclick = () => {
       if(j.game === 'run') startRun();
       else if(j.game === 'catch') startCatch();
-      else startCafe();
+      else startMine();
     };
   });
 }
@@ -382,6 +382,28 @@ function drawJobIcon(cvs, id){
     g.fillStyle = '#8A7264'; g.textAlign = 'center';
     g.font = '700 22px Gaegu, sans-serif';
     g.fillText('???', sw * 0.76, sh * 0.2);
+  }else if(id === 'mine'){
+    g.fillStyle = '#2E2A3A'; g.fillRect(0, 0, sw, sh);
+    [['#C9A06A', 0.30], ['#9AA0A6', 0.56], ['#6E7D92', 0.82]].forEach(([c, t], i) => {
+      g.fillStyle = c; g.fillRect(0, sh * t, sw, sh * 0.3);
+      g.beginPath(); g.moveTo(0, sh * t); g.lineTo(sw, sh * t); g.stroke();
+    });
+    g.fillStyle = '#1C1926';                                   // 수직 갱도
+    g.fillRect(sw * 0.33, sh * 0.30, sw * 0.34, sh * 0.7);
+    g.strokeRect(sw * 0.33, sh * 0.30, sw * 0.34, sh * 0.7);
+    [['#8FBF92', 0.44], ['#A98FE0', 0.72]].forEach(([c, t]) => {  // 원석
+      g.fillStyle = c;
+      g.beginPath();
+      g.moveTo(sw * 0.5, sh * t - 11); g.lineTo(sw * 0.59, sh * t);
+      g.lineTo(sw * 0.5, sh * t + 11); g.lineTo(sw * 0.41, sh * t);
+      g.closePath(); g.fill(); g.stroke();
+    });
+    g.fillStyle = '#C9A06A';                                   // 곡괭이
+    g.save(); g.translate(sw * 0.78, sh * 0.2); g.rotate(0.6);
+    rrect(-3, -4, 6, sh * 0.36, 3); g.fill(); g.stroke(); g.restore();
+    g.fillStyle = '#9AA0A6';
+    g.save(); g.translate(sw * 0.8, sh * 0.17); g.rotate(-0.5);
+    rrect(-sw * 0.1, -4, sw * 0.2, 8, 4); g.fill(); g.stroke(); g.restore();
   }else if(id === 'dish'){
     g.fillStyle = '#EAF6FB'; g.fillRect(0, 0, sw, sh);
     g.fillStyle = '#C6DCE6';                                   // 싱크대

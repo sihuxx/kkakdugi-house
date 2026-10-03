@@ -221,8 +221,9 @@ const careerPay = n => 1 + 0.05 * (careerLv(n) - 1);
 const JOBS = [
   { id:'deliver', game:'run', name:'배달 알바', place:'동네 골목',
     desc:'장애물을 피해 달려서 배달', pay:'동전을 줍고 제시간에 도착하면 보너스', color:'#EFA6B8' },
-  { id:'cafe', game:'cafe', name:'카페 알바', place:'골목 카페',
-    desc:'손님 주문을 외워서 담기', pay:'길게 외울수록 팁이 커져요', color:'#D9C4A0' },
+  { id:'mine', game:'mine', name:'두기 광산', place:'마을 뒷산',
+    desc:'파 내려가다 언제 올라올지 고르기', pay:'깊을수록 커지지만 무너지면 전부 잃어요',
+    color:'#C9A06A' },
   { id:'draw', game:'catch', name:'두기 캐치마인드', place:'광장 · 같이 하기',
     desc:'한 명이 그리고 나머지가 맞히기', pay:'빨리 맞힐수록 점수가 커져요',
     color:'#8FC0D8', multi:true }

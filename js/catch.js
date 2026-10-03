@@ -434,9 +434,22 @@ function frame(dt, active){
   if(active) tick(dt);
   draw();
 }
+/* 오른쪽 패널은 '바뀌면 알아서 다시 그린다'.
+   예전에는 메시지를 받은 쪽만 다시 그려서, 진행을 직접 하는 방장은
+   pick → draw 로 넘어가도 채팅칸이 잠긴 채로 남아 있었다. */
+let panelSig = '';
+function panelWatch(){
+  const sig = [phase, drawerKey, hits.join(','), chat.length,
+               players.map(p => p.key + p.name).join(','),
+               players.map(p => Math.round(scores[p.key] || 0)).join(','),
+               me() || ''].join('|');
+  if(sig !== panelSig){ panelSig = sig; paintPanel(); }
+}
+
 function tick(dt){
   if(!on) return;
   if(phase !== 'wait' && phase !== 'over') left = Math.max(0, left - dt);
+  panelWatch();
 
   if(isHost()){
     if(phase === 'pick' && left <= 0){ phase = 'draw'; left = DRAW_SEC; pushState(); }
@@ -497,13 +510,23 @@ function finish(){
 function paintPanel(){
   const pl = $('cmPlayers'); if(!pl) return;
   const rank = players.slice().sort((a, b) => (scores[b.key] || 0) - (scores[a.key] || 0));
+  /* 이름이 겹치면 뒤에 번호를 붙여서 누가 누군지 보이게 */
+  const seen = Object.create(null), dup = Object.create(null);
+  players.forEach(p => { dup[p.name] = (dup[p.name] || 0) + 1; });
+  const label = p => {
+    if(dup[p.name] < 2) return p.name;
+    seen[p.name] = (seen[p.name] || 0) + 1;
+    return p.name + ' ' + seen[p.name];
+  };
+  const tag2 = Object.create(null);
+  players.forEach(p => { tag2[p.key] = label(p); });
   pl.innerHTML = rank.map(p => {
     const ch = (typeof CHARS !== 'undefined' && CHARS.find(c => c.id === p.look)) || null;
     const img = ch && SRC[ch.run] ? '<img src="' + escAttr(SRC[ch.run]) + '" alt="">' : '<i class="noimg"></i>';
     const tag = p.key === drawerKey ? '<em class="pen">✎</em>'
               : hits.includes(p.key) ? '<em class="ok">✓</em>' : '';
     return '<div class="cmp' + (p.key === me() ? ' mine' : '') + '">' + img +
-           '<b>' + esc(p.name) + '</b>' + tag +
+           '<b>' + esc(tag2[p.key] || p.name) + (p.key === me() ? ' (나)' : '') + '</b>' + tag +
            '<span>' + Math.round(scores[p.key] || 0) + '</span></div>';
   }).join('');
 
