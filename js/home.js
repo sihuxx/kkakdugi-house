@@ -30,9 +30,12 @@ function rrect(x, y, w, h, r){
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
 }
 function box(x, y, w, h, r, fill){ g.fillStyle = fill; rrect(x, y, w, h, r); g.fill(); g.stroke(); }
+/* 바닥에 닿는 그림자 — 가운데는 진하고 가장자리는 사라진다.
+   납작한 타원 하나보다 이게 훨씬 '놓여 있는' 느낌이 납니다. */
 function shadow(cx, base, w){
-  g.save(); g.globalAlpha = 0.10; g.fillStyle = '#7A6250';
-  g.beginPath(); g.ellipse(cx, base + 1, w, w * 0.22, 0, 0, 7); g.fill(); g.restore();
+  const D = (typeof DAY === 'function') ? DAY() : null;
+  const dark = D && D.star ? 0.30 : 0.22;
+  FX.contact(cx, base + 1, w * 2.0, dark);
 }
 
 /* ===============================================================
@@ -86,16 +89,18 @@ function spotOf(id){ return LAY.floor.find(o => o.id === id) || LAY.wall.find(o 
    시간대 — 실제 시각에 따라 방 분위기가 바뀐다
    =============================================================== */
 const DAYPARTS = {
-  /* sky  : 바깥 하늘색 (위→아래)   mul : 화면 전체에 곱할 색
-     glow : 불빛 번짐 세기          lamp: 바깥 해·달 색 (null 이면 안 그림) */
+  /* sky  : 바깥 하늘색 (위→아래)   mul  : 화면 전체에 곱할 색
+     glow : 불빛 번짐 세기          lamp : 바깥 해·달 색 (null 이면 안 그림)
+     shaft: 빛기둥 세기             tilt : 빛이 기우는 방향   ray : 빛 색
+     bloom: 밝은 데가 번지는 정도 */
   morn:  { name:'아침', sky:['#CFE6FB','#FDF0E2'], mul:'#E7EFF9', pool:0.16, glow:0.10,
-           lamp:'#FFE9B0', star:0 },
+           lamp:'#FFE9B0', star:0, shaft:0.075, tilt:0.62, ray:'255,235,195', bloom:0.16 },
   day:   { name:'낮',   sky:['#CDEBFA','#EAF6FB'], mul:null,      pool:0.14, glow:0,
-           lamp:'#FFF3C4', star:0 },
+           lamp:'#FFF3C4', star:0, shaft:0.045, tilt:0.30, ray:'255,246,220', bloom:0.12 },
   eve:   { name:'저녁', sky:['#FFC58C','#FFAE85'], mul:'#FAD6B4', pool:0.26, glow:0.20,
-           lamp:'#FFB778', star:0 },
+           lamp:'#FFB778', star:0, shaft:0.095, tilt:0.95, ray:'255,198,140', bloom:0.21 },
   night: { name:'밤',   sky:['#3F4876','#6A6E97'], mul:'#5B60A2', pool:0.34, glow:0.52,
-           lamp:'#EAF0FF', star:1 }
+           lamp:'#EAF0FF', star:1, shaft:0.038, tilt:0.20, ray:'190,205,255', bloom:0.26 }
 };
 function dayPart(){
   const h = new Date().getHours();

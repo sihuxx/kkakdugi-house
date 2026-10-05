@@ -170,7 +170,7 @@ function draw(){
     const gr = g.createLinearGradient(0, y, 0, y + bh);
     gr.addColorStop(0, dug ? b.c2 : b.c1); gr.addColorStop(1, dug ? b.c1 : b.c2);
     g.fillStyle = gr; g.fillRect(0, y, W, bh + 1);
-    if(!dug){ g.fillStyle = 'rgba(14,11,18,.16)'; g.fillRect(0, y, W, bh + 1); }
+    if(!dug){ g.fillStyle = 'rgba(14,11,18,.30)'; g.fillRect(0, y, W, bh + 1); }
     /* 결 */
     g.save(); g.globalAlpha = 0.35; g.fillStyle = b.fleck;
     for(let i = 0; i < 7; i++){
@@ -186,10 +186,33 @@ function draw(){
     if(dug && d >= 1){
       const sw = W * 0.34, sx = W / 2 - sw / 2;
       const sg = g.createLinearGradient(0, y, 0, y + bh);
-      sg.addColorStop(0, 'rgba(18,15,24,.92)'); sg.addColorStop(1, 'rgba(30,26,38,.92)');
+      sg.addColorStop(0, 'rgba(18,15,24,.94)'); sg.addColorStop(1, 'rgba(30,26,38,.94)');
       g.fillStyle = sg; g.fillRect(sx, y, sw, bh + 1);
+      /* 갱도 양쪽 벽 — 안쪽이 파인 느낌이 나게 */
+      const eg = g.createLinearGradient(sx, 0, sx + sw, 0);
+      eg.addColorStop(0,    'rgba(0,0,0,.45)');
+      eg.addColorStop(0.18, 'rgba(0,0,0,0)');
+      eg.addColorStop(0.82, 'rgba(0,0,0,0)');
+      eg.addColorStop(1,    'rgba(0,0,0,.45)');
+      g.fillStyle = eg; g.fillRect(sx, y, sw, bh + 1);
+      /* 버팀목 — 몇 칸마다 하나씩 */
+      if(d % 3 === 0){
+        g.save(); g.fillStyle = '#6B5537'; g.globalAlpha = 0.85;
+        g.fillRect(sx + 2 * k, y, 6 * k, bh);
+        g.fillRect(sx + sw - 8 * k, y, 6 * k, bh);
+        g.fillRect(sx, y, sw, 6 * k);
+        g.restore();
+      }
       const c = cells.find(x => x.d === d);
-      if(c) drawFind(c, W / 2 - W * 0.065, y + bh / 2, k);
+      if(c){
+        drawFind(c, W / 2 - W * 0.065, y + bh / 2, k);
+        /* 광물은 랜턴 불빛을 받아 반짝인다 */
+        if(c.kind === 'gem' || c.kind === 'chest'){
+          const tw = 0.5 + 0.5 * Math.sin(t * 3 + d);
+          FX.glow(W / 2 - W * 0.065, y + bh / 2, 34 * k,
+                  c.kind === 'chest' ? '240,200,110' : '190,150,240', 0.22 + tw * 0.16);
+        }
+      }
     }
     if(!dug && d === depth + 1){
       g.save(); g.globalAlpha = 0.5; g.fillStyle = '#FFF8F0';
@@ -200,16 +223,43 @@ function draw(){
     }
   }
 
-  /* 두기 */
+  /* 랜턴 불빛 — 두기 주변만 환하다 */
   const dy = yOf(depth);
+  const lampX = W / 2 + W * 0.012, lampY = dy - bandH() * 0.46;
+  if(phase !== 'boom'){
+    const flick = 0.9 + Math.sin(t * 9) * 0.05 + Math.sin(t * 23) * 0.03;
+    const r = Math.min(W, H) * 0.34 * flick;
+    const rg = g.createRadialGradient(lampX, lampY, 4, lampX, lampY, r);
+    rg.addColorStop(0,    'rgba(255,220,150,.40)');
+    rg.addColorStop(0.45, 'rgba(255,200,120,.14)');
+    rg.addColorStop(1,    'rgba(255,200,120,0)');
+    g.save(); g.globalCompositeOperation = 'lighter';
+    g.fillStyle = rg; g.fillRect(0, 0, W, H); g.restore();
+  }
+
+  /* 두기 */
   const im = IMG[look().run], ds = Math.min(bandH() * 0.82, W * 0.11);
   if(im && im.complete){
     g.save();
     g.globalAlpha = phase === 'boom' ? Math.max(0, 1 - t / 1.3) : 1;
+    FX.contact(W / 2 + W * 0.055, dy, ds * 1.1, 0.42);
     g.translate(W / 2 + W * 0.055, dy - 4);
     if(phase === 'dig') g.rotate(Math.sin(t * 34) * 0.14);
     g.scale(-1, 1);
     g.drawImage(im, -ds * 0.5, -ds, ds, ds);
+    g.restore();
+    /* 들고 있는 랜턴 — 두기 쪽에서 끈이 내려온다 */
+    g.save(); ink(LW() * 0.8);
+    g.strokeStyle = '#8A7264';
+    g.beginPath();
+    g.moveTo(W / 2 + W * 0.042, dy - ds * 0.62);
+    g.quadraticCurveTo(lampX + ds * 0.1, lampY - ds * 0.34, lampX, lampY - ds * 0.12);
+    g.stroke();
+    g.fillStyle = '#F3D79A';
+    rrect(lampX - ds * 0.11, lampY - ds * 0.12, ds * 0.22, ds * 0.26, ds * 0.06);
+    g.fill(); g.stroke();
+    g.fillStyle = '#FFF2C8';
+    g.beginPath(); g.arc(lampX, lampY + ds * 0.01, ds * 0.06, 0, 7); g.fill();
     g.restore();
   }
 
@@ -222,8 +272,20 @@ function draw(){
   });
   g.restore();
 
+  /* 아래로 갈수록 어둠에 잠긴다 */
+  const fog = g.createLinearGradient(0, H * 0.62, 0, H);
+  fog.addColorStop(0, 'rgba(14,11,20,0)');
+  fog.addColorStop(1, 'rgba(14,11,20,.75)');
+  g.fillStyle = fog; g.fillRect(0, H * 0.62, W, H * 0.38);
+  /* 위쪽도 — 지나온 길은 멀어진다 */
+  const fog2 = g.createLinearGradient(0, 0, 0, H * 0.3);
+  fog2.addColorStop(0, 'rgba(14,11,20,.6)');
+  fog2.addColorStop(1, 'rgba(14,11,20,0)');
+  g.fillStyle = fog2; g.fillRect(0, 0, W, H * 0.3);
+
   g.restore();                                 /* 흔들림 끝 */
 
+  FX.bloom(0.24, 3);
   drawHud(k);
   if(phase === 'boom') drawBoom(k);
   else if(phase === 'prop') drawBanner('지지대가 버텨줬어요!', '#8FBF92', k);

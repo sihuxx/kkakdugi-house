@@ -198,10 +198,6 @@ function buildEvents(song){
   ev.sort((a,b)=>a.t-b.t);
   return ev;
 }
-let songStart=0;
-function at(t){ return songStart+t; }
-/* 스피커로 소리가 나오기까지 걸리는 지연까지 빼야 손과 귀가 맞는다 */
-function nowT(){ return ctx ? ctx.currentTime-songStart-audioLat() + settings.offset/1000 : 0; }
 
 /* 곡 카드 미리듣기 */
 let previewUntil=0;

@@ -73,6 +73,7 @@ async function api(path, opt){
       referrerPolicy: 'no-referrer'
     });
   }finally{ clearTimeout(t); }
+  if(opt.raw) return res;                    /* 헤더까지 봐야 할 때 (순위 세기) */
   const txt = await res.text();
   let data = null;
   if(txt){ try{ data = JSON.parse(txt); }catch(e){ data = null; } }
@@ -189,6 +190,19 @@ async function resetPassword(email){
   return true;
 }
 
+/* 조건에 맞는 줄이 몇 개인지만 센다 — 순위표에서 내 등수를 구할 때 씁니다.
+   PostgREST 는 Content-Range 헤더에 전체 개수를 적어줍니다. */
+async function count(path){
+  if(!ON || !user) return null;
+  const t = await token(); if(!t) return null;
+  const res = await api(path, { raw: true,
+    headers: { 'Prefer': 'count=exact', 'Range': '0-0' } });
+  if(!res || (!res.ok && res.status !== 206)) return null;
+  const cr = res.headers.get('content-range') || '';
+  const n = Number(String(cr).split('/')[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
 /* ===============================================================
    클라우드 세이브
    =============================================================== */
@@ -229,6 +243,8 @@ function sanitizeSave(raw){
   const d = (raw.dugi && typeof raw.dugi === 'object') ? raw.dugi : {};
   out.dugi = {
     name:   cleanName(d.name, 8) || '두기',
+    lv:     num(d.lv, 1, LV_MAX, 1),
+    exp:    num(d.exp, 0, 9999999, 0),
     love:   num(d.love, 0, 99999999, 0),
     full:   num(d.full, 0, 100, 70),
     clean:  num(d.clean, 0, 100, 70),
@@ -294,7 +310,8 @@ function sanitizeSave(raw){
           n: num(r && r.n, 0, 999999, 0), got: !!(r && r.got) })) }
     : null;
   out.settings = { volBgm: num(raw.settings && raw.settings.volBgm, 0, 1, 0.6),
-                   volSfx: num(raw.settings && raw.settings.volSfx, 0, 1, 0.9) };
+                   volSfx: num(raw.settings && raw.settings.volSfx, 0, 1, 0.9),
+                   fx: (raw.settings && raw.settings.fx) !== false };
   return out;
 }
 
@@ -333,6 +350,6 @@ function pushLater(state){
 }
 
 return { enabled, current, onChange, ready, signUp, signIn, signOut, resetPassword,
-         checkPw, checkEmail, pull, push, pushLater, sanitizeSave, token,
+         checkPw, checkEmail, pull, push, pushLater, sanitizeSave, token, api, count,
          get busy(){ return busy; } };
 })();

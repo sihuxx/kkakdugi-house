@@ -155,7 +155,111 @@ create trigger saves_rate_ins before insert on public.saves
 create trigger saves_rate_upd before update on public.saves
   for each row execute function public.saves_rate_limit();
 
+
+-- ═══════════════════════════════════════════════════════════
+--  순위표 (알바 최고 기록)
+--
+--  점수는 브라우저가 세서 보냅니다. 서버는 브라우저를 믿지 않으므로
+--  "말이 되는 범위" 밖은 아예 받지 않습니다. 그래도 범위 안에서의
+--  위조는 막을 수 없습니다 — 그건 Edge Function 으로 옮겨야 풀립니다.
+--  (SECURITY.md 10장에 정직하게 적어뒀습니다)
+-- ═══════════════════════════════════════════════════════════
+create table if not exists public.scores (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  job        text not null check (job in ('deliver','mine','draw')),
+  name       text not null default '두기',
+  best       integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, job),
+  -- 알바마다 사람이 낼 수 있는 최대치보다 넉넉히 위에서 자른다
+  constraint scores_range check (
+    (job = 'deliver' and best between 0 and 200000) or
+    (job = 'mine'    and best between 0 and 30)     or   -- 깊이(m)
+    (job = 'draw'    and best between 0 and 100000)
+  ),
+  constraint scores_name_len   check (char_length(name) between 1 and 8),
+  constraint scores_name_clean check (name !~ '[<>&"''`\\]')
+);
+
+create index if not exists scores_board on public.scores (job, best desc, updated_at);
+
+alter table public.scores enable row level security;
+alter table public.scores force row level security;
+
+-- 읽기: 로그인한 사람은 순위표를 볼 수 있다 (이름과 점수만 들어 있음)
+drop policy if exists "순위표는 로그인하면 볼 수 있다" on public.scores;
+create policy "순위표는 로그인하면 볼 수 있다"
+  on public.scores for select to authenticated using (true);
+
+-- 쓰기: 자기 줄만
+drop policy if exists "내 기록만 올린다" on public.scores;
+create policy "내 기록만 올린다"
+  on public.scores for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+drop policy if exists "내 기록만 고친다" on public.scores;
+create policy "내 기록만 고친다"
+  on public.scores for update to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop policy if exists "내 기록만 지운다" on public.scores;
+create policy "내 기록만 지운다"
+  on public.scores for delete to authenticated
+  using ((select auth.uid()) = user_id);
+
+revoke all on public.scores from anon;
+
+-- 들어오는 값을 서버가 한 번 더 손본다
+create or replace function public.scores_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := (select auth.uid());          -- 남의 이름으로 못 올린다
+  new.updated_at := now();
+  new.name := left(regexp_replace(coalesce(new.name, '두기'), '[<>&"''`\\]', '', 'g'), 8);
+  if char_length(new.name) = 0 then new.name := '두기'; end if;
+  new.best := greatest(0, new.best);
+  -- 기록은 내려가지 않는다
+  if tg_op = 'UPDATE' and new.best < old.best then new.best := old.best; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists scores_guard_ins on public.scores;
+drop trigger if exists scores_guard_upd on public.scores;
+create trigger scores_guard_ins before insert on public.scores
+  for each row execute function public.scores_guard();
+create trigger scores_guard_upd before update on public.scores
+  for each row execute function public.scores_guard();
+
+-- 올리는 횟수 제한 — saves 와 같은 방식 (1분에 20번)
+create or replace function public.scores_rate_limit()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare r public.save_rate%rowtype;
+begin
+  select * into r from public.save_rate where user_id = (select auth.uid()) for update;
+  if not found then
+    insert into public.save_rate(user_id, window_start, hits)
+      values ((select auth.uid()), now(), 1);
+    return new;
+  end if;
+  if now() - r.window_start > interval '1 minute' then
+    update public.save_rate set window_start = now(), hits = 1 where user_id = r.user_id;
+  else
+    if r.hits >= 50 then
+      raise exception '너무 자주 올리고 있어요. 잠시 후 다시 시도해주세요';
+    end if;
+    update public.save_rate set hits = r.hits + 1 where user_id = r.user_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists scores_rate_ins on public.scores;
+drop trigger if exists scores_rate_upd on public.scores;
+create trigger scores_rate_ins before insert on public.scores
+  for each row execute function public.scores_rate_limit();
+create trigger scores_rate_upd before update on public.scores
+  for each row execute function public.scores_rate_limit();
+
 -- ── 확인용 ─────────────────────────────────────────────────
--- 아래가 true 로 나와야 합니다.
+-- 아래가 전부 true 로 나와야 합니다.
 -- select relname, relrowsecurity, relforcerowsecurity
---   from pg_class where relname in ('saves','save_rate');
+--   from pg_class where relname in ('saves','save_rate','scores');

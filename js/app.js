@@ -19,18 +19,23 @@ function refreshBar(){
   const d = S.dugi, lv = loveLv(d.love);
   $('barClover').innerHTML = CLOVER_SVG + '<b>' + S.clover.toLocaleString('ko-KR') + '</b>';
   $('barName').textContent = d.name;
-  $('barStage').textContent = '마음 Lv' + lv;
+  $('barStage').innerHTML = '<b>Lv ' + (d.lv || 1) + '</b>' +
+    (d.lv >= LV_MAX ? '' : '<i>알바비 +' + Math.round(lvPay() * 100) + '%</i>');
   $('barLook').textContent = look().name;
   $('barHouse').textContent = HOUSE().name;
   const wx = WEATHER(), dp = DAY();
   const wxEl = $('barWx');
   if(wxEl) wxEl.innerHTML = '<i class="wx wx-' + wx.id + '"></i>' + wx.name + ' · ' + dp.name;
-  $('expFill').style.width = Math.round(loveProg(d.love) * 100) + '%';
-  $('expCap').textContent = lv >= LOVE_MAX ? '최고 단짝!' : ('다음 레벨까지 ' + Math.ceil(loveNext(d.love)));
+  $('expFill').style.width = Math.round(expProg() * 100) + '%';
+  $('expCap').textContent = (d.lv || 1) >= LV_MAX
+    ? '최고 레벨!'
+    : ('다음 레벨까지 ' + Math.max(0, expNeed(d.lv) - (d.exp || 0)).toLocaleString('ko-KR'));
   const gb = $('gachaBtn');
   if(gb) gb.classList.toggle('alert', typeof freeLeft === 'function' && freeLeft());
   const hearts = Math.min(5, Math.round(lv / 2));
   $('loveHearts').innerHTML = [0,1,2,3,4].map(i => '<i class="' + (i < hearts ? 'on' : '') + '">♥</i>').join('');
+  const lb = $('loveBox'); if(lb) lb.title = '마음 Lv' + lv +
+    (lv >= LOVE_MAX ? ' · 최고 단짝!' : ' · 다음까지 ' + Math.ceil(loveNext(d.love)));
   STATS.forEach(s => {
     const bar = $('st_' + s.id);
     if(!bar) return;
@@ -96,6 +101,7 @@ function runEnd(r){
   else $('runBest').textContent = '최고 기록 ' + (S.runBest || 0).toLocaleString('ko-KR');
   payOut(pay, 'deliver', 'runReward', '배달 알바');
   careerUp('deliver', before);
+  showRank('deliver');
   showScreen($('runResult'));
   bgmStart();
 }
@@ -135,6 +141,7 @@ function mineEnd(r){
   $('runAgain').textContent = '한 번 더';
   payOut(pay, 'mine', 'runReward', '두기 광산 · ' + r.depth + 'm');
   careerUp('mine', before);
+  showRank('mine');
   showScreen($('runResult'));
   bgmStart();
 }
@@ -196,6 +203,7 @@ function catchEnd(r){
   $('runAgain').textContent = '한 번 더';
   payOut(pay, 'draw', 'runReward', '두기 캐치마인드');
   careerUp('draw', before);
+  showRank('draw');
   showScreen($('runResult'));
   bgmStart();
 }
@@ -219,6 +227,24 @@ $('cmForm').onsubmit = e => {
   $('cmInput').value = '';
   CatchMind.say(v);
 };
+
+/* 결과 화면 아래에 지금 랭크와 (로그인했다면) 전체 등수 */
+function showRank(jobId){
+  const n = S.career[jobId] || 0, rk = jobRank(n), nx = jobRankNext(n);
+  const el = $('runRank');
+  el.innerHTML = '<i class="rbadge" style="color:' + rk.color + ';background:' + rk.bg + '">' +
+    esc(rk.name) + '</i><span>' + n + '번째 · ' +
+    (nx ? esc(nx.name) + '까지 ' + (nx.at - n) + '번' : '최고 랭크!') + '</span>' +
+    '<b id="runBoardMe">…</b>';
+  el.hidden = false;
+  const me = $('runBoardMe');
+  if(!Board.enabled()){ me.textContent = ''; return; }
+  me.textContent = '순위 확인 중…';
+  Board.submit(jobId).then(r => {
+    if(!r) { me.textContent = ''; return; }
+    me.textContent = r.rank ? '전체 ' + r.rank + '위 / ' + r.total + '명' : '';
+  }).catch(() => { me.textContent = ''; });
+}
 
 /* ===== 처음 시작 ===== */
 function askName(){
@@ -393,8 +419,11 @@ document.addEventListener('fullscreenchange', () => {
 });
 
 /* ===== 메인 루프 ===== */
+/* 그리다 터진 횟수 — 시험이 이걸 보고 조용한 사고를 잡는다 */
+const frameErr = { n: 0, last: '' };
 function frame(ts){
   const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
+  FX.watch(dt);                      /* 느려지면 빛 효과를 스스로 끈다 */
   try{
     if(mode === 'cut' && cut){ drawCut(dt); }
     else if(mode === 'run' || mode === 'runresult'){ DugiRun.frame(dt, mode === 'run'); }
@@ -404,7 +433,11 @@ function frame(ts){
     else { updateHome(dt); drawHome(dt); }
     $('miniClose').hidden = !(mode === 'home' && mini);
   }catch(err){
-    console.error('frame', err);            // 한 번 삐끗해도 게임은 계속 돈다
+    /* 한 번 삐끗해도 게임은 계속 돈다. 다만 조용히 넘기면 이런 사고가
+       오래 숨어 있어서(실제로 뽑기 연출이 그랬다) 세어두고 처음 몇 번은 남긴다. */
+    frameErr.n++;
+    frameErr.last = String(err && err.message || err);
+    if(frameErr.n <= 3) console.error('frame', err);
   }
   requestAnimationFrame(frame);
 }

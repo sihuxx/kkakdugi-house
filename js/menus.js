@@ -47,6 +47,7 @@ function pull(n, free){
     else addClover(REFUND[rk] || 30);
     got.push({ c, rank: rk, isNew, refund: isNew ? 0 : (REFUND[rk] || 30) });
   }
+  addExp(5 * n);                              /* 뽑기도 함께 자란다 */
   checkRewards(); save(); refreshBar();
   return got;
 }
@@ -332,7 +333,9 @@ function buildJobs(body){
   body.appendChild(info);
   const row = document.createElement('div'); row.className = 'jobrow'; body.appendChild(row);
   JOBS.forEach(j => {
-    const n = S.career[j.id] || 0, lv = careerLv(n);
+    const n = S.career[j.id] || 0;
+    const rk = jobRank(n), nx = jobRankNext(n);
+    const prog = nx ? Math.min(1, (n - rk.at) / (nx.at - rk.at)) : 1;
     const b2 = document.createElement('button');
     b2.type = 'button'; b2.className = 'jobcard';
     b2.innerHTML = '<span class="sign" style="background:' + j.color + '">' +
@@ -340,8 +343,12 @@ function buildJobs(body){
       '<canvas width="208" height="156"></canvas>' +
       '<span class="nm">' + j.name + '</span>' +
       '<span class="meta">' + j.desc + '</span>' +
-      '<span class="lvrow">경력 <b>Lv' + lv + '</b> · ' + n + '번 · 시급 x' +
-        (payMult(j.id)).toFixed(2) + '</span>' +
+      '<span class="rankrow"><i class="rbadge" style="color:' + rk.color +
+        ';background:' + rk.bg + '">' + rk.name + '</i>' +
+        '<span class="rtrack"><b style="width:' + Math.round(prog * 100) +
+        '%;background:' + rk.color + '"></b></span>' +
+        '<em>' + (nx ? nx.at - n + '번 더' : '최고') + '</em></span>' +
+      '<span class="lvrow">' + n + '번 일함 · 시급 x' + (payMult(j.id)).toFixed(2) + '</span>' +
       '<span class="go">일하러 가기</span>';
     row.appendChild(b2);
     drawJobIcon(b2.querySelector('canvas'), j.id);
@@ -352,6 +359,59 @@ function buildJobs(body){
     };
   });
 }
+/* ===== 순위표 ===== */
+let boardJob = 'deliver';
+function buildBoard(body){
+  const box = document.createElement('div'); box.className = 'boardbox';
+  body.appendChild(box);
+  if(!Board.enabled()){
+    box.innerHTML = '<p class="bnote">로그인하면 다른 사람들과 기록을 견줄 수 있어요. ' +
+      '위쪽 <b>계정</b> 버튼에서 로그인해주세요.</p>';
+    return;
+  }
+  box.innerHTML = '<div class="tabs" id="bTabs"></div><div id="bList" class="blist"></div>';
+  const tabs = box.querySelector('#bTabs');
+  JOBS.forEach(j => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab' + (j.id === boardJob ? ' on' : '');
+    b.textContent = j.name;
+    b.onclick = () => { boardJob = j.id; buildBoardList(); 
+      [...tabs.children].forEach(c => c.classList.toggle('on', c === b)); };
+    tabs.appendChild(b);
+  });
+  buildBoardList();
+}
+async function buildBoardList(){
+  const el = $('bList'); if(!el) return;
+  const job = boardJob;
+  el.innerHTML = '<p class="bnote">불러오는 중…</p>';
+  let rows = [];
+  try{ rows = await Board.top(job); }catch(e){}
+  if($('bList') !== el || boardJob !== job) return;        /* 그새 탭이 바뀌었으면 버린다 */
+  const u = Board.unit(job);
+  if(!rows.length){
+    el.innerHTML = '<p class="bnote">아직 기록이 없어요. 첫 번째가 되어보세요!</p>';
+  }else{
+    const mine = cleanName(S.dugi.name, 8);
+    el.innerHTML = rows.map((r, i) =>
+      '<div class="brow' + (r.name === mine ? ' me' : '') + '">' +
+        '<i class="bno r' + (i < 3 ? i + 1 : '') + '">' + (i + 1) + '</i>' +
+        '<b>' + esc(r.name) + '</b>' +
+        '<span>' + r.best.toLocaleString('ko-KR') + u + '</span></div>').join('');
+  }
+  const meBest = { deliver: S.runBest, mine: S.mineBest, draw: S.drawBest }[job] || 0;
+  const foot = document.createElement('p'); foot.className = 'bnote';
+  foot.textContent = '내 기록 ' + meBest.toLocaleString('ko-KR') + u;
+  el.appendChild(foot);
+  if(meBest){
+    Board.rankOf(job, meBest).then(r => {
+      if(r && $('bList') === el && boardJob === job)
+        foot.textContent = '내 기록 ' + meBest.toLocaleString('ko-KR') + u +
+          ' · 전체 ' + r.rank + '위 / ' + r.total + '명';
+    }).catch(() => {});
+  }
+}
+
 function drawJobIcon(cvs, id){
   const c = cvs.getContext('2d'), sw = cvs.width, sh = cvs.height;
   const og = g, oW = W, oH = H;
@@ -472,6 +532,9 @@ function openModal(kind){
     $('modalTitle').textContent = '알바하러 가기';
     $('modalHint').textContent = '일하고 오면 클로버와 경험치를 벌어와요';
     buildJobs(body);
+    const h = document.createElement('h4'); h.className = 'bhead'; h.textContent = '순위표';
+    body.appendChild(h);
+    buildBoard(body);
   } else if(kind === 'settings'){
     $('modalTitle').textContent = '설정';
     $('modalHint').textContent = '';
@@ -519,9 +582,19 @@ function buildSettings(body){
       v => { settings[k] = v / 100; applyVolumes(); save(); if(k === 'volSfx') uiClick(); return v + '%'; });
   });
 
+  const g3 = group('화면');
+  const fxRow = row(g3, '빛 효과', settings.fx === false ? '끔' : '켬',
+    '<label class="sw"><input type="checkbox"' + (settings.fx === false ? '' : ' checked') +
+    '><span></span></label>',
+    '불빛이 번지고 빛기둥이 보입니다. 화면이 끊기면 꺼보세요.');
+  fxRow.querySelector('input').onchange = e => {
+    settings.fx = !!e.target.checked; save();
+    fxRow.querySelector('.lbl span').textContent = settings.fx ? '켬' : '끔';
+  };
+
   const rs = document.createElement('button');
   rs.className = 'btn ghost small'; rs.type = 'button'; rs.textContent = '기본값으로';
-  rs.onclick = () => { settings.volBgm = 0.6; settings.volSfx = 0.9;
+  rs.onclick = () => { settings.volBgm = 0.6; settings.volSfx = 0.9; settings.fx = true;
     applyVolumes(); save(); openModal('settings'); };
   wrap.appendChild(rs);
 }

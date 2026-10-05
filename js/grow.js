@@ -205,6 +205,44 @@ const CARE_ORDER = ['feed', 'wash', 'play', 'sleep', 'water', 'clean'];
 
 /* ===== 알바 ===== */
 const CAREER_NEED = [0, 2, 5, 9, 14, 20, 27, 36, 48, 62];    // 몇 번 일했나
+/* ===============================================================
+   두기 레벨 — 뭘 하든 조금씩 쌓이는 성장
+   마음(사랑)은 '얼마나 친한가', 레벨은 '얼마나 함께 지냈나' 입니다.
+   =============================================================== */
+const LV_MAX = 60;
+/* 다음 레벨까지 필요한 경험치 — 처음엔 금방, 뒤로 갈수록 천천히 */
+const expNeed = lv => Math.round(60 * Math.pow(Math.max(1, lv), 1.55) + 40);
+/* 레벨 하나당 알바비 +1.2% (최대 +60%) */
+const lvPay = () => Math.min(0.60, Math.max(0, ((S.dugi.lv || 1) - 1) * 0.012));
+
+/* 레벨 보상 — 5 단위로 클로버, 10 단위로 물건까지 */
+function lvReward(lv){
+  if(lv % 10 === 0) return { clover: 400 + lv * 70, item:'snack', n:2,
+                             txt:'클로버 ' + (400 + lv * 70) + ' + 간식 2개' };
+  if(lv % 5 === 0)  return { clover: 200 + lv * 40, txt:'클로버 ' + (200 + lv * 40) };
+  return { clover: 40 + lv * 12, txt:'클로버 ' + (40 + lv * 12) };
+}
+
+/* ===== 알바 랭크 — 많이 해본 알바일수록 올라갑니다 ===== */
+const JOB_RANKS = [
+  { at:0,   name:'견습',     color:'#B99A7A', bg:'#F3E8DA' },
+  { at:3,   name:'브론즈',   color:'#A8703F', bg:'#F5E3D2' },
+  { at:9,   name:'실버',     color:'#78838E', bg:'#E8EDF1' },
+  { at:20,  name:'골드',     color:'#A9801E', bg:'#FBEFCB' },
+  { at:36,  name:'플래티넘', color:'#2F8A84', bg:'#DDF1EF' },
+  { at:60,  name:'다이아',   color:'#3C7BA0', bg:'#DCEDF7' },
+  { at:95,  name:'마스터',   color:'#7A49A8', bg:'#EDE2F8' }
+];
+function jobRank(n){
+  let r = JOB_RANKS[0];
+  for(const x of JOB_RANKS) if((n || 0) >= x.at) r = x;
+  return r;
+}
+function jobRankNext(n){
+  for(const x of JOB_RANKS) if((n || 0) < x.at) return x;
+  return null;
+}
+
 /* ===== 모습 보너스 — 뽑기로 얻은 게 실제로 쓸모 있도록 =====
    좋은 등급을 입고 있으면 알바비가 오르고, 많이 모을수록 또 오릅니다.
    (모으는 재미가 수치로 돌아오게 하는 자리) */

@@ -40,6 +40,19 @@ const uiK = () => Math.max(0.85, Math.min(1.7, Math.min(W / 960, H / 540)));
 /* 게임 안의 모든 선은 이 굵기 하나로 통일 */
 const LW = () => Math.max(2.0, 2.5 * uiK());
 
+/* 살짝 찌그러진 동그라미 — 손으로 그린 느낌 (뽑기 연출의 클로버 잎) */
+function wobble(x, y, r, seed, fill, stroke){
+  g.beginPath();
+  for(let a = 0; a <= 6.29; a += Math.PI / 12){
+    const rr = r + Math.sin(a * 3 + seed) * r * 0.055;
+    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+    a === 0 ? g.moveTo(px, py) : g.lineTo(px, py);
+  }
+  g.closePath();
+  if(fill){ g.fillStyle = fill; g.fill(); }
+  if(stroke){ g.strokeStyle = stroke; g.lineWidth = LW(); g.stroke(); }
+}
+
 function roundRect(x, y, w, h, r){
   r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
   g.beginPath(); g.moveTo(x + r, y);

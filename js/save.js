@@ -18,7 +18,7 @@ function freshSave(){
     house: 0,
     wall: 'w0', floor: 'f0',
     walls: ['w0'], floors: ['f0'],
-    dugi: { name:'두기', love:0, full:70, clean:70, fun:70, energy:70,
+    dugi: { name:'두기', lv:1, exp:0, love:0, full:70, clean:70, fun:70, energy:70,
             fav: FOODS[Math.floor(Math.random() * FOODS.length)].id, plant:0 },
     furn: [...BASE_FURN],
     pos: {},                       // 꾸미기 모드에서 옮긴 자리
@@ -35,7 +35,7 @@ function freshSave(){
     upkeepDay: 0,
     claimed: [],
     named: false,
-    settings: { volBgm:0.6, volSfx:0.9 }
+    settings: { volBgm:0.6, volSfx:0.9, fx:true }
   };
 }
 
@@ -81,6 +81,7 @@ function payMult(jobId){
   const career = jobId ? careerPay(S.career[jobId] || 0) : 1;
   return (0.80 + 0.30 * condition()) * (1 + loveBonus(S.dugi.love)) * (1 + boost('pay'))
          * (1 + collectBonus())                 /* 모습 등급 + 도감 수집 */
+         * (1 + lvPay())                        /* 두기 레벨 */
          * career * WEATHER().pay;
 }
 
@@ -93,9 +94,41 @@ function addClover(n){
   if(n > 0){ S.stat.earn = (S.stat.earn || 0) + n; bumpDaily('earn', n); }
 }
 
+/* ===== 두기 레벨 =====
+   뭘 하든 조금씩 쌓입니다. 올라가면 알바비가 오르고 보상이 나와요. */
+let lvFx = 0;                       /* 레벨업 연출 남은 시간 */
+function addExp(n){
+  const d = S.dugi;
+  if(d.lv >= LV_MAX){ d.exp = 0; return; }
+  d.exp = Math.max(0, (d.exp || 0) + Math.round(n || 0));
+  let up = 0, got = 0, items = [];
+  while(d.lv < LV_MAX && d.exp >= expNeed(d.lv)){
+    d.exp -= expNeed(d.lv);
+    d.lv++;
+    up++;
+    const r = lvReward(d.lv);
+    if(r.clover){ addClover(r.clover); got += r.clover; }
+    if(r.item){ S.bag[r.item] = (S.bag[r.item] || 0) + (r.n || 1); items.push(ITEM(r.item).name); }
+    if(up > 40) break;              /* 터무니없는 값이 들어와도 멈춘다 */
+  }
+  if(d.lv >= LV_MAX) d.exp = 0;
+  if(up){
+    lvFx = 2.8;
+    toast('Lv ' + d.lv + ' 이 됐어요!',
+          '클로버 +' + got + (items.length ? ' · ' + items.join(', ') : '') +
+          ' · 알바비 +' + Math.round(lvPay() * 100) + '%');
+    sfxGrow();
+    if(typeof refreshBar === 'function') refreshBar();
+  }
+  return up;
+}
+const expProg = () => S.dugi.lv >= LV_MAX ? 1
+  : Math.min(1, (S.dugi.exp || 0) / expNeed(S.dugi.lv));
+
 /* ===== 마음 ===== */
 let leveledUp = 0;
 function addLove(n){
+  addExp(Math.round(Math.abs(n) * 3));          /* 쓰다듬고 돌볼 때마다 조금씩 */
   const before = loveLv(S.dugi.love);
   S.dugi.love = Math.max(0, Math.round((S.dugi.love + n * (1 + boost('love'))) * 10) / 10);
   const after = loveLv(S.dugi.love);
@@ -123,7 +156,9 @@ function afterOuting(jobId){
 /* 알바비 정산 — 알바 전부가 같이 쓴다 */
 function payOut(pay, jobId, elId, label){
   pay = Math.max(0, Math.round(pay));
-  addClover(pay); addLove(4); afterOuting(jobId); save(); refreshBar(); sfxCoin(4);
+  addClover(pay); addLove(4);
+  addExp(45 + Math.round(pay / 6));             /* 알바가 경험치의 큰 몫 */
+  afterOuting(jobId); save(); refreshBar(); sfxCoin(4);
   const lv = careerLv(S.career[jobId] || 0);
   const el = $(elId); if(!el) return;
   el.innerHTML = '<span class="paytop">오늘의 알바비</span>' + CLOVER_SVG +
@@ -132,9 +167,11 @@ function payOut(pay, jobId, elId, label){
     ' · 배부름 −16 · 기운 −20 · 깨끗함 −14</small>';
 }
 function careerUp(jobId, before){
-  const a = careerLv(before), b = careerLv(S.career[jobId] || 0);
-  if(b > a){ toast(JOB(jobId).name + ' 경력 ' + b + '!', '시급이 올랐어요 · 새 코스가 열릴지도?');
-             sfxCoin(4); }
+  const a = jobRank(before), b = jobRank(S.career[jobId] || 0);
+  if(b.name !== a.name){
+    toast(JOB(jobId).name + ' · ' + b.name + ' 승급!', a.name + ' → ' + b.name + ' · 시급이 올랐어요');
+    sfxCoin(5);
+  }
 }
 
 /* ===== 두기가 먼저 조르기 ===== */
@@ -193,7 +230,7 @@ function bumpDaily(kind, n){
     row.n += n;
     if(row.n >= def.need){
       row.got = true; changed = true;
-      S.clover += def.pay; addLove(3);
+      S.clover += def.pay; addLove(3); addExp(70);
       toast('오늘의 할 일 완료!', def.txt + ' · 클로버 +' + def.pay);
       sfxCoin(4);
     }

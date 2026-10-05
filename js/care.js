@@ -657,8 +657,20 @@ function drawYardScene(){
   if(!drew) drawDugi();
   drawParts();
   drawDayTint(true);                 /* 정원에도 아침·낮·저녁·밤을 입힌다 */
+  drawLightYard();
   if(deco) drawZoneLabels();
   drawPrompt();
+  FX.bloom(DAY().bloom * 0.85, 3.5);
+}
+
+/* 바깥의 빛 — 해·달에서 비스듬히 */
+function drawLightYard(){
+  const D = DAY(), L = skySpot();
+  if(D.shaft > 0)
+    FX.shafts({ x: L.x, y: L.y, len: H - L.y, n: 4, w: W * 0.03,
+                spread: 0.26, tilt: -0.5, a: D.shaft * 0.8, color: D.ray, t: home.t });
+  if(D.lamp) FX.glow(L.x, L.y, wallBot() * 0.55, D.star ? '200,214,255' : '255,232,170',
+                     D.star ? 0.15 : 0.13);
 }
 
 /* 방 전체 */
@@ -694,10 +706,30 @@ function drawHome(dt){
   if(!drew){ drawDugi(); drawBall(); }
   drawParts();
   drawDayTint();
+  drawLightRoom(dt);                 /* 창문 빛 · 전등 불빛 · 공중 먼지 */
   if(deco) drawZoneLabels();
   drawPrompt();
   if(deco) drawDecoHint();
   if(mini) drawMini();
+  FX.bloom(DAY().bloom, 3);          /* 밝은 데가 번진다 */
+}
+
+/* 방 안의 빛 — 시간대마다 세기와 방향이 달라진다 */
+function drawLightRoom(dt){
+  const D = DAY(), wb = wallBot();
+  FX.motesStep(dt || 0, home.t);
+  if(D.shaft > 0){
+    /* 창문에서 바닥으로 쏟아지는 빛 */
+    FX.shafts({ x: rx(0.11), y: wb * 0.52, len: H - wb * 0.52,
+                n: 3, w: W * 0.032, spread: 0.22, tilt: D.tilt,
+                a: D.shaft, color: D.ray, t: home.t });
+    FX.drawMotes({ x: rx(0.02), y: wb * 0.3, w: W * 0.42, h: H - wb * 0.3 },
+                 D.shaft * 2.6, home.t);
+  }
+  if(D.glow){                        /* 전등 주변 */
+    const L = lampSpot();
+    FX.glow(L.x, L.y, Math.min(W, H) * 0.3, '255,214,132', D.glow * 0.5);
+  }
 }
 function drawDecoHint(){
   const k = uiK();
