@@ -5,6 +5,7 @@
    셸 — 화면 전환 · 입력 · 메인 루프
    =============================================================== */
 let mode = 'home';          // home · auth · cut · run · runresult · mine · mineresult
+                            // · lost · lostresult · pack · packresult
                             // · cmlobby · catch · catchresult
 let last = performance.now();
 
@@ -93,6 +94,7 @@ function runEnd(r){
   $('runTitle').textContent = r.cleared ? '배달 완료!' : '배달 실패…';
   $('runArt').src = SRC[look().run];
   $('runScore').textContent = Math.round(r.score).toLocaleString('ko-KR');
+  tally('달린 거리', '주운 동전', '최고 연속');
   $('rDist').textContent = Math.floor(r.dist / 10) + ' m';
   $('rJelly').textContent = r.jelly + ' / ' + r.total;
   $('rCombo').textContent = r.combo;
@@ -130,6 +132,7 @@ function mineEnd(r){
                                             : '무사히 올라왔어요';
   $('runArt').src = SRC[look().run];
   $('runScore').textContent = Math.round(pay).toLocaleString('ko-KR');
+  tally('내려간 깊이', '주운 보물', '들고 온 것');
   $('rDist').textContent = r.depth + ' m';
   $('rJelly').textContent = names.length ? names.join(', ') : '없음';
   $('rCombo').textContent = r.collapsed ? '−' + (r.lost || 0).toLocaleString('ko-KR') : '지킴';
@@ -142,6 +145,72 @@ function mineEnd(r){
   payOut(pay, 'mine', 'runReward', '두기 광산 · ' + r.depth + 'm');
   careerUp('mine', before);
   showRank('mine');
+  showScreen($('runResult'));
+  bgmStart();
+}
+
+/* ===== 미아 찾기 ===== */
+function startLost(){
+  closeModal(); initAudio(); bgmStop();
+  if(ctx && ctx.state === 'suspended') ctx.resume();
+  mode = 'lost'; $('topbar').hidden = true; $('careBar').hidden = true;
+  $('runPad').hidden = true; showScreen(null);
+  LostGame.start({ onEnd: lostEnd });
+}
+function lostEnd(r){
+  mode = 'lostresult';
+  const before = S.career.lost || 0;
+  const score = Math.min(60000, Math.max(0, Math.round(r.score) || 0));
+  const pay = Math.round((score * 0.19 + 60) * payMult('lost'));
+  $('runTitle').textContent = r.round >= 10 ? '안내소의 달인!'
+                            : r.round >= 5  ? '잘 찾았어요'
+                                            : '눈이 아직 덜 떠졌네요';
+  $('runArt').src = SRC[look().run];
+  $('runScore').textContent = score.toLocaleString('ko-KR');
+  tally('찾은 손님', '헛짚음', '내 도감');
+  $('rDist').textContent = r.round + '명 찾음';
+  $('rJelly').textContent = r.miss + '번 헛짚음';
+  $('rCombo').textContent = S.own.length + '종';
+  $('rGrade').textContent = r.round >= 12 ? 'S' : r.round >= 8 ? 'A' : r.round >= 4 ? 'B' : 'C';
+  if(score > (S.lostBest || 0)){ S.lostBest = score; $('runBest').textContent = '새 기록!'; }
+  else $('runBest').textContent = '최고 점수 ' + (S.lostBest || 0).toLocaleString('ko-KR');
+  $('runAgain').textContent = '한 번 더';
+  payOut(pay, 'lost', 'runReward', '미아 찾기 · ' + r.round + '명');
+  careerUp('lost', before);
+  showRank('lost');
+  showScreen($('runResult'));
+  bgmStart();
+}
+
+/* ===== 택배 포장 ===== */
+function startPack(){
+  closeModal(); initAudio(); bgmStop();
+  if(ctx && ctx.state === 'suspended') ctx.resume();
+  mode = 'pack'; $('topbar').hidden = true; $('careBar').hidden = true;
+  $('runPad').hidden = true; showScreen(null);
+  PackGame.start({ onEnd: packEnd });
+}
+function packEnd(r){
+  mode = 'packresult';
+  const before = S.career.pack || 0;
+  const score = Math.min(300000, Math.max(0, Math.round(r.score) || 0));
+  const pay = Math.round((score * 0.42 + 60) * payMult('pack'));
+  $('runTitle').textContent = r.lines >= 25 ? '창고의 전설!'
+                            : r.lines >= 12 ? '깔끔하게 쌌네요'
+                                            : '상자가 금방 찼어요';
+  $('runArt').src = SRC[look().run];
+  $('runScore').textContent = score.toLocaleString('ko-KR');
+  tally('지운 줄', '쌓은 칸', '한 번에 최다');
+  $('rDist').textContent = r.lines + '줄';
+  $('rJelly').textContent = r.placed + '칸';
+  $('rCombo').textContent = (r.burst || 0) + '줄';
+  $('rGrade').textContent = r.lines >= 30 ? 'S' : r.lines >= 18 ? 'A' : r.lines >= 8 ? 'B' : 'C';
+  if(score > (S.packBest || 0)){ S.packBest = score; $('runBest').textContent = '새 기록!'; }
+  else $('runBest').textContent = '최고 점수 ' + (S.packBest || 0).toLocaleString('ko-KR');
+  $('runAgain').textContent = '한 번 더';
+  payOut(pay, 'pack', 'runReward', '택배 포장 · ' + r.lines + '줄');
+  careerUp('pack', before);
+  showRank('pack');
   showScreen($('runResult'));
   bgmStart();
 }
@@ -194,6 +263,7 @@ function catchEnd(r){
   $('runTitle').textContent = r.rank === 1 ? '1등!' : r.rank + '등이에요';
   $('runArt').src = SRC[look().run];
   $('runScore').textContent = score.toLocaleString('ko-KR');
+  tally('내 등수', '함께한 사람', '1등');
   $('rDist').textContent = r.rank + ' / ' + r.total + '등';
   $('rJelly').textContent = r.total + '명';
   $('rCombo').textContent = (r.board[0] ? r.board[0].name : '-');
@@ -227,6 +297,12 @@ $('cmForm').onsubmit = e => {
   $('cmInput').value = '';
   CatchMind.say(v);
 };
+
+/* 결과 화면의 네 칸 이름을 알바마다 바꿔 단다 */
+function tally(a, b, c, d){
+  $('rDistL').textContent = a; $('rJellyL').textContent = b;
+  $('rComboL').textContent = c; $('rGradeL').textContent = d || '등급';
+}
 
 /* 결과 화면 아래에 지금 랭크와 (로그인했다면) 전체 등수 */
 function showRank(jobId){
@@ -297,6 +373,8 @@ addEventListener('keydown', e => {
     if(!e.repeat) MineGame.key(e.code);
     return;
   }
+  if(mode === 'lost'){ if(!e.repeat) LostGame.key(e.code); return; }
+  if(mode === 'pack'){ if(!e.repeat) PackGame.key(e.code); return; }
   if(mode === 'catch'){
     const typing = /^(INPUT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
     if(e.code === 'Escape'){ if(typing) $('cmInput').blur(); else CatchMind.quit(); return; }
@@ -335,6 +413,8 @@ cv.addEventListener('pointerdown', e => {
   const p = canvasXY(e);
   if(mode === 'run'){ DugiRun.pointer(p.y / H, true); return; }
   if(mode === 'mine'){ MineGame.pointer(p.x, p.y); return; }
+  if(mode === 'lost'){ LostGame.pointer(p.x, p.y); return; }
+  if(mode === 'pack'){ e.preventDefault(); PackGame.down(p.x, p.y); return; }
   if(mode === 'catch'){ e.preventDefault(); CatchMind.down(p.x, p.y); return; }
   if(mode === 'cut'){ advanceCut(); return; }
   if(mode === 'home'){
@@ -344,6 +424,7 @@ cv.addEventListener('pointerdown', e => {
 });
 cv.addEventListener('pointermove', e => {
   if(mode === 'catch'){ const q = canvasXY(e); CatchMind.move(q.x, q.y, ptrDown); return; }
+  if(mode === 'pack'){ const q = canvasXY(e); PackGame.move(q.x, q.y, ptrDown); return; }
   if(mode !== 'home') return;
   const p = canvasXY(e);
   homeMove(p.x, p.y, ptrDown);
@@ -352,11 +433,13 @@ cv.addEventListener('pointerup', e => {
   ptrDown = false;
   if(mode === 'run'){ DugiRun.pointer(0, false); return; }
   if(mode === 'catch'){ CatchMind.up(); return; }
+  if(mode === 'pack'){ PackGame.up(); return; }
   if(mode === 'home') homeUp();
 });
 cv.addEventListener('pointercancel', e => {
   ptrDown = false;
   if(mode === 'catch'){ CatchMind.up(); return; }
+  if(mode === 'pack'){ PackGame.up(); return; }
   if(mode === 'home') homeUp();
 });
 
@@ -368,7 +451,8 @@ function audioKick(){
   initAudio();
   if(ctx.state === 'suspended') ctx.resume();
   if(mode === 'home' || mode === 'result' || mode === 'runresult' ||
-     mode === 'mineresult' || mode === 'catchresult') bgmStart();
+     mode === 'mineresult' || mode === 'lostresult' ||
+     mode === 'packresult' || mode === 'catchresult') bgmStart();
 }
 
 /* 버튼 */
@@ -391,6 +475,8 @@ $('modalClose').onclick = closeModal;
 modal.addEventListener('pointerdown', e => { if(e.target === modal) closeModal(); });
 $('runAgain').onclick = () => {
   if(mode === 'mineresult') startMine();
+  else if(mode === 'lostresult') startLost();
+  else if(mode === 'packresult') startPack();
   else if(mode === 'catchresult') startCatch();
   else startRun();
 };
@@ -428,6 +514,8 @@ function frame(ts){
     if(mode === 'cut' && cut){ drawCut(dt); }
     else if(mode === 'run' || mode === 'runresult'){ DugiRun.frame(dt, mode === 'run'); }
     else if(mode === 'mine' || mode === 'mineresult'){ MineGame.frame(dt, mode === 'mine'); }
+    else if(mode === 'lost' || mode === 'lostresult'){ LostGame.frame(dt, mode === 'lost'); }
+    else if(mode === 'pack' || mode === 'packresult'){ PackGame.frame(dt, mode === 'pack'); }
     else if(mode === 'catch' || mode === 'catchresult'){ CatchMind.frame(dt, mode === 'catch'); }
     else if(mode === 'cmlobby'){ g.fillStyle = '#F3EAE1'; g.fillRect(0, 0, W, H); }
     else { updateHome(dt); drawHome(dt); }

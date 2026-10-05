@@ -234,6 +234,8 @@ function sanitizeSave(raw){
   out.named   = !!raw.named;
   out.runBest  = num(raw.runBest, 0, 99999999, 0);
   out.mineBest = num(raw.mineBest, 0, 999, 0);
+  out.lostBest = num(raw.lostBest, 0, 9999999, 0);
+  out.packBest = num(raw.packBest, 0, 9999999, 0);
   out.drawBest = num(raw.drawBest, 0, 99999999, 0);
   out.seen     = num(raw.seen, 0, 4102444800000, 0);
   out.guestDay = num(raw.guestDay, 0, 99999999, 0);
@@ -255,6 +257,7 @@ function sanitizeSave(raw){
   };
   const c = (raw.career && typeof raw.career === 'object') ? raw.career : {};
   out.career = { deliver: num(c.deliver, 0, 999999, 0), mine: num(c.mine, 0, 999999, 0),
+                 lost: num(c.lost, 0, 999999, 0), pack: num(c.pack, 0, 999999, 0),
                  draw: num(c.draw, 0, 999999, 0) };
   const st = (raw.stat && typeof raw.stat === 'object') ? raw.stat : {};
   out.stat = { pet: num(st.pet, 0, 99999999, 0), job: num(st.job, 0, 999999, 0),

@@ -16,9 +16,10 @@ const Board = (function(){
 
 const TOP_N = 20;
 /* 각 알바가 올리는 값과, 사람이 낼 수 있는 한계 (서버 제약과 같은 숫자) */
-const JOBCAP = { deliver: 200000, mine: 30, draw: 100000 };
-const UNIT   = { deliver: '점', mine: 'm', draw: '점' };
-const bestOf = { deliver: () => S.runBest, mine: () => S.mineBest, draw: () => S.drawBest };
+const JOBCAP = { deliver: 200000, mine: 30, lost: 60000, pack: 300000, draw: 100000 };
+const UNIT   = { deliver: '점', mine: 'm', lost: '점', pack: '점', draw: '점' };
+const bestOf = { deliver: () => S.runBest, mine: () => S.mineBest,
+                 lost: () => S.lostBest, pack: () => S.packBest, draw: () => S.drawBest };
 
 let cache = Object.create(null);       /* job -> {at, rows} */
 let lastSent = Object.create(null);

@@ -262,6 +262,12 @@ const JOBS = [
   { id:'mine', game:'mine', name:'두기 광산', place:'마을 뒷산',
     desc:'파 내려가다 언제 올라올지 고르기', pay:'깊을수록 커지지만 무너지면 전부 잃어요',
     color:'#C9A06A' },
+  { id:'lost', game:'lost', name:'미아 찾기', place:'광장 안내소',
+    desc:'사람들 속에서 찾는 두기 고르기', pay:'도감에 있는 두기를 찾으면 점수가 더 커요',
+    color:'#9CCADF' },
+  { id:'pack', game:'pack', name:'택배 포장', place:'물류 창고',
+    desc:'상자에 블록을 끼워 넣어 줄 지우기', pay:'여러 줄을 한 번에 지울수록 커져요',
+    color:'#C6B49A' },
   { id:'draw', game:'catch', name:'두기 캐치마인드', place:'광장 · 같이 하기',
     desc:'한 명이 그리고 나머지가 맞히기', pay:'빨리 맞힐수록 점수가 커져요',
     color:'#8FC0D8', multi:true }

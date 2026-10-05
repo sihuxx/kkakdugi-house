@@ -355,6 +355,8 @@ function buildJobs(body){
     b2.onclick = () => {
       if(j.game === 'run') startRun();
       else if(j.game === 'catch') startCatch();
+      else if(j.game === 'lost') startLost();
+      else if(j.game === 'pack') startPack();
       else startMine();
     };
   });
@@ -399,7 +401,8 @@ async function buildBoardList(){
         '<b>' + esc(r.name) + '</b>' +
         '<span>' + r.best.toLocaleString('ko-KR') + u + '</span></div>').join('');
   }
-  const meBest = { deliver: S.runBest, mine: S.mineBest, draw: S.drawBest }[job] || 0;
+  const meBest = { deliver: S.runBest, mine: S.mineBest, lost: S.lostBest,
+                   pack: S.packBest, draw: S.drawBest }[job] || 0;
   const foot = document.createElement('p'); foot.className = 'bnote';
   foot.textContent = '내 기록 ' + meBest.toLocaleString('ko-KR') + u;
   el.appendChild(foot);
@@ -442,6 +445,54 @@ function drawJobIcon(cvs, id){
     g.fillStyle = '#8A7264'; g.textAlign = 'center';
     g.font = '700 22px Gaegu, sans-serif';
     g.fillText('???', sw * 0.76, sh * 0.2);
+  }else if(id === 'lost'){
+    g.fillStyle = '#F2E8DA'; g.fillRect(0, 0, sw, sh);
+    g.fillStyle = '#E3D4BE'; g.fillRect(0, sh * 0.62, sw, sh * 0.38);
+    /* 군중 */
+    const put = (x, y, r, c) => {
+      g.fillStyle = c; ink(2.6);
+      g.beginPath(); g.ellipse(sw * x, sh * y, r, r * 1.15, 0, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = '#5A4A40';
+      g.beginPath(); g.arc(sw * x - r * 0.3, sh * y - r * 0.25, 1.7, 0, 7); g.fill();
+      g.beginPath(); g.arc(sw * x + r * 0.25, sh * y - r * 0.25, 1.7, 0, 7); g.fill();
+    };
+    [[0.16,0.52],[0.33,0.46],[0.5,0.55],[0.67,0.45],[0.84,0.53],
+     [0.24,0.74],[0.58,0.76],[0.77,0.72]].forEach(([x,y]) => put(x, y, 11, '#FFFCF8'));
+    /* 찾는 두기 — 동그라미로 표시 */
+    put(0.41, 0.72, 12, '#FFF3D6');
+    g.strokeStyle = '#5E9B63'; g.lineWidth = 3.4;
+    g.beginPath(); g.arc(sw * 0.41, sh * 0.72, 19, 0, 7); g.stroke();
+    /* 돋보기 */
+    g.strokeStyle = '#5A4A40'; g.lineWidth = 3.4;
+    g.beginPath(); g.arc(sw * 0.78, sh * 0.26, 14, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(sw * 0.86, sh * 0.36); g.lineTo(sw * 0.95, sh * 0.5); g.stroke();
+    g.fillStyle = 'rgba(156,202,223,.45)';
+    g.beginPath(); g.arc(sw * 0.78, sh * 0.26, 13, 0, 7); g.fill();
+  }else if(id === 'pack'){
+    g.fillStyle = '#F4EADC'; g.fillRect(0, 0, sw, sh);
+    /* 상자 */
+    g.fillStyle = '#E4CDA8'; ink(3.2);
+    rrect(sw * 0.1, sh * 0.14, sw * 0.56, sh * 0.72, 8); g.fill(); g.stroke();
+    g.fillStyle = '#FBF4E9';
+    rrect(sw * 0.14, sh * 0.19, sw * 0.48, sh * 0.62, 5); g.fill();
+    /* 칸 */
+    const gx = sw * 0.14, gy = sh * 0.19, gw = sw * 0.48, gh = sh * 0.62, cs = gw / 4;
+    g.strokeStyle = '#E6D8C2'; g.lineWidth = 1.4;
+    for(let i = 1; i < 4; i++){
+      g.beginPath(); g.moveTo(gx + i * cs, gy); g.lineTo(gx + i * cs, gy + gh); g.stroke();
+      g.beginPath(); g.moveTo(gx, gy + i * gh / 4); g.lineTo(gx + gw, gy + i * gh / 4); g.stroke();
+    }
+    const cell = (r, c, col) => {
+      g.fillStyle = col;
+      rrect(gx + c * cs + 2, gy + r * gh / 4 + 2, cs - 4, gh / 4 - 4, 4); g.fill();
+    };
+    cell(1,0,'#EFA6B8'); cell(1,1,'#EFA6B8'); cell(1,2,'#EFA6B8'); cell(1,3,'#EFA6B8');
+    cell(2,0,'#8FC0D8'); cell(3,2,'#8FBF92'); cell(3,3,'#8FBF92');
+    /* 들고 있는 블록 */
+    g.fillStyle = '#E0B84E'; ink(3.2);
+    rrect(sw * 0.72, sh * 0.3, sw * 0.12, sh * 0.16, 4); g.fill(); g.stroke();
+    rrect(sw * 0.72, sh * 0.48, sw * 0.12, sh * 0.16, 4); g.fill(); g.stroke();
+    rrect(sw * 0.85, sh * 0.48, sw * 0.12, sh * 0.16, 4); g.fill(); g.stroke();
   }else if(id === 'mine'){
     g.fillStyle = '#2E2A3A'; g.fillRect(0, 0, sw, sh);
     [['#C9A06A', 0.30], ['#9AA0A6', 0.56], ['#6E7D92', 0.82]].forEach(([c, t], i) => {

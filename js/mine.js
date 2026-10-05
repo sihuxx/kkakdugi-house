@@ -36,8 +36,11 @@ let haul = [], cells = [], found = null;
 let t = 0, shake = 0, camY = 0, camTo = 0, dust = [];
 let onEnd = null, hit = [], best = 0, ended = false;
 
-const risk = () => Math.min(RISK_CAP, Math.max(0, (depth + 1 - RISK_FREE) * RISK_STEP))
-                 + (cracked ? CRACK_ADD : 0);
+/* 처음 몇 칸은 무슨 일이 있어도 안전 — 금이 갔어도 마찬가지.
+   "처음 5칸은 안전" 이라고 써 붙여 놓고 2m 에서 무너지면 속은 기분이 든다. */
+const risk = () => (depth + 1 <= RISK_FREE) ? 0
+  : Math.min(RISK_CAP, Math.max(0, (depth + 1 - RISK_FREE) * RISK_STEP))
+    + (cracked ? CRACK_ADD : 0);
 
 function start(o){
   onEnd = o && o.onEnd;

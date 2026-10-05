@@ -10,7 +10,7 @@ import base64, hashlib, pathlib, re, mimetypes
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT  = ROOT / "dist" / "ggakdugi-house.html"
 ORDER = ["config","boot","fx","data","grow","save","auth","net","board","audio","menus","cut",
-         "home","care","run","mine","catch","app"]
+         "home","care","run","mine","lost","pack","catch","app"]
 
 def data_uri(path):
     mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"

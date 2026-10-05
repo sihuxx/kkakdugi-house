@@ -166,7 +166,7 @@ create trigger saves_rate_upd before update on public.saves
 -- ═══════════════════════════════════════════════════════════
 create table if not exists public.scores (
   user_id    uuid not null references auth.users(id) on delete cascade,
-  job        text not null check (job in ('deliver','mine','draw')),
+  job        text not null check (job in ('deliver','mine','lost','pack','draw')),
   name       text not null default '두기',
   best       integer not null default 0,
   updated_at timestamptz not null default now(),
@@ -175,6 +175,8 @@ create table if not exists public.scores (
   constraint scores_range check (
     (job = 'deliver' and best between 0 and 200000) or
     (job = 'mine'    and best between 0 and 30)     or   -- 깊이(m)
+    (job = 'lost'    and best between 0 and 60000)  or
+    (job = 'pack'    and best between 0 and 300000) or
     (job = 'draw'    and best between 0 and 100000)
   ),
   constraint scores_name_len   check (char_length(name) between 1 and 8),

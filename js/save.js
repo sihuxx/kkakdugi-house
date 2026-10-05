@@ -23,8 +23,8 @@ function freshSave(){
     furn: [...BASE_FURN],
     pos: {},                       // 꾸미기 모드에서 옮긴 자리
     bag: {},                       // 소모품
-    career: { deliver:0, mine:0, draw:0 },
-    runBest: 0, mineBest: 0, drawBest: 0,
+    career: { deliver:0, mine:0, lost:0, pack:0, draw:0 },
+    runBest: 0, mineBest: 0, lostBest: 0, packBest: 0, drawBest: 0,
     stat: { pet:0, job:0, earn:0 },
     daily: null,
     seen: 0,                       // 마지막으로 논 시각
@@ -47,7 +47,7 @@ let S = freshSave();
       S = Object.assign(freshSave(), raw);
       S.dugi = Object.assign(freshSave().dugi, raw.dugi || {});
       S.settings = Object.assign(freshSave().settings, raw.settings || {});
-      S.career = Object.assign({ deliver:0, mine:0, draw:0 }, raw.career || {});
+      S.career = Object.assign({ deliver:0, mine:0, lost:0, pack:0, draw:0 }, raw.career || {});
       S.stat = Object.assign({ pet:0, job:0, earn:0 }, raw.stat || {});
       const ids = new Set(CHARS.map(c => c.id));
       S.own = (S.own || []).filter(id => ids.has(id));
