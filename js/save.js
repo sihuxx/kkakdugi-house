@@ -250,14 +250,18 @@ function toast(title, line){
 }
 
 /* ===== 도감 보상 ===== */
+/* 도감 보상 — 초반 단계는 일부러 작게.
+   예전엔 22종까지 모으는 데 14,200 을 돌려줘서 뽑는 값보다 많았습니다.
+   그러면 "뽑을수록 부자" 가 되어서 알바가 의미가 없어져요.
+   마지막 31종만 크게 — 그건 한 번뿐이니까. */
 const DEX_REWARDS = [
-  { id:'d3',  n:3,  clover:400,  txt:'클로버 400' },
-  { id:'d5',  n:5,  clover:800,  txt:'클로버 800' },
-  { id:'d9',  n:9,  clover:1600, txt:'클로버 1600' },
-  { id:'d13', n:13, clover:2600, item:'snack', txt:'클로버 2600 + 간식 3개' },
-  { id:'d17', n:17, clover:3600, txt:'클로버 3600' },
-  { id:'d22', n:22, clover:5200, item:'snack', txt:'클로버 5200 + 간식 3개' },
-  { id:'d27', n:27, clover:7000, txt:'클로버 7000' },
+  { id:'d3',  n:3,  clover:200,  txt:'클로버 200' },
+  { id:'d5',  n:5,  clover:400,  txt:'클로버 400' },
+  { id:'d9',  n:9,  clover:800,  txt:'클로버 800' },
+  { id:'d13', n:13, clover:1300, item:'snack', txt:'클로버 1300 + 간식 3개' },
+  { id:'d17', n:17, clover:1800, txt:'클로버 1800' },
+  { id:'d22', n:22, clover:2600, item:'snack', txt:'클로버 2600 + 간식 3개' },
+  { id:'d27', n:27, clover:4000, txt:'클로버 4000' },
   { id:'d31', n:31, clover:12000, txt:'클로버 12000 · 전부 모았어요!' }
 ];
 function checkRewards(){

@@ -16,9 +16,13 @@ let freshIds = new Set();
 
 /* ===== 뽑기 로직 ===== */
 const PULL1 = 110, PULL10 = 1000;
-const REFUND = { N:55, R:130, SR:340, UR:900 };     /* 겹쳐도 손해가 아니게 */
-const RATE = [['N', 58], ['R', 28], ['SR', 11], ['UR', 3]];
-const PITY_SR = 90, PITY_UR = 250;                  /* 천장 */
+/* 겹침 환급 — 뽑기 값(1회 100~110)보다 확실히 낮게.
+   예전엔 기댓값이 132 라서 뽑을수록 클로버가 늘어났습니다.
+   그러면 알바를 할 이유도, 아껴 쓸 이유도 사라져요. 지금은 기댓값 약 30. */
+const REFUND = { N:18, R:45, SR:140, UR:400 };
+/* 전설·진귀는 정말 안 나옵니다. 대신 천장이 있으니 언젠가는 옵니다. */
+const RATE = [['N', 75], ['R', 21], ['SR', 3.4], ['UR', 0.6]];
+const PITY_SR = 100, PITY_UR = 320;                 /* 천장 */
 const POOL = rk => CHARS.filter(c => c.rank === rk);
 function rollRank(force){
   if(force) return force;
