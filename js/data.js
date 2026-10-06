@@ -22,10 +22,12 @@ for(const k in SRC){ const im=new Image(); im.src=SRC[k]; IMG[k]=im; }
    p = 뽑기 확률(%) · style: run 기본 / float 둥둥 / slide 미끄러짐 */
 const RARITY = {
   base:{ name:'기본',  color:'#F3EAE1', note:'처음부터 있음' },
-  N:   { name:'흔함',  color:'#DCEBD6', note:'합쳐서 58%' },
-  R:   { name:'귀함',  color:'#8FC0D8', note:'합쳐서 28%' },
-  SR:  { name:'진귀',  color:'#EFA6B8', note:'합쳐서 11%' },
-  UR:  { name:'전설',  color:'#E0B84E', note:'합쳐서 3%' }
+  N:   { name:'흔함',  color:'#DCEBD6', note:'합쳐서 78%' },
+  R:   { name:'귀함',  color:'#8FC0D8', note:'합쳐서 19.7%' },
+  SR:  { name:'진귀',  color:'#EFA6B8', note:'합쳐서 1.7%' },
+  UR:  { name:'전설',  color:'#E0B84E', note:'합쳐서 0.5%' },
+  /* 맨 위 한 칸 — 두기 한 마리만 들어 있습니다 */
+  UU:  { name:'울트라초수퍼전설', short:'울초전', color:'#C98BE8', note:'단 0.1%' }
 };
 function C(o){ return Object.assign({ flip:true, scale:1, float:0, style:'run', accent:'#8FBF92' }, o); }
 const CHARS = [
@@ -47,7 +49,7 @@ const CHARS = [
       run:'car', jump:'car', fall:'car', scale:0.95, style:'slide', jumpRot:-0.1, fallRot:0.3, accent:'#8FC0D8' }),
   C({ id:'snail',    name:'달팽이 두기', meta:'느긋하게 미끄러짐', rank:'N',
       run:'snail', jump:'snail', fall:'snail', scale:0.88, style:'slide', jumpRot:-0.08, fallRot:0.3, accent:'#8FBF92' }),
-  C({ id:'cute',     name:'귀여운 두기', meta:'그냥 귀엽다', rank:'N',
+  C({ id:'cute',     name:'귀여운 두기', meta:'그냥 귀엽다', rank:'UU',
       run:'cute', jump:'cute', fall:'cute', scale:0.96, jumpRot:-0.18, fallRot:0.45, accent:'#EFA6B8' }),
   C({ id:'meh',      name:'심드렁 두기', meta:'별로 안 놀란 표정', rank:'N',
       run:'meh', jump:'meh', fall:'meh', jumpRot:-0.16, fallRot:0.42, accent:'#DCC7A9' }),

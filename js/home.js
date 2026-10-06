@@ -1080,6 +1080,45 @@ function drawYardThing(id, cx, base, s, glow){
       label('알바', base - s * 1.55);
       break;
     }
+    case 'arch': {                                    /* 광장 가는 길 */
+      shadow(cx, base, s * 0.55);
+      const aw = s * 1.15, ah = s * 1.35;
+      g.strokeStyle = '#C9A06A'; g.lineWidth = LW() * 3.4; g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(cx - aw / 2, base);
+      g.lineTo(cx - aw / 2, base - ah * 0.6);
+      g.quadraticCurveTo(cx, base - ah * 1.25, cx + aw / 2, base - ah * 0.6);
+      g.lineTo(cx + aw / 2, base);
+      g.stroke();
+      ink();
+      ['#8FBF92', '#A9D9A2'].forEach((c, i) => {      /* 타고 오른 덩굴 */
+        g.fillStyle = c;
+        for(let k = 0; k < 5; k++){
+          const t = (k + i * 0.5) / 5;
+          const a2 = Math.PI * (0.1 + t * 0.8);
+          const px = cx - Math.cos(a2) * aw * 0.52;
+          const py = base - ah * 0.6 - Math.sin(a2) * ah * 0.52;
+          g.beginPath(); g.arc(px, py, s * 0.1, 0, 7); g.fill(); g.stroke();
+        }
+      });
+      /* 문 너머로 보이는 길 */
+      g.save();
+      g.beginPath();
+      g.moveTo(cx - aw * 0.4, base);
+      g.lineTo(cx - aw * 0.4, base - ah * 0.55);
+      g.quadraticCurveTo(cx, base - ah * 1.05, cx + aw * 0.4, base - ah * 0.55);
+      g.lineTo(cx + aw * 0.4, base);
+      g.closePath(); g.clip();
+      g.fillStyle = '#CFE6C8'; g.fillRect(cx - aw, base - ah * 1.3, aw * 2, ah * 1.3);
+      g.fillStyle = '#E4D2AE';
+      g.beginPath();
+      g.moveTo(cx - aw * 0.14, base - ah * 0.5); g.lineTo(cx + aw * 0.14, base - ah * 0.5);
+      g.lineTo(cx + aw * 0.34, base); g.lineTo(cx - aw * 0.34, base);
+      g.closePath(); g.fill();
+      g.restore();
+      label('광장', base - ah * 1.42);
+      break;
+    }
     case 'rank': {                                    /* 명예의 전당 — 랭킹 */
       shadow(cx, base, s * 0.95);
       const bw = s * 0.5;                             /* 단 하나의 너비 */

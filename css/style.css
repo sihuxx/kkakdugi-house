@@ -895,3 +895,18 @@ body.fs #stage{border-radius:0;box-shadow:none;}
 .roomcard b{font-family:var(--display);font-size:16px;color:var(--ink);}
 .roomcard i{font-style:normal;font-size:11px;color:var(--ink-soft);}
 .roomcard .code{font-size:11px;letter-spacing:.08em;color:#3E6B44;}
+
+/* ── 울트라초수퍼전설 — 두기 한 마리뿐인 맨 윗칸 ──────── */
+.dcard.r-UU, .gcard.r-UU{
+  background:linear-gradient(135deg,#FFFDF8,#F3E4FB 45%,#FFF1CE);
+  box-shadow:0 0 0 2px #C98BE8 inset, 0 8px 20px rgba(150,100,190,.20);}
+.namecard.r-UU{
+  background:linear-gradient(135deg,#FFFDF8,#F3E4FB 45%,#FFF1CE);
+  box-shadow:0 0 0 2px #C98BE8 inset, 0 6px 16px rgba(150,100,190,.18);}
+.orb.r-UU{--oc:#C98BE8;}
+.rgroup .rname.r-UU{color:#8E4FC0;}
+.prow.uu .ptrack i{background:#C98BE8;}
+.banner.uu{background:linear-gradient(90deg,#E8C86A,#C98BE8,#8FC0D8,#C98BE8,#E8C86A);
+  background-size:300% 100%;color:#FFFFFF;animation:uuFlow 2.6s linear infinite;
+  text-shadow:0 1px 3px rgba(90,60,120,.45);}
+@keyframes uuFlow{0%{background-position:0% 50%}100%{background-position:300% 50%}}

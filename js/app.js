@@ -89,7 +89,7 @@ function goYard(){
   home.x = 0.12; home.y = 0.28; home.target = null; home.autoAct = null;
   home.vx = home.vy = 0; home.act = null; home.sweep = false;
   home.ball.home = true; home.aim = null;
-  toast('정원으로 나왔어요', '상점 · 뽑기 · 알바 게시판 · 랭킹 · 우체통');
+  toast('정원으로 나왔어요', '상점 · 뽑기 · 알바 · 랭킹 · 광장');
   refreshBar();
 }
 

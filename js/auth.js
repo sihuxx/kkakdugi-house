@@ -223,6 +223,7 @@ function sanitizeSave(raw){
   out.clover  = num(raw.clover, 0, 99999999, 500);
   out.pity    = num(raw.pity, 0, 100000, 0);
   out.pityU   = num(raw.pityU, 0, 100000, 0);
+  out.pityX   = num(raw.pityX, 0, 100000, 0);
   out.house   = num(raw.house, 0, HOUSES.length - 1, 0);
   out.look    = ids.has(raw.look) ? raw.look : 'wool';
   out.own     = Array.isArray(raw.own) ? [...new Set(raw.own.filter(x => ids.has(x)))].slice(0, 200) : ['wool'];

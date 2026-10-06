@@ -11,7 +11,7 @@ const CLOVER_SVG = '<svg class="cv" viewBox="0 0 20 20" aria-hidden="true">' +
   '<circle cx="10" cy="5.6" r="3.5"/><circle cx="14.4" cy="10" r="3.5"/>' +
   '<circle cx="10" cy="14.4" r="3.5"/><circle cx="5.6" cy="10" r="3.5"/></g>' +
   '<path d="M10 11 L10 19" stroke="#8FBF92" stroke-width="1.8" fill="none"/></svg>';
-const STARS = { base:1, N:1, R:2, SR:3, UR:4 };
+const STARS = { base:1, N:1, R:2, SR:3, UR:4, UU:5 };
 const starRow = rk => '<span class="stars">' + '★'.repeat(STARS[rk]) + '</span>';
 let freshIds = new Set();
 
@@ -19,11 +19,12 @@ let freshIds = new Set();
 const PULL1 = 110, PULL10 = 1000;
 /* 겹침 환급 — 뽑기 값(1회 100~110)보다 확실히 낮게.
    예전엔 기댓값이 132 라서 뽑을수록 클로버가 늘어났습니다.
-   그러면 알바를 할 이유도, 아껴 쓸 이유도 사라져요. 지금은 기댓값 약 30. */
-const REFUND = { N:18, R:45, SR:140, UR:400 };
-/* 전설·진귀는 정말 안 나옵니다. 대신 천장이 있으니 언젠가는 옵니다. */
-const RATE = [['N', 75], ['R', 21], ['SR', 3.4], ['UR', 0.6]];
-const PITY_SR = 100, PITY_UR = 320;                 /* 천장 */
+   그러면 알바를 할 이유도, 아껴 쓸 이유도 사라져요. 지금은 기댓값 약 29. */
+const REFUND = { N:18, R:45, SR:140, UR:400, UU:1200 };
+/* 위로 갈수록 정말 안 나옵니다. 맨 위 '울트라초수퍼전설' 은 귀여운 두기 한 마리뿐. */
+const RATE = [['N', 78], ['R', 19.7], ['SR', 1.7], ['UR', 0.5], ['UU', 0.1]];
+/* 천장 — 운이 아주 없어도 언젠가는 옵니다 */
+const PITY_SR = 100, PITY_UR = 400, PITY_UU = 1500;
 const POOL = rk => CHARS.filter(c => c.rank === rk);
 function rollRank(force){
   if(force) return force;
@@ -41,10 +42,14 @@ function pull(n, free){
   for(let i = 0; i < n; i++){
     const force = (n === 10 && i === 9 && !got.some(x => x.rank !== 'N')) ? 'R' : null;
     let rk = rollRank(force);
-    /* 천장 — 90번 안에 진귀 이상, 250번 안에 전설 */
-    S.pityU = (rk === 'UR') ? 0 : (S.pityU || 0) + 1;
-    S.pity  = (rk === 'SR' || rk === 'UR') ? 0 : S.pity + 1;
-    if(S.pityU >= PITY_UR){ rk = 'UR'; S.pity = S.pityU = 0; }
+    /* 천장 세 겹 — 100번 안에 진귀 이상, 400번 안에 전설,
+       1500번 안에 울트라초수퍼전설. 위 등급이 나오면 아래 counter 도 같이 풀립니다. */
+    const TOP = { SR:1, UR:2, UU:3 }[rk] || 0;
+    S.pityX = (TOP >= 3) ? 0 : (S.pityX || 0) + 1;
+    S.pityU = (TOP >= 2) ? 0 : (S.pityU || 0) + 1;
+    S.pity  = (TOP >= 1) ? 0 : (S.pity  || 0) + 1;
+    if(S.pityX >= PITY_UU){ rk = 'UU'; S.pity = S.pityU = S.pityX = 0; }
+    else if(S.pityU >= PITY_UR){ rk = 'UR'; S.pity = S.pityU = 0; }
     else if(S.pity >= PITY_SR){ rk = 'SR'; S.pity = 0; }
     const pool = POOL(rk), c = pool[Math.floor(Math.random() * pool.length)];
     const isNew = !owns(c.id);
@@ -79,7 +84,7 @@ function buildDex(body, onPick){
     '<span>' + (nx ? '다음 보상 — ' + nx.n + '종에서 ' + nx.txt : '보상 전부 받음!') + '</span></div>';
   body.appendChild(bar);
   const wrap = document.createElement('div'); wrap.className = 'dex';
-  ['base', 'UR', 'SR', 'R', 'N'].forEach(rk => {
+  ['base', 'UU', 'UR', 'SR', 'R', 'N'].forEach(rk => {
     const list = CHARS.filter(x => x.rank === rk), soon = COMING.filter(x => x.rank === rk);
     if(!list.length && !soon.length) return;
     const grp = document.createElement('div'); grp.className = 'rgroup';
@@ -768,12 +773,15 @@ const RANKSOUND = {
 };
 function buildGacha(body){
   const wrap = document.createElement('div'); wrap.className = 'gacha';
-  const srLeft = Math.max(0, PITY_SR - (S.pity || 0));
+  const srLeft = Math.max(0, PITY_SR - (S.pity  || 0));
   const urLeft = Math.max(0, PITY_UR - (S.pityU || 0));
+  const uuLeft = Math.max(0, PITY_UU - (S.pityX || 0));
   const free = freeLeft();
   wrap.innerHTML =
     '<div class="gtop">' + CLOVER_SVG + '<b id="gWallet">' + S.clover.toLocaleString('ko-KR') + '</b>' +
-      '<span>' + RATE.map(([rk, p]) => RARITY[rk].name + ' ' + p + '%').join(' · ') + '</span></div>' +
+      '<span>' + RATE.slice().reverse()
+        .map(([rk, p]) => (RARITY[rk].short || RARITY[rk].name) + ' ' + p + '%').join(' · ') +
+      '</span></div>' +
 
     /* 천장 — 몇 번 더 뽑으면 확정인지 눈에 보이게 */
     '<div class="pity">' +
@@ -785,6 +793,10 @@ function buildGacha(body){
         '<span class="ptrack"><i style="width:' +
           Math.round((S.pityU || 0) / PITY_UR * 100) + '%"></i></span>' +
         '<em>' + urLeft + '번</em></div>' +
+      '<div class="prow uu"><b>울초전 ★★★★★ 확정까지</b>' +
+        '<span class="ptrack"><i style="width:' +
+          Math.round((S.pityX || 0) / PITY_UU * 100) + '%"></i></span>' +
+        '<em>' + uuLeft + '번</em></div>' +
     '</div>' +
 
     '<div class="gstage" id="gStage"><p class="gidle">클로버를 넣고 새 모습을 만나보세요<br>' +
@@ -821,14 +833,14 @@ function buildGacha(body){
   $('g10').onclick = () => run(10);
   if(lastPull) renderPullResult(lastPull);
 }
-const RANK_RC = { R:'#8FC0D8', SR:'#FF9EB5', UR:'#E8C86A' };
+const RANK_RC = { R:'#8FC0D8', SR:'#FF9EB5', UR:'#E8C86A', UU:'#C98BE8' };
 function decorate(el, rank){
   if(rank === 'N' || rank === 'base') return;
   const ring = document.createElement('span');
   ring.className = 'ring'; ring.style.setProperty('--rc', RANK_RC[rank] || '#8FC0D8');
   el.appendChild(ring);
-  if(rank === 'SR' || rank === 'UR'){
-    for(let k = 0; k < (rank === 'UR' ? 14 : 9); k++){
+  if(rank === 'SR' || rank === 'UR' || rank === 'UU'){
+    for(let k = 0; k < (rank === 'UU' ? 20 : rank === 'UR' ? 14 : 9); k++){
       const s = document.createElement('span'); s.className = 'spark';
       const a = k / 9 * 6.283, d = 42 + Math.random() * 34;
       s.style.setProperty('--dx', (Math.cos(a) * d).toFixed(1) + 'px');
@@ -838,17 +850,19 @@ function decorate(el, rank){
     }
   }
 }
-const topRank = got => got.some(r => r.rank === 'UR') ? 'UR'
+const topRank = got => got.some(r => r.rank === 'UU') ? 'UU'
+                     : got.some(r => r.rank === 'UR') ? 'UR'
                      : got.some(r => r.rank === 'SR') ? 'SR'
                      : got.some(r => r.rank === 'R')  ? 'R' : 'N';
 function renderPullResult(got){
   const st = $('gStage'); if(!st) return;
   const top = topRank(got);
-  st.innerHTML = ''; st.classList.toggle('hasbanner', top === 'SR' || top === 'UR');
-  if(top === 'SR' || top === 'UR'){
+  st.innerHTML = ''; st.classList.toggle('hasbanner', top === 'SR' || top === 'UR' || top === 'UU');
+  if(top === 'SR' || top === 'UR' || top === 'UU'){
     const bn = document.createElement('div');
-    bn.className = 'banner' + (top === 'UR' ? ' ur' : '');
-    bn.textContent = top === 'UR' ? '전설 등장!!' : '진귀 등장!';
+    bn.className = 'banner' + (top === 'UU' ? ' uu' : top === 'UR' ? ' ur' : '');
+    bn.textContent = top === 'UU' ? '울트라초수퍼전설!!!'
+                   : top === 'UR' ? '전설 등장!!' : '진귀 등장!';
     st.appendChild(bn);
   }
   const grid = document.createElement('div'); grid.className = 'gresult'; st.appendChild(grid);
@@ -856,7 +870,7 @@ function renderPullResult(got){
   got.forEach((r, i) => {
     const el = document.createElement('div');
     el.className = 'gcard r-' + r.rank +
-                   (r.rank === 'SR' || r.rank === 'UR' ? ' shine' : '');
+                   (r.rank === 'SR' || r.rank === 'UR' || r.rank === 'UU' ? ' shine' : '');
     el.style.animationDelay = (i * step / 1000) + 's';
     el.innerHTML = starRow(r.rank) +
       (r.isNew ? '<span class="newbadge">NEW</span>' : '') +

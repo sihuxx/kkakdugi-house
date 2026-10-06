@@ -14,7 +14,7 @@ function freshSave(){
     clover: 500,
     look: 'proud',
     own: [...START_LOOKS],
-    pity: 0, pityU: 0,
+    pity: 0, pityU: 0, pityX: 0,
     house: 0,
     wall: 'w0', floor: 'f0',
     walls: ['w0'], floors: ['f0'],

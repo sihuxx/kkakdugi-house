@@ -168,12 +168,12 @@ const FIXED = [
 
 /* ===== 정원 (집 밖) — 자리는 고정 ===== */
 const YARD = [
-  { id:'house', name:'우리 집',     x:0.11, y:0.03, act:'in' },
-  { id:'shop',  name:'가게',        x:0.38, y:0.02, act:'shop' },
-  { id:'gmach', name:'뽑기 기계',   x:0.55, y:0.07, act:'gacha' },
-  { id:'board', name:'알바 게시판', x:0.73, y:0.05, act:'job' },
-  { id:'rank',  name:'명예의 전당', x:0.82, y:0.04, act:'rank' },
-  { id:'arch',  name:'광장 가는 길', x:0.96, y:0.09, act:'plaza' }
+  { id:'house', name:'우리 집',     x:0.09, y:0.03, act:'in' },
+  { id:'shop',  name:'가게',        x:0.30, y:0.02, act:'shop' },
+  { id:'gmach', name:'뽑기 기계',   x:0.46, y:0.07, act:'gacha' },
+  { id:'board', name:'알바 게시판', x:0.62, y:0.05, act:'job' },
+  { id:'rank',  name:'명예의 전당', x:0.77, y:0.04, act:'rank' },
+  { id:'arch',  name:'광장 가는 길', x:0.92, y:0.10, act:'plaza' }
 ];
 
 /* ===== 광장 (여럿이 모이는 곳) ===== */
@@ -262,7 +262,7 @@ function jobRankNext(n){
 /* ===== 모습 보너스 — 뽑기로 얻은 게 실제로 쓸모 있도록 =====
    좋은 등급을 입고 있으면 알바비가 오르고, 많이 모을수록 또 오릅니다.
    (모으는 재미가 수치로 돌아오게 하는 자리) */
-const LOOK_PAY = { base:0, N:0.03, R:0.07, SR:0.13, UR:0.22 };
+const LOOK_PAY = { base:0, N:0.03, R:0.07, SR:0.13, UR:0.22, UU:0.35 };
 const DEX_PAY_EACH = 0.01;      /* 한 종류당 +1% */
 const DEX_PAY_CAP  = 0.30;      /* 최대 +30% */
 const lookPay = () => LOOK_PAY[(look().rank)] || 0;
