@@ -33,40 +33,32 @@
 
     <!-- 위쪽 상태바 -->
     <header id="topbar">
-      <div class="who">
-        <span class="nm"><b id="barName">두기</b></span>
-        <div class="lovewrap">
-          <span class="love" id="loveBox" title="마음"><span id="loveHearts"></span></span>
-          <i id="barStage">마음 Lv1</i>
+      <div class="chip who">
+        <b id="barName">두기</b>
+        <span class="lv" id="barStage">Lv 1</span>
+        <span class="hearts" id="loveHearts"></span>
+        <span class="expbar"><i id="expFill"></i></span>
+      </div>
+      <button class="chip cond" id="condChip" type="button" aria-expanded="false"
+              title="컨디션 — 누르면 자세히">
+        <span class="ring" id="condRing"></span>
+        <b id="condPct">100%</b>
+        <small id="condPay">알바비 ×1.10</small>
+      </button>
+      <span class="chip wx" id="barWx"></span>
+      <span class="chip wallet" id="barClover"></span>
+      <div id="condPanel" hidden>
+        <div class="stats" id="statRow">
+          <div class="stat"><span class="ic i-full"></span><b>배부름</b><div class="track"><div class="fill" id="st_full"></div></div></div>
+          <div class="stat"><span class="ic i-clean"></span><b>깨끗함</b><div class="track"><div class="fill" id="st_clean"></div></div></div>
+          <div class="stat"><span class="ic i-fun"></span><b>기분</b><div class="track"><div class="fill" id="st_fun"></div></div></div>
+          <div class="stat"><span class="ic i-energy"></span><b>기운</b><div class="track"><div class="fill" id="st_energy"></div></div></div>
         </div>
-        <div class="exp"><div class="track"><div class="fill" id="expFill"></div></div>
-          <small id="expCap"></small></div>
-      </div>
-      <div class="stats" id="statRow">
-        <div class="stat"><span class="ic i-full"></span><div class="track"><div class="fill" id="st_full"></div></div></div>
-        <div class="stat"><span class="ic i-clean"></span><div class="track"><div class="fill" id="st_clean"></div></div></div>
-        <div class="stat"><span class="ic i-fun"></span><div class="track"><div class="fill" id="st_fun"></div></div></div>
-        <div class="stat"><span class="ic i-energy"></span><div class="track"><div class="fill" id="st_energy"></div></div></div>
-      </div>
-      <div class="right">
-        <span class="wxbox" id="barWx"></span>
-        <span class="wallet" id="barClover"></span>
-        <span class="lookname">모습 · <b id="barLook">양 두기</b><br>집 · <b id="barHouse">낡은 방</b></span>
-        <nav class="tools">
-          <button id="outBtn"   type="button" title="알바하러 가기">알바</button>
-          <button id="gachaBtn" type="button" title="뽑기">뽑기</button>
-          <button id="shopBtn"  type="button" title="상점">상점</button>
-          <button id="dexBtn"   type="button" title="옷장·도감">옷장</button>
-          <button id="decoBtn"  type="button" title="가구 옮기기">꾸미기</button>
-          <button id="albumBtn" type="button" title="사진첩">앨범</button>
-          <button id="dailyBtn" type="button" title="오늘의 할 일">할 일</button>
-          <button id="acctBtn"  type="button" title="계정">계정</button>
-          <button id="setBtn"   type="button" title="설정">설정</button>
-          <button id="fsBtn"   type="button" title="전체화면">⛶</button>
-        </nav>
+        <p class="chint" id="condHint"></p>
       </div>
     </header>
 
+    <button id="fsBtn" type="button" title="전체화면" aria-label="전체화면">⛶</button>
     <button id="skipBtn" type="button" hidden>건너뛰기</button>
     <p id="tapHint" hidden>아무 곳이나 누르면 다음으로</p>
 
@@ -191,7 +183,6 @@
     </aside>
 
     <!-- 아래 돌봄 버튼 -->
-    <div id="careBar"></div>
     <button id="miniClose" type="button" hidden>그만하기</button>
 
     <!-- 꺅두기런 폰 조작 -->

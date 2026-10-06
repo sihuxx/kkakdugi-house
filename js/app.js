@@ -12,7 +12,6 @@ let last = performance.now();
 function showScreen(el){
   [$('introScreen'), $('authScreen'), $('runResult'), $('cmLobby')]
     .forEach(s => { if(s) s.hidden = s !== el; });
-  $('careBar').hidden = !(mode === 'home' && place === 'room' && !el && !mini && !deco);
 }
 
 /* ===== 위쪽 상태바 ===== */
@@ -20,29 +19,48 @@ function refreshBar(){
   const d = S.dugi, lv = loveLv(d.love);
   $('barClover').innerHTML = CLOVER_SVG + '<b>' + S.clover.toLocaleString('ko-KR') + '</b>';
   $('barName').textContent = d.name;
-  $('barStage').innerHTML = '<b>Lv ' + (d.lv || 1) + '</b>' +
-    (d.lv >= LV_MAX ? '' : '<i>알바비 +' + Math.round(lvPay() * 100) + '%</i>');
-  $('barLook').textContent = look().name;
-  $('barHouse').textContent = HOUSE().name;
+  const atMax = (d.lv || 1) >= LV_MAX;
+  $('barStage').textContent = 'Lv ' + (d.lv || 1) + (atMax ? ' 최고' : '');
   const wx = WEATHER(), dp = DAY();
-  const wxEl = $('barWx');
-  if(wxEl) wxEl.innerHTML = '<i class="wx wx-' + wx.id + '"></i>' + wx.name + ' · ' + dp.name;
+  $('barWx').innerHTML = '<i class="wx wx-' + wx.id + '"></i>' + wx.name + ' · ' + dp.name;
   $('expFill').style.width = Math.round(expProg() * 100) + '%';
-  $('expCap').textContent = (d.lv || 1) >= LV_MAX
-    ? '최고 레벨!'
-    : ('다음 레벨까지 ' + Math.max(0, expNeed(d.lv) - (d.exp || 0)).toLocaleString('ko-KR'));
-  const gb = $('gachaBtn');
-  if(gb) gb.classList.toggle('alert', typeof freeLeft === 'function' && freeLeft());
+  $('expFill').parentElement.title = atMax ? '최고 레벨!'
+    : '다음 레벨까지 ' + Math.max(0, expNeed(d.lv) - (d.exp || 0)).toLocaleString('ko-KR');
   const hearts = Math.min(5, Math.round(lv / 2));
   $('loveHearts').innerHTML = [0,1,2,3,4].map(i => '<i class="' + (i < hearts ? 'on' : '') + '">♥</i>').join('');
-  const lb = $('loveBox'); if(lb) lb.title = '마음 Lv' + lv +
-    (lv >= LOVE_MAX ? ' · 최고 단짝!' : ' · 다음까지 ' + Math.ceil(loveNext(d.love)));
-  STATS.forEach(s => {
-    const bar = $('st_' + s.id);
+
+  /* 컨디션 하나로 — 네 수치는 눌렀을 때만 */
+  const c = condition();                       /* 0~1 */
+  const pct = Math.round(c * 100);
+  const mult = 0.80 + 0.30 * c;                /* save.js 의 payMult 와 같은 식 */
+  const chip = $('condChip');
+  $('condPct').textContent = pct + '%';
+  $('condPay').textContent = '알바비 ×' + mult.toFixed(2);
+  chip.classList.toggle('low', pct < 50);
+  chip.classList.toggle('mid', pct >= 50 && pct < 75);
+  $('condRing').style.setProperty('--p', pct + '%');
+  STATS.forEach(s2 => {
+    const bar = $('st_' + s2.id);
     if(!bar) return;
-    bar.style.width = Math.round(d[s.id]) + '%';
-    bar.parentElement.parentElement.classList.toggle('low', d[s.id] < 30);
+    bar.style.width = Math.round(d[s2.id]) + '%';
+    bar.parentElement.parentElement.classList.toggle('low', d[s2.id] < 30);
   });
+  const hint = $('condHint');
+  if(hint){
+    const worst = STATS.slice().sort((a, b) => d[a.id] - d[b.id])[0];
+    hint.textContent = pct >= 90
+      ? '최상 — 알바비를 가장 많이 받아요'
+      : (worst ? worst.name + '이(가) 제일 낮아요 · 방 안의 물건을 눌러 돌봐주세요' : '');
+  }
+}
+
+/* 컨디션 칩 — 눌러서 네 수치 펼치기 */
+function toggleCond(force){
+  const panel = $('condPanel'), chip = $('condChip');
+  const open = force === undefined ? panel.hidden : force;
+  panel.hidden = !open;
+  chip.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(open) refreshBar();
 }
 
 function goHome(){
@@ -54,10 +72,9 @@ function goHome(){
   $('cmPanel').hidden = true;
   try{ if(typeof Net !== 'undefined' && Net.roomCode()) Net.leave(); }catch(e){}
   $('skipBtn').hidden = true; $('tapHint').hidden = true;
-  $('decoBtn').classList.remove('on'); $('decoBtn').disabled = false;
   if(wasOut){ home.x = LAY.door.x; home.y = 0.22; home.target = null; home.vx = home.vy = 0; }
   checkDaily(); rollGuest(); seedWeather(); seedDust();
-  relayout(); refreshBar(); paintCareBar(); paintDaily(); bgmStart();
+  relayout(); refreshBar(); paintDaily(); bgmStart();
 }
 
 /* ===== 정원으로 나가기 ===== */
@@ -66,13 +83,11 @@ function goYard(){
   mode = 'home'; deco = false; mini = null;
   closeModal(); showScreen(null);
   $('topbar').hidden = false; $('runPad').hidden = true;
-  $('careBar').hidden = true;
-  $('decoBtn').classList.remove('on'); $('decoBtn').disabled = true;
   $('dailyPanel').hidden = true;
   home.x = 0.12; home.y = 0.28; home.target = null; home.autoAct = null;
   home.vx = home.vy = 0; home.act = null; home.sweep = false;
   home.ball.home = true; home.aim = null;
-  toast('정원으로 나왔어요', '가게 · 뽑기 · 알바 게시판이 있어요');
+  toast('정원으로 나왔어요', '상점 · 뽑기 · 알바 게시판 · 랭킹 · 우체통');
   refreshBar();
 }
 
@@ -80,7 +95,7 @@ function goYard(){
 function startRun(){
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
-  mode = 'run'; $('topbar').hidden = true; $('careBar').hidden = true; showScreen(null);
+  mode = 'run'; $('topbar').hidden = true; showScreen(null);
   $('runPad').hidden = !(W < 760 || matchMedia('(pointer:coarse)').matches);
   DugiRun.start({ look: look(), onEnd: runEnd });
 }
@@ -112,7 +127,7 @@ function runEnd(r){
 function startMine(){
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
-  mode = 'mine'; $('topbar').hidden = true; $('careBar').hidden = true; showScreen(null);
+  mode = 'mine'; $('topbar').hidden = true; showScreen(null);
   $('runPad').hidden = true;
   MineGame.start({ onEnd: mineEnd });
 }
@@ -153,7 +168,7 @@ function mineEnd(r){
 function startLost(){
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
-  mode = 'lost'; $('topbar').hidden = true; $('careBar').hidden = true;
+  mode = 'lost'; $('topbar').hidden = true;
   $('runPad').hidden = true; showScreen(null);
   LostGame.start({ onEnd: lostEnd });
 }
@@ -186,7 +201,7 @@ function lostEnd(r){
 function startPack(){
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
-  mode = 'pack'; $('topbar').hidden = true; $('careBar').hidden = true;
+  mode = 'pack'; $('topbar').hidden = true;
   $('runPad').hidden = true; showScreen(null);
   PackGame.start({ onEnd: packEnd });
 }
@@ -230,7 +245,7 @@ function startCatch(){
     openModal('job'); return;
   }
   mode = 'cmlobby';
-  $('topbar').hidden = true; $('careBar').hidden = true; $('runPad').hidden = true;
+  $('topbar').hidden = true; $('runPad').hidden = true;
   $('cmPanel').hidden = true;
   cmErr(''); $('cmCode').value = '';
   showScreen($('cmLobby'));
@@ -245,7 +260,7 @@ function enterRoom(code){
     mode = 'catch';
     bgmStop();
     showScreen(null);
-    $('topbar').hidden = true; $('careBar').hidden = true;
+    $('topbar').hidden = true;
     $('cmPanel').hidden = false;
     CatchMind.layout();
     CatchMind.enter({ name: S.dugi.name, look: S.look, onEnd: catchEnd });
@@ -326,7 +341,7 @@ function showRank(jobId){
 function askName(){
   showScreen($('introScreen'));
   $('introName').value = S.dugi.name;
-  $('topbar').hidden = true; $('careBar').hidden = true;
+  $('topbar').hidden = true;
   setTimeout(() => $('introName').focus(), 200);
 }
 function finishIntro(){
@@ -352,9 +367,11 @@ function paintDaily(){
       '<span class="pay">' + CLOVER_SVG + def.pay + '</span>';
     el.appendChild(li);
   });
-  const btn = $('dailyBtn');
-  if(btn) btn.classList.toggle('alert', left > 0);
+  dailyLeftN = left;
 }
+/* 남은 할 일 수 — 집 안 '할 일판' 에 빨간 점을 띄울 때 씁니다 */
+let dailyLeftN = 0;
+function dailyLeft(){ return dailyLeftN; }
 
 /* ===== 입력 ===== */
 const KMAP = { KeyW:'w', KeyA:'a', KeyS:'s', KeyD:'d',
@@ -455,22 +472,24 @@ function audioKick(){
      mode === 'packresult' || mode === 'catchresult') bgmStart();
 }
 
-/* 버튼 */
-$('gachaBtn').onclick = () => openModal('gacha');
-$('shopBtn').onclick = () => openModal('shop');
-$('dexBtn').onclick  = () => openModal('wardrobe');
-$('setBtn').onclick  = () => openModal('settings');
-$('outBtn').onclick  = () => openModal('job');
-$('albumBtn').onclick = () => openModal('album');
-$('dailyBtn').onclick = () => { $('dailyPanel').hidden = !$('dailyPanel').hidden; paintDaily(); };
-$('decoBtn').onclick = () => {
+$('condChip').onclick = () => toggleCond();
+
+/* 메뉴는 전부 사물에서 열립니다 (care.js 의 act 참고) */
+function toggleDaily(){
+  const p2 = $('dailyPanel');
+  p2.hidden = !p2.hidden;
+  paintDaily();
+}
+function toggleDeco(){
   if(place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
   deco = !deco; mini = null;
-  $('decoBtn').classList.toggle('on', deco);
-  $('careBar').hidden = deco || mode !== 'home' || place !== 'room';
-  toast(deco ? '꾸미기 모드' : '꾸미기 끝', deco ? '가구를 끌어서 옮기세요' : '자리를 저장했어요');
+  toast(deco ? '꾸미기 모드' : '꾸미기 끝',
+        deco ? '가구를 끌어서 옮기세요 · 공구함을 다시 누르면 끝' : '자리를 저장했어요');
   if(!deco) save();
-};
+}
+function openAccount(){
+  if(Auth.current()) openModal('account'); else showAuth();
+}
 $('modalClose').onclick = closeModal;
 modal.addEventListener('pointerdown', e => { if(e.target === modal) closeModal(); });
 $('runAgain').onclick = () => {
@@ -568,7 +587,7 @@ function setAuthMode(m){
 function showAuth(){
   mode = 'auth';
   showScreen($('authScreen'));
-  $('topbar').hidden = true; $('careBar').hidden = true;
+  $('topbar').hidden = true;
   $('authNote').textContent = Auth.enabled()
     ? '비밀번호는 이 게임이 저장하지 않아요. 인증 서버가 암호화해서 보관합니다.'
     : '서버가 아직 연결되지 않아 이 기기에만 저장됩니다 (js/config.js).';
@@ -584,9 +603,6 @@ function leaveAuth(){
 $('tabLogin').onclick = () => setAuthMode('login');
 $('tabJoin').onclick  = () => setAuthMode('join');
 $('authSkip').onclick = () => { try{ localStorage.setItem('ggakdugi.local', '1'); }catch(e){} leaveAuth(); };
-$('acctBtn').onclick  = () => {
-  if(Auth.current()) openModal('account'); else showAuth();
-};
 $('authForgot').onclick = async () => {
   const em = $('authEmail').value;
   if(Auth.checkEmail(em)){ authMsg('이메일을 먼저 적어주세요', true); return; }
@@ -643,18 +659,15 @@ function applyCloud(data){
   if(!clean) return;
   Object.assign(S, clean);
   S.seen = Date.now();
-  save(); relayout(); refreshBar(); paintCareBar(); paintDaily();
+  save(); relayout(); refreshBar(); paintDaily();
 }
 
 /* 저장할 때마다 서버에도 (너무 자주 올리지 않게 모아서) */
 const _saveLocal = save;
 save = function(){ _saveLocal(); if(Auth.enabled() && Auth.current()) Auth.pushLater(S); };
 
-/* 로그인 상태가 바뀌면 상단바 버튼 모양도 바꾼다 */
-Auth.onChange(u => {
-  const b = $('acctBtn');
-  if(b) b.textContent = u ? '내 계정' : '로그인';
-});
+/* 로그인 상태가 바뀌면 상단바를 다시 그린다 */
+Auth.onChange(() => { try{ refreshBar(); }catch(e){} });
 
 /* 페이지를 열 때: 저장된 세션이 있으면 조용히 이어서 로그인 */
 (async function bootAuth(){

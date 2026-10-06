@@ -239,7 +239,7 @@ function buildItemTab(body){
       for(const k in it.add) addStat(k, it.add[k]);
       addLove(it.love || 2);
       S.bag[id]--; if(!S.bag[id]) delete S.bag[id];
-      save(); refreshBar(); paintCareBar(); sfxCare('feed');
+      save(); refreshBar(); sfxCare('feed');
       toast(it.name + ' 사용!', it.use);
       openModal('shop');
     };
@@ -367,12 +367,32 @@ function buildJobs(body){
 }
 /* ===== 순위표 ===== */
 let boardJob = 'deliver';
+/* 내 기록 — 로그인 없이도 보이는 부분.
+   알바별 최고 점수와, 많이 해볼수록 올라가는 랭크를 같이 보여줍니다. */
+function buildMyRecords(body){
+  const wrap = document.createElement('div'); wrap.className = 'myrec';
+  const best = { deliver:S.runBest, mine:S.mineBest, lost:S.lostBest,
+                 pack:S.packBest, draw:S.drawBest };
+  wrap.innerHTML = JOBS.map(j => {
+    const n = (S.career && S.career[j.id]) || 0;
+    const rk = jobRank(n), u = Board.unit(j.id);
+    return '<div class="mrow">' +
+      '<b>' + esc(j.name) + '</b>' +
+      '<span class="jrank" style="color:' + rk.color + ';background:' + rk.bg + '">' +
+        esc(rk.name) + '</span>' +
+      '<i>' + n + '번</i>' +
+      '<span class="mbest">' + (best[j.id] || 0).toLocaleString('ko-KR') + u + '</span>' +
+    '</div>';
+  }).join('');
+  body.appendChild(wrap);
+}
+
 function buildBoard(body){
   const box = document.createElement('div'); box.className = 'boardbox';
   body.appendChild(box);
   if(!Board.enabled()){
-    box.innerHTML = '<p class="bnote">로그인하면 다른 사람들과 기록을 견줄 수 있어요. ' +
-      '위쪽 <b>계정</b> 버튼에서 로그인해주세요.</p>';
+    box.innerHTML = '<p class="bnote">정원의 <b>우체통</b>에서 로그인하면 ' +
+      '다른 사람들과 기록을 견줄 수 있어요.</p>';
     return;
   }
   box.innerHTML = '<div class="tabs" id="bTabs"></div><div id="bList" class="blist"></div>';
@@ -560,7 +580,7 @@ function openModal(kind){
   modalOpen = kind;
   const body = $('modalBody'); body.innerHTML = '';
   const sheet = modal.querySelector('.sheet');
-  sheet.className = 'sheet' + (['wardrobe','gacha','shop','job','daily','album'].includes(kind) ? ' wide' : '');
+  sheet.className = 'sheet' + (['wardrobe','gacha','shop','job','daily','album','rank'].includes(kind) ? ' wide' : '');
   $('modalClose').textContent = '확인'; $('modalClose').hidden = false;
 
   if(kind === 'wardrobe'){
@@ -587,7 +607,11 @@ function openModal(kind){
     $('modalTitle').textContent = '알바하러 가기';
     $('modalHint').textContent = '일하고 오면 클로버와 경험치를 벌어와요';
     buildJobs(body);
-    const h = document.createElement('h4'); h.className = 'bhead'; h.textContent = '순위표';
+  } else if(kind === 'rank'){
+    $('modalTitle').textContent = '명예의 전당';
+    $('modalHint').textContent = '내 최고 기록과 알바 랭크 · 전체 순위표';
+    buildMyRecords(body);
+    const h = document.createElement('h4'); h.className = 'bhead'; h.textContent = '전체 순위표';
     body.appendChild(h);
     buildBoard(body);
   } else if(kind === 'settings'){
@@ -770,14 +794,13 @@ function playCutscene(got){
   lastPull = got;
   const top = topRank(got);
   modal.hidden = true; modalOpen = null;
-  $('topbar').hidden = true; $('careBar').hidden = true;
+  $('topbar').hidden = true;
   $('dailyPanel').hidden = true; $('miniClose').hidden = true; bgmStop();
   $('skipBtn').hidden = false; $('tapHint').hidden = false;
   mode = 'cut';
   startCut(top, got, () => {
     $('skipBtn').hidden = true; $('tapHint').hidden = true;
     mode = 'home'; $('topbar').hidden = false;
-    $('careBar').hidden = (place !== 'room');
     refreshBar(); bgmStart();
     openModal('gacha');
   });
@@ -787,22 +810,6 @@ function playCutscene(got){
 /* ===============================================================
    아래 돌봄 버튼 바
    =============================================================== */
-function paintCareBar(){
-  const bar = $('careBar'); if(!bar) return;
-  bar.innerHTML = '';
-  CARE_ORDER.forEach(kind => {
-    const c = CARE[kind], ok = canCare(kind) === true;
-    const want = S.req && S.req.kind === kind;
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'carebtn' + (ok ? '' : ' off') + (want ? ' want' : '');
-    b.title = c.tip;
-    b.innerHTML = '<span class="ic c-' + kind + '"></span><b>' + c.name + '</b>' +
-                  '<i>' + c.tip + '</i>';
-    b.onclick = () => { doCare(kind); };
-    bar.appendChild(b);
-  });
-}
 
 
 /* ===============================================================

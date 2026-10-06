@@ -843,6 +843,166 @@ function drawYardThing(id, cx, base, s, glow){
       label('알바', base - s * 1.55);
       break;
     }
+    case 'mail': {                                    /* 우체통 — 계정 */
+      shadow(cx, base, s * 0.34);
+      ink(); g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.6;
+      g.beginPath(); g.moveTo(cx, base); g.lineTo(cx, base - s * 0.62); g.stroke();
+      ink();
+      const mw = s * 0.62, mh = s * 0.46, my = base - s * 0.62 - mh;
+      box(cx - mw / 2, my + mh * 0.3, mw, mh * 0.7, s * 0.05, '#8FC0D8');
+      g.fillStyle = '#8FC0D8';                        /* 둥근 지붕 */
+      g.beginPath(); g.arc(cx, my + mh * 0.3, mw / 2, Math.PI, 0); g.fill(); g.stroke();
+      g.fillStyle = '#5A4A40';
+      rrect(cx - mw * 0.22, my + mh * 0.46, mw * 0.44, mh * 0.12, mh * 0.06); g.fill();
+      g.strokeStyle = '#E86A6A'; g.lineWidth = LW() * 1.4;  /* 깃발 */
+      g.beginPath(); g.moveTo(cx + mw * 0.5, my + mh * 0.34);
+      g.lineTo(cx + mw * 0.5, my - mh * 0.1); g.stroke();
+      g.fillStyle = '#E86A6A';
+      g.beginPath(); g.moveTo(cx + mw * 0.5, my - mh * 0.1);
+      g.lineTo(cx + mw * 0.98, my + mh * 0.02);
+      g.lineTo(cx + mw * 0.5, my + mh * 0.14); g.closePath(); g.fill(); ink(); g.stroke();
+      label('계정', my - mh * 0.34);
+      break;
+    }
+    case 'rank': {                                    /* 명예의 전당 — 랭킹 */
+      shadow(cx, base, s * 0.95);
+      const bw = s * 0.5;                             /* 단 하나의 너비 */
+      const steps = [[-1, 0.46, '#DCE3EA', '2'], [1, 0.34, '#E8C3A0', '3'], [0, 0.66, '#FFE08A', '1']];
+      steps.forEach(([ox, hh, col, no]) => {
+        const x0 = cx + ox * bw - bw / 2;
+        box(x0, base - s * hh, bw, s * hh, s * 0.03, col);
+        g.fillStyle = 'rgba(90,74,64,.55)'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.font = '700 ' + (15 * uiK()) + 'px Gaegu, sans-serif';
+        g.fillText(no, x0 + bw / 2, base - s * hh * 0.5);
+      });
+      /* 가운데 단 위의 트로피 */
+      const ty = base - s * 0.66;
+      g.fillStyle = '#E8B15E';
+      box(cx - s * 0.17, ty - s * 0.1, s * 0.34, s * 0.1, s * 0.025, '#D99B46');   /* 받침 */
+      g.fillStyle = '#E8B15E';
+      g.fillRect(cx - s * 0.045, ty - s * 0.26, s * 0.09, s * 0.16);               /* 기둥 */
+      g.strokeRect(cx - s * 0.045, ty - s * 0.26, s * 0.09, s * 0.16);
+      g.fillStyle = '#F2C772';                                                     /* 컵 */
+      g.beginPath();
+      g.moveTo(cx - s * 0.19, ty - s * 0.56);
+      g.lineTo(cx + s * 0.19, ty - s * 0.56);
+      g.quadraticCurveTo(cx + s * 0.15, ty - s * 0.26, cx, ty - s * 0.26);
+      g.quadraticCurveTo(cx - s * 0.15, ty - s * 0.26, cx - s * 0.19, ty - s * 0.56);
+      g.closePath(); g.fill(); g.stroke();
+      g.strokeStyle = '#E8B15E'; g.lineWidth = LW() * 1.5;                         /* 손잡이 */
+      g.beginPath(); g.arc(cx - s * 0.21, ty - s * 0.47, s * 0.09, 1.4, 4.6, true); g.stroke();
+      g.beginPath(); g.arc(cx + s * 0.21, ty - s * 0.47, s * 0.09, 4.6, 1.4); g.stroke();
+      ink();
+      const tw = 0.5 + Math.sin(home.t * 2.4) * 0.5;                               /* 반짝 */
+      g.fillStyle = 'rgba(255,255,255,.9)'; g.globalAlpha = 0.3 + tw * 0.55;
+      g.beginPath(); g.arc(cx + s * 0.09, ty - s * 0.5, s * 0.045 * (0.7 + tw * 0.6), 0, 7); g.fill();
+      g.globalAlpha = 1;
+      label('랭킹', ty - s * 0.78);
+      break;
+    }
+  }
+  g.restore();
+}
+
+/* ===============================================================
+   집 안 붙박이 — 사진첩 · 할 일판 · 공구함 · 라디오
+   위쪽 버튼 줄을 없앤 대신, 누르면 두기가 걸어가서 열어줍니다.
+   =============================================================== */
+function drawFixed(id, cx, base, s, glow){
+  g.save();
+  if(glow){
+    g.save(); g.globalAlpha = 0.26 + Math.sin(home.t * 5) * 0.15;
+    g.fillStyle = '#FFE08A';
+    g.beginPath(); g.ellipse(cx, base - s * 0.45, s * 1.25, s * 0.9, 0, 0, 7); g.fill(); g.restore();
+  }
+  ink();
+  switch(id){
+    case 'album': {                                   /* 사진첩 — 벽 선반 위 책 두 권 */
+      box(cx - s * 0.5, base, s * 1.0, s * 0.1, s * 0.03, '#C9A06A');   /* 선반 */
+      box(cx - s * 0.42, base - s * 0.26, s * 0.84, s * 0.26, s * 0.04, '#9CB8D8');
+      box(cx - s * 0.38, base - s * 0.52, s * 0.76, s * 0.27, s * 0.04, '#EFA6B8');
+      g.fillStyle = '#FFF8F0';                        /* 책등 종이 */
+      rrect(cx - s * 0.3, base - s * 0.5, s * 0.6, s * 0.06, s * 0.02); g.fill();
+      /* 끼워둔 사진 한 장 */
+      g.save(); g.translate(cx + s * 0.12, base - s * 0.58); g.rotate(-0.16);
+      box(-s * 0.19, -s * 0.22, s * 0.38, s * 0.3, s * 0.02, '#FFFDF8');
+      g.fillStyle = '#C8DCC9';
+      rrect(-s * 0.15, -s * 0.18, s * 0.3, s * 0.18, s * 0.015); g.fill();
+      g.restore(); ink();
+      break;
+    }
+    case 'calend': {                                  /* 할 일판 — 벽에 건 체크리스트 */
+      ink(LW() * 0.9);
+      g.beginPath(); g.moveTo(cx, base - s * 0.82); g.lineTo(cx, base - s * 0.96); g.stroke();
+      g.fillStyle = '#8A7560';
+      g.beginPath(); g.arc(cx, base - s * 0.98, s * 0.045, 0, 7); g.fill(); g.stroke();
+      box(cx - s * 0.34, base - s * 0.82, s * 0.68, s * 0.82, s * 0.05, '#FFFBF0');
+      box(cx - s * 0.34, base - s * 0.82, s * 0.68, s * 0.18, s * 0.05, '#E8907F');
+      g.fillStyle = '#FFF8F0';
+      for(let i = 0; i < 3; i++){
+        const ly = base - s * 0.56 + i * s * 0.17;
+        g.strokeStyle = '#C2A88A'; g.lineWidth = LW() * 0.7;
+        g.beginPath(); g.moveTo(cx - s * 0.11, ly); g.lineTo(cx + s * 0.24, ly); g.stroke();
+        ink(LW() * 0.8);
+        g.strokeRect(cx - s * 0.25, ly - s * 0.06, s * 0.11, s * 0.11);
+        if(i < 2){                                    /* 체크 */
+          g.strokeStyle = '#6FA86F'; g.lineWidth = LW() * 1.3;
+          g.beginPath(); g.moveTo(cx - s * 0.22, ly - s * 0.005);
+          g.lineTo(cx - s * 0.19, ly + s * 0.035); g.lineTo(cx - s * 0.14, ly - s * 0.045);
+          g.stroke();
+        }
+        ink();
+      }
+      /* 남은 할 일이 있으면 빨간 점 */
+      if(typeof dailyLeft === 'function' && dailyLeft() > 0){
+        g.fillStyle = '#E8564E';
+        g.beginPath();
+        g.arc(cx + s * 0.3, base - s * 0.84, s * 0.1 + Math.sin(home.t * 4) * s * 0.015, 0, 7);
+        g.fill(); g.stroke();
+      }
+      break;
+    }
+    case 'tools': {                                   /* 공구 걸이 — 꾸미기 */
+      box(cx - s * 0.44, base - s * 0.72, s * 0.88, s * 0.72, s * 0.05,
+          deco ? '#9CCADF' : '#E0C49A');
+      g.fillStyle = 'rgba(120,95,60,.22)';              /* 타공판 구멍 */
+      for(let r2 = 0; r2 < 3; r2++) for(let c2 = 0; c2 < 4; c2++){
+        g.beginPath();
+        g.arc(cx - s * 0.3 + c2 * s * 0.2, base - s * 0.6 + r2 * s * 0.2, s * 0.022, 0, 7); g.fill();
+      }
+      /* 망치 */
+      g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.6;
+      g.beginPath(); g.moveTo(cx - s * 0.2, base - s * 0.52); g.lineTo(cx - s * 0.2, base - s * 0.14);
+      g.stroke(); ink();
+      box(cx - s * 0.33, base - s * 0.62, s * 0.26, s * 0.12, s * 0.02, '#8A7560');
+      /* 드라이버 */
+      g.strokeStyle = '#8FC0D8'; g.lineWidth = LW() * 1.4;
+      g.beginPath(); g.moveTo(cx + s * 0.16, base - s * 0.56); g.lineTo(cx + s * 0.16, base - s * 0.3);
+      g.stroke(); ink();
+      box(cx + s * 0.08, base - s * 0.3, s * 0.16, s * 0.18, s * 0.03, '#E8907F');
+      break;
+    }
+    case 'radio': {                                   /* 선반 위 라디오 — 설정 */
+      box(cx - s * 0.5, base, s * 1.0, s * 0.1, s * 0.03, '#C9A06A');   /* 선반 */
+      box(cx - s * 0.4, base - s * 0.46, s * 0.8, s * 0.46, s * 0.06, '#C9A88B');
+      box(cx - s * 0.32, base - s * 0.38, s * 0.4, s * 0.3, s * 0.04, '#5A4A40');
+      g.fillStyle = '#8A7560';                         /* 스피커 구멍 */
+      for(let r2 = 0; r2 < 3; r2++) for(let c2 = 0; c2 < 4; c2++){
+        g.beginPath();
+        g.arc(cx - s * 0.27 + c2 * s * 0.1, base - s * 0.33 + r2 * s * 0.09, s * 0.025, 0, 7);
+        g.fill();
+      }
+      g.fillStyle = '#FFE08A';                         /* 손잡이 둘 */
+      [0.0, 0.17].forEach((o, i) => {
+        g.beginPath(); g.arc(cx + s * 0.2, base - s * 0.36 + o * 1.4, s * 0.07, 0, 7);
+        g.fill(); g.stroke();
+      });
+      g.strokeStyle = '#8A7560'; g.lineWidth = LW() * 1.2;   /* 안테나 */
+      g.beginPath(); g.moveTo(cx + s * 0.3, base - s * 0.46);
+      g.lineTo(cx + s * 0.44, base - s * 0.78); g.stroke();
+      ink();
+      break;
+    }
   }
   g.restore();
 }

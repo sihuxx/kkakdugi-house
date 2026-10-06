@@ -38,6 +38,7 @@ function homeSpots(){
     const p = PLACES.find(q => q.id === o.id);
     if(p && p.act) list.push({ id:o.id, name:p.name, x:o.x, y:o.y, act:p.act });
   }
+  for(const f of FIXED) list.push({ ...f });
   list.push({ id:'door', name:'현관', x:LAY.door.x, y:0.02, act:'out' });
   if(S.guest && !S.guest.fed)
     list.push({ id:'guest', name:'손님', x:GUEST_POS.x, y:GUEST_POS.y, act:'guest' });
@@ -64,7 +65,7 @@ function careGain(kind, mult){
   clearRequest(kind);
   bumpDaily('care:' + kind, 1);
   home.bubble = CARE[kind].verb; home.bubbleT = 1.8;
-  save(); refreshBar(); paintCareBar();
+  save(); refreshBar();
 }
 function canCare(kind){
   const d = S.dugi;
@@ -170,7 +171,6 @@ function openMini(kind){
                    r:0.055 + Math.random() * 0.045, hp:2, seed:Math.random() * 6 });
     mini = { kind:'wash', t:0, spots, total:n, bubbles:[], soap:!!S.bag.soap };
   }
-  $('careBar').hidden = true;
 }
 function closeMini(done){
   if(mini && mini.kind === 'wash'){
@@ -183,8 +183,7 @@ function closeMini(done){
     }
   }
   mini = null;
-  $('careBar').hidden = !(mode === 'home' && place === 'room');
-  save(); refreshBar(); paintCareBar();
+  save(); refreshBar();
 }
 function feedPick(f){
   if(!mini || mini.picked) return;
@@ -360,15 +359,18 @@ function pickIdle(){
   home.idleGoal = p;
 }
 
+/* 사물 → 메뉴. 위쪽 버튼 줄이 없어졌으니 여기가 유일한 입구입니다. */
+const SPOT_MODAL = { wardrobe:'wardrobe', gacha:'gacha', shop:'shop', job:'job',
+                     album:'album', settings:'settings', rank:'rank' };
 function act(spot){
   if(!spot) return;
-  if(spot.act === 'wardrobe') return openModal('wardrobe');
-  if(spot.act === 'gacha')    return openModal('gacha');
-  if(spot.act === 'shop')     return openModal('shop');
-  if(spot.act === 'guest')    return feedGuest();
-  if(spot.act === 'job')      return openModal('job');
-  if(spot.act === 'out')      return goYard();
-  if(spot.act === 'in')       return goHome();
+  if(SPOT_MODAL[spot.act]) return openModal(SPOT_MODAL[spot.act]);
+  if(spot.act === 'guest')   return feedGuest();
+  if(spot.act === 'out')     return goYard();
+  if(spot.act === 'in')      return goHome();
+  if(spot.act === 'daily')   return toggleDaily();
+  if(spot.act === 'deco')    return toggleDeco();
+  if(spot.act === 'account') return openAccount();
   doCare(spot.act);
 }
 
@@ -406,6 +408,10 @@ function homeDown(px, py){
   }
   if(home.sweep){
     sweepAt(r); return;
+  }
+  /* 먼지를 누르면 바로 청소 시작 — 돌봄 버튼 줄이 없으니 먼지 자체가 버튼입니다 */
+  if(home.dusts.some(d => Math.hypot((d.x - r.x) * 1.4, (d.y - r.y) * 0.8) < 0.075)){
+    if(doCare('clean')){ sweepAt(r); return; }
   }
   if(onDugi(px, py)){ home.pet.dist = 0; home.pet.on = true; petOnce(); return; }
   /* 가까운 가구를 누르면 걸어가서 실행 */
@@ -584,6 +590,16 @@ function drawParts(){
     g.restore();
   }
 }
+/* 조르는 물건 표시 — 가까이 가라는 뜻의 분홍 테두리 */
+function wantRing(cx, base, s2){
+  const t = 0.5 + Math.sin(home.t * 3.4) * 0.5;
+  g.save();
+  g.globalAlpha = 0.22 + t * 0.26;
+  g.fillStyle = '#EFA6B8';
+  g.beginPath(); g.ellipse(cx, base - s2 * 0.42, s2 * (0.9 + t * 0.12), s2 * (0.72 + t * 0.1), 0, 0, 7);
+  g.fill();
+  g.restore();
+}
 function drawDust(d){
   const cx = rx(d.x), cy = yAt(d.y), s = 22 * uiK() * depthAt(cy);
   g.save(); ink(LW() * 0.8); g.fillStyle = '#CFC3AA';
@@ -688,9 +704,14 @@ function drawHome(dt){
     drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
   }
   for(const o of LAY.wall) drawFurn(o.id, rx(o.x), wb * 0.46, fs * 0.82, near(o.id));
+  /* 메뉴 붙박이 — 벽에 걸려 있어 가구에 가리지 않습니다 */
+  for(const o of FIXED) drawFixed(o.id, rx(o.x), wb * 0.52, fs * 0.66, near(o.id));
   drawFurn('door', rx(LAY.door.x), wb + (H - wb) * 0.02, fs * 1.05, near('door'));
 
   const items = LAY.floor.filter(o => !o.floorLayer).sort((a, b) => a.y - b.y);
+  /* 두기가 조르는 게 있으면 그 물건이 분홍으로 두근거립니다 */
+  const wantF = S.req && FURNITURE.find(x => x.act === S.req.kind);
+  const wantId = wantF && hasFurn(wantF.id) ? wantF.id : null;
   let drew = false, drewG = !S.guest;
   for(const o of items){
     if(!drewG && o.y > GUEST_POS.y){ drawGuest(); drewG = true; }
@@ -698,6 +719,7 @@ function drawHome(dt){
     const by = yAt(o.y);
     const hi = deco && home.drag && home.drag.id === o.id;
     if(hi){ g.save(); g.globalAlpha = .75; }
+    if(o.id === wantId) wantRing(rx(o.x), by, fs * depthAt(by) * (o.sz || 1));
     drawFurn(o.id, rx(o.x), by, fs * depthAt(by) * (o.sz || 1), near(o.id));
     if(hi) g.restore();
   }

@@ -146,7 +146,7 @@ const petMul = () => (loveLv(S.dugi.love) >= 6 ? 1.5 : 1);
 
 /* ===== 알바 다녀온 뒤 ===== */
 function afterOuting(jobId){
-  addStat('full', -16); addStat('energy', -20); addStat('clean', -14); addStat('fun', 6);
+  addStat('full', -11); addStat('energy', -14); addStat('clean', -10); addStat('fun', 6);
   if(jobId){ S.career[jobId] = (S.career[jobId] || 0) + 1; }
   S.stat.job = (S.stat.job || 0) + 1;
   bumpDaily('job', 1); 
@@ -156,6 +156,10 @@ function afterOuting(jobId){
 /* 알바비 정산 — 알바 전부가 같이 쓴다 */
 function payOut(pay, jobId, elId, label){
   pay = Math.max(0, Math.round(pay));
+  /* 컨디션이 얼마를 보탰는지 — 돌봄의 효과를 눈에 보이게.
+     일하고 나면 수치가 깎이므로, 깎이기 전 값으로 계산해 둡니다. */
+  const condNow = condition();
+  const condGain = Math.round(pay - pay / (0.80 + 0.30 * condNow));
   addClover(pay); addLove(4);
   addExp(45 + Math.round(pay / 6));             /* 알바가 경험치의 큰 몫 */
   afterOuting(jobId); save(); refreshBar(); sfxCoin(4);
@@ -164,7 +168,9 @@ function payOut(pay, jobId, elId, label){
   el.innerHTML = '<span class="paytop">오늘의 알바비</span>' + CLOVER_SVG +
     '<b>+' + pay + '</b> 클로버 · 마음 <b>+4</b>' +
     '<small>' + esc(label || '') + ' · 경력 Lv' + lv + ' (' + (S.career[jobId] || 0) + '번째)' +
-    ' · 배부름 −16 · 기운 −20 · 깨끗함 −14</small>';
+    '</small><small class="paycond">컨디션 ' + Math.round(condNow * 100) + '% ' +
+    (condGain >= 0 ? '덕에 <b>+' + condGain + '</b>' : '때문에 <b>' + condGain + '</b>') +
+    ' · 일하고 나니 배부름 −11 · 기운 −14 · 깨끗함 −10</small>';
 }
 function careerUp(jobId, before){
   const a = jobRank(before), b = jobRank(S.career[jobId] || 0);
@@ -293,9 +299,9 @@ function awayReport(){
   const lines = [];
 
   const before = { ...S.dugi };
-  addStat('full',  -Math.round(hrs * 4.5));
-  addStat('clean', -Math.round(hrs * 3.2));
-  addStat('fun',   -Math.round(hrs * 3.6));
+  addStat('full',  -Math.round(hrs * 3.0));
+  addStat('clean', -Math.round(hrs * 2.1));
+  addStat('fun',   -Math.round(hrs * 2.4));
   /* 자고 있었다고 치고 기운은 오히려 찬다 */
   addStat('energy', Math.round(hrs * 2.4));
 
