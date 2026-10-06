@@ -79,8 +79,7 @@ function join(roomCodeIn, meta, cb){
   leaving = false;
   code = roomCodeIn;
   myKey = makeKey();
-  myMeta = { name: cleanName(meta && meta.name, 8) || '두기',
-             look: String(meta && meta.look || 'wool').slice(0, 20) };
+  myMeta = makeMeta(meta);
   connect(cb);
 }
 function makeKey(){
@@ -159,6 +158,30 @@ function connect(cb){
   ws.onerror = () => {};
 }
 
+/* 남에게 보여줄 내 정보 — 이름·모습 말고는 전부 작은 숫자뿐입니다.
+   세이브·이메일·토큰은 올라가지 않습니다. */
+const num = (v, max) => {
+  const n = Math.floor(Number(v));
+  return Number.isFinite(n) && n >= 0 ? Math.min(max, n) : 0;
+};
+function makeMeta(meta){
+  meta = meta || {};
+  return { name: cleanName(meta.name, 8) || '두기',
+           look: String(meta.look || 'wool').slice(0, 20),
+           lv:   num(meta.lv, 999),
+           dex:  num(meta.dex, 999),
+           rk:   String(meta.rk || '').slice(0, 8),
+           best: num(meta.best, 9999999),
+           rm:   okCode(meta.rm) ? meta.rm : '' };     /* 내가 연 캐치마인드 방 */
+}
+/* 내 정보가 바뀌면 다시 알린다 (방을 열었다거나 모습을 갈아입었다거나) */
+function setMeta(meta){
+  if(!live) return false;
+  myMeta = makeMeta(meta);
+  track();
+  return true;
+}
+
 function mergePresence(joins){
   if(!joins || typeof joins !== 'object') return;
   for(const k of Object.keys(joins)){
@@ -166,7 +189,12 @@ function mergePresence(joins){
     const metas = joins[k] && joins[k].metas;
     const m = Array.isArray(metas) && metas.length ? metas[0] : null;
     peers[k] = { name: cleanName(m && m.name, 8) || '두기',
-                 look: /^[a-z0-9_]{1,20}$/i.test(m && m.look) ? m.look : 'wool' };
+                 look: /^[a-z0-9_]{1,20}$/i.test(m && m.look) ? m.look : 'wool',
+                 lv:   num(m && m.lv, 999),
+                 dex:  num(m && m.dex, 999),
+                 rk:   /^[가-힣]{1,8}$/.test(m && m.rk) ? m.rk : '',
+                 best: num(m && m.best, 9999999),
+                 rm:   okCode(m && m.rm) ? m.rm : '' };
   }
   if(onPeers) onPeers(list());
 }
@@ -228,7 +256,7 @@ function leave(quiet){
 
 addEventListener('beforeunload', () => { try{ leave(); }catch(e){} });
 
-return { enabled, status, join, leave, send, on, off, list, key, roomCode,
+return { enabled, status, join, leave, send, on, off, list, key, roomCode, setMeta,
          makeCode, tidyCode, okCode, CODE_LEN,
          set onPeers(f){ onPeers = f; }, set onStatus(f){ onStatus = f; } };
 })();

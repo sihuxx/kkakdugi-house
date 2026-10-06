@@ -64,7 +64,8 @@ function toggleCond(force){
 }
 
 function goHome(){
-  const wasOut = (place === 'yard');
+  leavePlaza(); $('emoteBar').hidden = true;
+  const wasOut = outside();
   place = 'room';
   mode = 'home'; deco = false; mini = null;
   showScreen(null);
@@ -79,6 +80,7 @@ function goHome(){
 
 /* ===== 정원으로 나가기 ===== */
 function goYard(){
+  leavePlaza(); $('emoteBar').hidden = true;
   place = 'yard';
   mode = 'home'; deco = false; mini = null;
   closeModal(); showScreen(null);
@@ -91,9 +93,51 @@ function goYard(){
   refreshBar();
 }
 
+/* ===== 광장 ===== */
+let plazaBusy = false;
+function goPlaza(){
+  if(plazaBusy) return;
+  if(!Net.enabled()){ toast('광장은 서버 연결이 필요해요', '혼자 하기 모드예요'); return; }
+  plazaBusy = true;
+  toast('광장으로 가는 중…', '');
+  Plaza.enter(err => {
+    plazaBusy = false;
+    if(err){ toast('광장에 못 들어갔어요', err.message || ''); return; }
+    place = 'plaza';
+    mode = 'home'; deco = false; mini = null;
+    closeModal(); showScreen(null);
+    $('topbar').hidden = false; $('runPad').hidden = true;
+    $('dailyPanel').hidden = true;
+    home.x = 0.12; home.y = 0.42; home.target = null; home.autoAct = null;
+    home.vx = home.vy = 0; home.act = null; home.sweep = false;
+    home.ball.home = true; home.aim = null;
+    paintEmotes();
+    toast('광장에 왔어요', '지금 ' + Plaza.count() + '명 · 두기를 누르면 명함');
+    refreshBar();
+  });
+}
+function leavePlaza(){
+  if(!Plaza.alive()) return;
+  Plaza.leave();
+  $('emoteBar').hidden = true;
+}
+
+/* 인사 — 정해진 6개만. 자유 입력이 없으니 욕설도 스크립트도 못 들어옵니다. */
+function paintEmotes(){
+  const bar = $('emoteBar');
+  bar.innerHTML = '';
+  Plaza.emoteList().forEach((txt, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = txt;
+    b.onclick = () => Plaza.emote(i);
+    bar.appendChild(b);
+  });
+  bar.hidden = false;
+}
+
 /* ===== 배달 알바 ===== */
 function startRun(){
-  closeModal(); initAudio(); bgmStop();
+  leavePlaza(); closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'run'; $('topbar').hidden = true; showScreen(null);
   $('runPad').hidden = !(W < 760 || matchMedia('(pointer:coarse)').matches);
@@ -263,11 +307,13 @@ function enterRoom(code){
     $('topbar').hidden = true;
     $('cmPanel').hidden = false;
     CatchMind.layout();
+    Plaza.setMyRoom(code);          /* 광장 사람들 눈에 '방 열림' 으로 보입니다 */
     CatchMind.enter({ name: S.dugi.name, look: S.look, onEnd: catchEnd });
   });
 }
 function catchEnd(r){
   $('cmPanel').hidden = true;
+  Plaza.setMyRoom('');
   if(!r){ mode = 'home'; goHome(); openModal('job'); return; }
   mode = 'catchresult';
   const before = S.career.draw || 0;
@@ -462,6 +508,8 @@ cv.addEventListener('pointercancel', e => {
 
 document.addEventListener('pointerdown', e => {
   audioKick();
+  if(!e.target.closest('#menuPanel,#menuBtn')) toggleMenu(false);
+  if(!e.target.closest('#condPanel,#condChip')) toggleCond(false);
   if(e.target.closest('button,.dcard,.shopcard,.jobcard,.tab,.photo')) uiClick();
 }, true);
 function audioKick(){
@@ -473,6 +521,27 @@ function audioKick(){
 }
 
 $('condChip').onclick = () => toggleCond();
+
+/* ☰ — 설정·꾸미기·할 일·계정. 세계에 두기엔 애매한 '시스템' 메뉴만 모았습니다. */
+function toggleMenu(force){
+  const panel = $('menuPanel'), btn = $('menuBtn');
+  const open = force === undefined ? panel.hidden : force;
+  panel.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.classList.toggle('on', open);
+  if(open) paintMenu();
+}
+function paintMenu(){
+  $('mDeco').textContent = deco ? '꾸미기 끝내기' : '꾸미기';
+  $('mAcct').textContent = (typeof Auth !== 'undefined' && Auth.current()) ? '내 계정' : '로그인';
+  $('mDaily').classList.toggle('dot', dailyLeft() > 0);
+}
+Plaza.onCount = n => { if(place === 'plaza') refreshBar(); };
+$('menuBtn').onclick = () => toggleMenu();
+$('mDaily').onclick = () => { toggleMenu(false); toggleDaily(); };
+$('mDeco').onclick  = () => { toggleMenu(false); toggleDeco(); };
+$('mAcct').onclick  = () => { toggleMenu(false); openAccount(); };
+$('mSet').onclick   = () => { toggleMenu(false); openModal('settings'); };
 
 /* 메뉴는 전부 사물에서 열립니다 (care.js 의 act 참고) */
 function toggleDaily(){
@@ -537,7 +606,7 @@ function frame(ts){
     else if(mode === 'pack' || mode === 'packresult'){ PackGame.frame(dt, mode === 'pack'); }
     else if(mode === 'catch' || mode === 'catchresult'){ CatchMind.frame(dt, mode === 'catch'); }
     else if(mode === 'cmlobby'){ g.fillStyle = '#F3EAE1'; g.fillRect(0, 0, W, H); }
-    else { updateHome(dt); drawHome(dt); }
+    else { if(place === 'plaza') Plaza.tick(dt); updateHome(dt); drawHome(dt); }
     $('miniClose').hidden = !(mode === 'home' && mini);
   }catch(err){
     /* 한 번 삐끗해도 게임은 계속 돈다. 다만 조용히 넘기면 이런 사고가
@@ -667,7 +736,7 @@ const _saveLocal = save;
 save = function(){ _saveLocal(); if(Auth.enabled() && Auth.current()) Auth.pushLater(S); };
 
 /* 로그인 상태가 바뀌면 상단바를 다시 그린다 */
-Auth.onChange(() => { try{ refreshBar(); }catch(e){} });
+Auth.onChange(() => { try{ refreshBar(); paintMenu(); }catch(e){} });
 
 /* 페이지를 열 때: 저장된 세션이 있으면 조용히 이어서 로그인 */
 (async function bootAuth(){

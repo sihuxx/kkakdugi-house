@@ -160,23 +160,28 @@ const PLACES = [
   { id:'door',     name:'현관',      zone:'living', act:'out', wall:true }
 ];
 
-/* 집 안 붙박이 — 가구 자리를 차지하지 않고 늘 앞쪽 바닥에 있습니다.
-   위쪽 버튼 줄을 없앴기 때문에, 메뉴는 전부 이런 '사물' 로 들어옵니다. */
+/* 집 안 붙박이 — 가구 자리를 차지하지 않고 늘 벽에 걸려 있습니다.
+   설정·꾸미기·할 일·계정은 ☰ 메뉴로 빠졌고, 여기 남는 건 사진첩뿐. */
 const FIXED = [
-  { id:'album',  name:'사진첩',    x:0.20, y:0.02, act:'album' },
-  { id:'calend', name:'할 일판',   x:0.33, y:0.02, act:'daily' },
-  { id:'radio',  name:'라디오',    x:0.62, y:0.02, act:'settings' },
-  { id:'tools',  name:'공구 걸이', x:0.74, y:0.02, act:'deco' }
+  { id:'album', name:'사진첩', x:0.27, y:0.02, act:'album' }
 ];
 
 /* ===== 정원 (집 밖) — 자리는 고정 ===== */
 const YARD = [
   { id:'house', name:'우리 집',     x:0.11, y:0.03, act:'in' },
-  { id:'mail',  name:'우체통',      x:0.25, y:0.12, act:'account' },
   { id:'shop',  name:'가게',        x:0.38, y:0.02, act:'shop' },
   { id:'gmach', name:'뽑기 기계',   x:0.55, y:0.07, act:'gacha' },
   { id:'board', name:'알바 게시판', x:0.73, y:0.05, act:'job' },
-  { id:'rank',  name:'명예의 전당', x:0.88, y:0.04, act:'rank' }
+  { id:'rank',  name:'명예의 전당', x:0.82, y:0.04, act:'rank' },
+  { id:'arch',  name:'광장 가는 길', x:0.96, y:0.09, act:'plaza' }
+];
+
+/* ===== 광장 (여럿이 모이는 곳) ===== */
+const PLAZA = [
+  { id:'back',  name:'정원으로',       x:0.08, y:0.10, act:'yardback' },
+  { id:'tent',  name:'캐치마인드 천막', x:0.30, y:0.05, act:'tent' },
+  { id:'bench', name:'벤치',           x:0.64, y:0.20, act:'sit' },
+  { id:'tree',  name:'큰 나무',        x:0.90, y:0.12, act:'look' }
 ];
 
 /* ===== 먹이 ===== */

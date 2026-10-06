@@ -838,3 +838,60 @@ body.fs #stage{border-radius:0;box-shadow:none;}
 /* 알바 결과 — 컨디션이 얼마를 보탰나 */
 .paycond{display:block;margin-top:2px;font-size:11.5px;color:var(--ink-soft);}
 .paycond b{font-family:var(--display);font-size:14px;color:#3E6B44;}
+
+/* ── ☰ 메뉴 — 설정·꾸미기·할 일·계정 ──────────────────── */
+#topbar .menubtn{cursor:pointer;font-size:15px;line-height:1;color:#7A6250;
+        padding:6px 12px;transition:transform .12s ease,box-shadow .12s ease;}
+#topbar .menubtn:hover{transform:translateY(-1px);box-shadow:0 7px 16px rgba(120,95,75,.14);}
+#topbar .menubtn.on{background:#FDF2DE;}
+#menuPanel{position:absolute;right:12px;top:52px;z-index:10;min-width:164px;
+        background:#FFFFFF;border-radius:20px;padding:7px;
+        box-shadow:0 14px 34px rgba(120,95,75,.18);display:flex;flex-direction:column;gap:2px;}
+#menuPanel[hidden]{display:none!important;}
+#menuPanel button{position:relative;font-family:var(--body);font-size:13.5px;text-align:left;
+        border:none;background:transparent;color:#5C4C42;border-radius:14px;
+        padding:9px 13px;cursor:pointer;}
+#menuPanel button:hover{background:#F6EFE7;}
+#menuPanel button.dot::after{content:'';position:absolute;right:12px;top:50%;margin-top:-4px;
+        width:8px;height:8px;border-radius:999px;background:#E4849C;}
+
+/* ── 광장 ──────────────────────────────────────────────── */
+#emoteBar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:7;
+    display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:94%;
+    background:rgba(255,252,248,.82);border-radius:999px;padding:6px 8px;
+    box-shadow:0 6px 18px rgba(120,95,75,.12);}
+#emoteBar[hidden]{display:none!important;}
+#emoteBar button{font-family:var(--body);font-size:13px;border:none;cursor:pointer;
+    background:#FFFFFF;color:#5C4C42;border-radius:999px;padding:6px 14px;
+    box-shadow:0 2px 6px rgba(120,95,75,.10);transition:transform .12s ease;}
+#emoteBar button:hover{transform:translateY(-2px);}
+#emoteBar button:active{transform:translateY(1px);}
+
+/* 명함 */
+.namecard{display:flex;gap:14px;align-items:center;width:100%;box-sizing:border-box;
+    background:#FFFFFF;border-radius:26px;padding:14px 16px;
+    box-shadow:0 6px 18px rgba(120,95,75,.10);}
+.namecard .cart{width:92px;height:92px;flex:none;display:flex;align-items:center;
+    justify-content:center;background:#F6EFE7;border-radius:22px;}
+.namecard .cart img{max-width:78%;max-height:78%;}
+.namecard .cinfo{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.namecard .cinfo > b{font-family:var(--display);font-size:24px;color:var(--ink);}
+.namecard .clv{font-size:12.5px;color:#3E6B44;}
+.namecard .crow{font-size:12.5px;color:var(--ink-soft);}
+.namecard .crow b{font-family:var(--display);font-size:16px;color:var(--ink);}
+.namecard.r-SR{background:linear-gradient(#FFFDF8,#FFE9EF);}
+.namecard.r-UR{background:linear-gradient(#FFFDF8,#FFEFBE);
+    box-shadow:0 0 0 2px #E8C86A inset, 0 6px 16px rgba(120,95,75,.10);}
+
+/* 열린 방 목록 */
+.roomlist{display:flex;flex-wrap:wrap;gap:9px;width:100%;}
+.roomcard{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;
+    cursor:pointer;background:#FFFFFF;border-radius:22px;padding:10px 12px;min-width:96px;
+    font-family:var(--body);box-shadow:0 5px 14px rgba(120,95,75,.10);
+    transition:transform .12s ease;}
+.roomcard:hover{transform:translateY(-3px);}
+.roomcard .art{width:48px;height:48px;display:flex;align-items:center;justify-content:center;}
+.roomcard .art img{max-width:100%;max-height:100%;}
+.roomcard b{font-family:var(--display);font-size:16px;color:var(--ink);}
+.roomcard i{font-style:normal;font-size:11px;color:var(--ink-soft);}
+.roomcard .code{font-size:11px;letter-spacing:.08em;color:#3E6B44;}

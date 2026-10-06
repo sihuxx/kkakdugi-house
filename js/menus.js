@@ -5,6 +5,7 @@
    모달 — 옷장 · 상점 · 뽑기 · 도감 · 설정 · 외출
    =============================================================== */
 let modalOpen = null;
+let lastCard = null;      /* 광장에서 누른 남의 두기 */
 const CLOVER_SVG = '<svg class="cv" viewBox="0 0 20 20" aria-hidden="true">' +
   '<g fill="#8FBF92" stroke="#5A4A40" stroke-width="1.6">' +
   '<circle cx="10" cy="5.6" r="3.5"/><circle cx="14.4" cy="10" r="3.5"/>' +
@@ -367,6 +368,76 @@ function buildJobs(body){
 }
 /* ===== 순위표 ===== */
 let boardJob = 'deliver';
+/* ===============================================================
+   광장 — 명함과 캐치마인드 천막
+   =============================================================== */
+function buildCard(body){
+  const p = lastCard;
+  if(!p){ body.innerHTML = '<p class="hint">두기를 다시 눌러주세요</p>'; return; }
+  const c = CHARS.find(q => q.id === p.look) || CHARS[0];
+  const wrap = document.createElement('div');
+  wrap.className = 'namecard r-' + c.rank;
+  /* 전부 남이 보낸 값이라 그대로 넣지 않고 esc 로 감쌉니다 */
+  wrap.innerHTML =
+    '<div class="cart"><img alt="" src="' + SRC[c.run] + '"></div>' +
+    '<div class="cinfo">' +
+      '<b>' + esc(p.name) + '</b>' +
+      '<span class="clv">Lv ' + p.lv + (p.rk ? ' · ' + esc(p.rk) : '') + '</span>' +
+      '<span class="crow">모습 <b>' + esc(c.name) + '</b> ' + starRow(c.rank) + '</span>' +
+      '<span class="crow">도감 <b>' + p.dex + '</b> / ' + CHARS.length + '종</span>' +
+      (p.best ? '<span class="crow">최고 기록 <b>' + p.best.toLocaleString('ko-KR') + '</b></span>' : '') +
+    '</div>';
+  body.appendChild(wrap);
+
+  const mine = S.own.length;
+  const note = document.createElement('p');
+  note.className = 'hint';
+  note.textContent = p.dex > mine ? '나보다 ' + (p.dex - mine) + '종 더 모았어요'
+                   : p.dex < mine ? '내가 ' + (mine - p.dex) + '종 더 모았어요'
+                   : '도감이 똑같네요!';
+  body.appendChild(note);
+
+  if(p.rm){
+    const go = document.createElement('button');
+    go.className = 'btn'; go.type = 'button';
+    go.textContent = '이 사람 캐치마인드 방에 들어가기';
+    go.onclick = () => { closeModal(); enterRoom(p.rm); };
+    body.appendChild(go);
+  }
+}
+
+function buildTent(body){
+  const list = Plaza.hosts();
+  const top = document.createElement('div');
+  top.className = 'albumtop';
+  const mk = document.createElement('button');
+  mk.className = 'btn'; mk.type = 'button'; mk.textContent = '새 방 만들기';
+  mk.onclick = () => { closeModal(); enterRoom(Net.makeCode()); };
+  const cnt = document.createElement('span');
+  cnt.className = 'hint';
+  cnt.textContent = '광장에 ' + Plaza.count() + '명 · 열린 방 ' + list.length + '개';
+  top.appendChild(mk); top.appendChild(cnt);
+  body.appendChild(top);
+
+  if(!list.length){
+    const e = document.createElement('p'); e.className = 'hint';
+    e.textContent = '아직 열린 방이 없어요. 먼저 만들면 광장 사람들에게 보입니다.';
+    body.appendChild(e); return;
+  }
+  const grid = document.createElement('div'); grid.className = 'roomlist';
+  body.appendChild(grid);
+  list.forEach(p => {
+    const c = CHARS.find(q => q.id === p.look) || CHARS[0];
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'roomcard';
+    b.innerHTML = '<span class="art"><img alt="" src="' + SRC[c.run] + '"></span>' +
+                  '<b>' + esc(p.name) + '</b><i>Lv ' + p.lv + '</i>' +
+                  '<span class="code">' + esc(p.rm) + '</span>';
+    b.onclick = () => { closeModal(); enterRoom(p.rm); };
+    grid.appendChild(b);
+  });
+}
+
 /* 내 기록 — 로그인 없이도 보이는 부분.
    알바별 최고 점수와, 많이 해볼수록 올라가는 랭크를 같이 보여줍니다. */
 function buildMyRecords(body){
@@ -580,7 +651,7 @@ function openModal(kind){
   modalOpen = kind;
   const body = $('modalBody'); body.innerHTML = '';
   const sheet = modal.querySelector('.sheet');
-  sheet.className = 'sheet' + (['wardrobe','gacha','shop','job','daily','album','rank'].includes(kind) ? ' wide' : '');
+  sheet.className = 'sheet' + (['wardrobe','gacha','shop','job','daily','album','rank','tent'].includes(kind) ? ' wide' : '');
   $('modalClose').textContent = '확인'; $('modalClose').hidden = false;
 
   if(kind === 'wardrobe'){
@@ -614,6 +685,14 @@ function openModal(kind){
     const h = document.createElement('h4'); h.className = 'bhead'; h.textContent = '전체 순위표';
     body.appendChild(h);
     buildBoard(body);
+  } else if(kind === 'card'){
+    $('modalTitle').textContent = '명함';
+    $('modalHint').textContent = '광장에서 만난 두기';
+    buildCard(body);
+  } else if(kind === 'tent'){
+    $('modalTitle').textContent = '캐치마인드 천막';
+    $('modalHint').textContent = '열려 있는 방에 코드 없이 바로 들어갈 수 있어요';
+    buildTent(body);
   } else if(kind === 'settings'){
     $('modalTitle').textContent = '설정';
     $('modalHint').textContent = '';

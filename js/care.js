@@ -30,7 +30,8 @@ seedDust();
 
 /* ===== 다가갈 수 있는 것 ===== */
 function homeSpots(){
-  if(place === 'yard') return YARD.map(o => ({ ...o }));
+  if(place === 'plaza') return PLAZA.map(o => ({ ...o }));
+  if(place === 'yard')  return YARD.map(o => ({ ...o }));
   const list = [];
   for(const o of LAY.floor){
     const f = FURN(o.id);
@@ -299,7 +300,7 @@ function updateHome(dt){
   }
 
   /* 가까운 것 — 문 앞에 서면 문이 먼저 */
-  let near = null, bd = (place === 'yard' ? 0.17 : 0.075);
+  let near = null, bd = (outside() ? 0.17 : 0.075);
   for(const s of homeSpots()){
     const d = Math.hypot((s.x - home.x) * 1.4, ((s.y || 0) - home.y) * 0.8);
     if(d < bd){ bd = d; near = s; }
@@ -322,7 +323,7 @@ const IDLE_SAY = ['심심해~', '오늘 뭐 하지?', '배고픈가?', '낮잠 �
 function pickIdle(){
   home.idle = 0;
   const d = S.dugi;
-  if(place === 'yard'){
+  if(outside()){
     home.target = { x:0.08 + Math.random() * 0.84, y:0.25 + Math.random() * 0.68 };
     home.idleGoal = 'walk';
     if(Math.random() < 0.45){
@@ -368,6 +369,13 @@ function act(spot){
   if(spot.act === 'guest')   return feedGuest();
   if(spot.act === 'out')     return goYard();
   if(spot.act === 'in')      return goHome();
+  if(spot.act === 'plaza')   return goPlaza();
+  if(spot.act === 'yardback')return goYard();
+  if(spot.act === 'tent')    return openModal('tent');
+  if(spot.act === 'sit' || spot.act === 'look'){
+    home.say = spot.act === 'sit' ? '잠깐 쉬자' : '나무 크다…'; home.sayT = 2.2;
+    addLove(1); return;
+  }
   if(spot.act === 'daily')   return toggleDaily();
   if(spot.act === 'deco')    return toggleDeco();
   if(spot.act === 'account') return openAccount();
@@ -413,15 +421,19 @@ function homeDown(px, py){
   if(home.dusts.some(d => Math.hypot((d.x - r.x) * 1.4, (d.y - r.y) * 0.8) < 0.075)){
     if(doCare('clean')){ sweepAt(r); return; }
   }
+  if(place === 'plaza'){
+    const who = Plaza.pick(px, py);
+    if(who){ lastCard = who; openModal('card'); return; }
+  }
   if(onDugi(px, py)){ home.pet.dist = 0; home.pet.on = true; petOnce(); return; }
   /* 가까운 가구를 누르면 걸어가서 실행 */
-  let spot = null, bd = (place === 'yard' ? 0.2 : 0.09);
+  let spot = null, bd = (outside() ? 0.2 : 0.09);
   for(const s of homeSpots()){
     const d = Math.hypot((s.x - r.x) * 1.3, ((s.y || 0) - r.y) * 0.7);
     if(d < bd){ bd = d; spot = s; }
   }
   if(spot){
-    home.target = place === 'yard'
+    home.target = outside()
       ? { x:spot.x, y:Math.min(0.95, (spot.y || 0.05) + 0.13) }
       : { x:spot.x + (spot.act === 'job' ? 0 : 0.04),
           y:Math.min(0.95, (spot.y || 0.05) + 0.16) };
@@ -679,6 +691,24 @@ function drawYardScene(){
   FX.bloom(DAY().bloom * 0.85, 3.5);
 }
 
+/* 광장 — 정원과 같은 하늘 아래, 사람이 모이는 자리 */
+function drawPlazaScene(){
+  drawYard(true);
+  const wb = wallBot();
+  const fs = Math.min(roomW() * 0.115, (H - wb) * 0.52);
+  const near = id => home.near && home.near.id === id;
+  for(const o of PLAZA.slice().sort((a, b) => a.y - b.y)){
+    const by = yAt(o.y);
+    drawPlazaThing(o.id, rx(o.x), by, fs * depthAt(by), near(o.id));
+  }
+  Plaza.draw();                      /* 나와 다른 사람들 — 앞뒤 순서대로 */
+  drawParts();
+  drawDayTint(true);
+  drawLightYard();
+  drawPrompt();
+  FX.bloom(DAY().bloom * 0.85, 3.5);
+}
+
 /* 바깥의 빛 — 해·달에서 비스듬히 */
 function drawLightYard(){
   const D = DAY(), L = skySpot();
@@ -691,6 +721,7 @@ function drawLightYard(){
 
 /* 방 전체 */
 function drawHome(dt){
+  if(place === 'plaza'){ drawPlazaScene(); return; }
   if(place === 'yard'){ drawYardScene(); return; }
   drawRoom();
   const wb = wallBot();

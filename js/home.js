@@ -5,15 +5,16 @@
    집 — 방 그리기와 가구 자리
    =============================================================== */
 
-/* 어디에 있나 — 'room'(집 안) · 'yard'(정원) */
+/* 어디에 있나 — 'room'(집 안) · 'yard'(정원) · 'plaza'(광장) */
 let place = 'room';
+const outside = () => place !== 'room';
 
-/* 방 좌표 — 정원은 화면 전체를 쓴다 */
-const roomW   = () => W * (place === 'yard' ? 1 : HOUSE().wide);
+/* 방 좌표 — 집 밖은 화면 전체를 쓴다 */
+const roomW   = () => W * (outside() ? 1 : HOUSE().wide);
 const roomL   = () => (W - roomW()) / 2;
 const roomR   = () => roomL() + roomW();
 const rx      = t => roomL() + roomW() * t;
-const wallBot = () => H * (place === 'yard' ? 0.44 : HOUSE().tall);
+const wallBot = () => H * (outside() ? 0.44 : HOUSE().tall);
 const walkTop = () => wallBot() + (H - wallBot()) * 0.06;     // 벽 바로 앞까지 갈 수 있다
 const walkBot = () => H - (H - wallBot()) * 0.06;
 const yAt     = t => walkTop() + t * (walkBot() - walkTop());
@@ -647,7 +648,7 @@ function seedYard(){
 }
 seedYard();
 
-function drawYard(){
+function drawYard(plaza){
   const wb = wallBot();
   const D = DAY();
   /* 하늘 — 시간대에 따라 색이 바뀐다 */
@@ -701,12 +702,14 @@ function drawYard(){
   g.quadraticCurveTo(W * 0.22, wb - H * 0.12, W * 0.46, wb);
   g.quadraticCurveTo(W * 0.72, wb - H * 0.16, W, wb);
   g.closePath(); g.fill();
-  /* 잔디 */
+  /* 바닥 — 둘 다 잔디. 광장은 조금 더 짙게 (나무가 많아 그늘진 공원) */
   const gr = g.createLinearGradient(0, wb, 0, H);
-  gr.addColorStop(0, '#A9D9A2'); gr.addColorStop(1, '#8CC486');
+  if(plaza){ gr.addColorStop(0, '#A6DB9C'); gr.addColorStop(1, '#79BA78'); }
+  else     { gr.addColorStop(0, '#A9D9A2'); gr.addColorStop(1, '#8CC486'); }
   g.fillStyle = gr; g.fillRect(0, wb, W, H - wb);
-  /* 울타리 */
+  /* 울타리 — 광장은 울타리 대신 생울타리 */
   const fy = wb, fh = (H - wb) * 0.12;
+  if(plaza){ drawPlazaGround(wb); return; }
   g.save(); ink(LW() * 0.8); g.fillStyle = '#E3D2B4';
   for(let x = 0; x < W; x += W * 0.045){
     rrect(x, fy - fh, W * 0.018, fh, W * 0.008); g.fill(); g.stroke();
@@ -748,6 +751,240 @@ function drawYard(){
     }
     g.restore();
   });
+}
+
+/* 광장 풀숲 — 한 번만 자리를 정해두고 계속 같은 자리에 그립니다.
+   매 프레임 랜덤이면 풀이 춤을 춥니다. */
+const plazaBack = [];      /* 생울타리 뒤 — 큰 나무들 */
+const plazaFront = [];     /* 잔디 위 — 덤불·꽃·풀 */
+function seedPlaza(){
+  plazaBack.length = 0; plazaFront.length = 0;
+  const G = ['#6FAE6D', '#7FB97C', '#8FC489', '#66A468'];
+  for(let i = 0; i < 9; i++)
+    plazaBack.push({ x: 0.03 + i * 0.118 + ((i * 7) % 3) * 0.012,
+                     s: 0.72 + ((i * 5) % 6) * 0.17, c: G[i % 4] });
+  for(let i = 0; i < 11; i++)
+    plazaFront.push({ k:'bush', x: (i * 0.0937 + 0.03) % 1, y: 0.06 + ((i * 0.233) % 0.26),
+                      s: 0.8 + ((i * 3) % 5) * 0.16, c: G[(i + 1) % 4] });
+  for(let i = 0; i < 34; i++){
+    const x = (i * 0.0617 + 0.02) % 1;
+    const y = 0.16 + ((i * 0.1937) % 0.82);
+    if(Math.hypot((x - 0.5) / 0.30, (y - 0.58) / 0.33) < 1) continue;   /* 돌바닥 위는 비움 */
+    plazaFront.push({ k: i % 3 === 0 ? 'flower' : 'tuft', x, y,
+                      c: ['#EFA6B8','#FFE08A','#FFFFFF','#C9A8E8'][i % 4] });
+  }
+}
+seedPlaza();
+
+/* 나무 하나 */
+function leafTree(x, base, s2, col){
+  ink(LW() * 0.7);
+  box(x - s2 * 0.11, base - s2 * 0.9, s2 * 0.22, s2 * 0.9, s2 * 0.05, '#B98F58');
+  [[-0.46, 1.18, 0.62], [0.46, 1.24, 0.6], [0, 1.62, 0.78]].forEach(([ox, oy, r]) => {
+    g.fillStyle = col;
+    g.beginPath(); g.ellipse(x + ox * s2, base - oy * s2, r * s2, r * s2 * 0.84, 0, 0, 7);
+    g.fill(); g.stroke();
+  });
+  g.fillStyle = 'rgba(255,255,255,.16)';
+  g.beginPath(); g.ellipse(x - s2 * 0.2, base - s2 * 1.82, s2 * 0.3, s2 * 0.2, -0.4, 0, 7); g.fill();
+}
+
+function drawPlazaGround(wb){
+  const hh = (H - wb) * 0.14;
+
+  /* ① 생울타리 너머의 숲 — 울타리에 반쯤 가려야 깊이가 생깁니다 */
+  g.save();
+  g.beginPath(); g.rect(0, 0, W, wb + hh * 0.5); g.clip();
+  plazaBack.forEach(t => leafTree(rx(t.x), wb - hh * 0.1, 30 * uiK() * t.s, t.c));
+  g.restore();
+
+  /* ② 생울타리 — 울타리보다 공원 같습니다 */
+  g.save(); ink(LW() * 0.8);
+  g.fillStyle = '#5FA25F';
+  rrect(-4, wb - hh, W + 8, hh, hh * 0.4); g.fill(); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.17)';
+  for(let x = 0; x < W; x += W * 0.026){
+    g.beginPath(); g.ellipse(x, wb - hh * 0.66, W * 0.016, hh * 0.28, 0, 0, 7); g.fill();
+  }
+  g.fillStyle = 'rgba(40,80,45,.1)';
+  rrect(-4, wb - hh * 0.3, W + 8, hh * 0.3, hh * 0.12); g.fill();
+  g.restore();
+
+  /* ③ 가운데 돌바닥 — 사람이 모이는 자리만, 작게 */
+  const cy = wb + (H - wb) * 0.58, rw = W * 0.26, rh = (H - wb) * 0.28;
+  g.save();
+  g.fillStyle = '#E9DFCC';
+  g.beginPath(); g.ellipse(W * 0.5, cy, rw, rh, 0, 0, 7); g.fill();
+  g.save();
+  g.beginPath(); g.ellipse(W * 0.5, cy, rw, rh, 0, 0, 7); g.clip();
+  g.strokeStyle = 'rgba(150,128,95,.2)'; g.lineWidth = LW() * 0.7;
+  for(let i = -3; i <= 3; i++){
+    const y = cy + rh * (i / 3.2);
+    g.beginPath(); g.moveTo(W * 0.5 - rw, y); g.lineTo(W * 0.5 + rw, y); g.stroke();
+  }
+  for(let i = -4; i <= 4; i++){
+    const x = W * 0.5 + rw * (i / 4.2);
+    g.beginPath(); g.moveTo(x, cy - rh); g.lineTo(x + rw * 0.2, cy + rh); g.stroke();
+  }
+  g.restore();
+  g.strokeStyle = '#B9D9AE'; g.lineWidth = LW() * 2.4;    /* 둘레의 잔디 테두리 */
+  g.beginPath(); g.ellipse(W * 0.5, cy, rw, rh, 0, 0, 7); g.stroke();
+  g.globalAlpha = .4; g.strokeStyle = '#C8B48E'; g.lineWidth = LW();
+  g.beginPath(); g.ellipse(W * 0.5, cy, rw * 0.66, rh * 0.66, 0, 0, 7); g.stroke();
+  g.restore();
+
+  /* ④ 돌바닥을 둘러싼 꽃밭 */
+  g.save();
+  for(let i = 0; i < 18; i++){
+    const a2 = i / 18 * 6.283 + 0.2;
+    const x = W * 0.5 + Math.cos(a2) * rw * 1.16;
+    const y = cy + Math.sin(a2) * rh * 1.16;
+    if(y < wb + hh * 0.2) continue;
+    const s2 = 8 * uiK() * depthAt(y);
+    ink(LW() * 0.5);
+    g.strokeStyle = '#5F9A5D'; g.lineWidth = LW() * 0.7;      /* 짧은 줄기 */
+    g.beginPath(); g.moveTo(x, y + s2 * 0.8); g.lineTo(x, y); g.stroke();
+    ink(LW() * 0.5);
+    g.fillStyle = ['#EFA6B8','#FFE08A','#C9A8E8','#FFFFFF'][i % 4];
+    for(let k = 0; k < 5; k++){                                /* 꽃잎 다섯 */
+      const a3 = k / 5 * 6.283 + i;
+      g.beginPath();
+      g.arc(x + Math.cos(a3) * s2 * 0.42, y + Math.sin(a3) * s2 * 0.42, s2 * 0.34, 0, 7);
+      g.fill(); g.stroke();
+    }
+    g.fillStyle = '#FFE08A'; g.beginPath(); g.arc(x, y, s2 * 0.26, 0, 7); g.fill(); g.stroke();
+  }
+  g.restore();
+
+  /* ⑤ 잔디 위 — 뒤에서 앞으로 */
+  plazaFront.slice().sort((a2, b2) => a2.y - b2.y).forEach(d => {
+    const x = rx(d.x), y = yAt(d.y), dep = depthAt(y);
+    g.save(); ink(LW() * 0.6);
+    if(d.k === 'bush'){
+      const s2 = 26 * uiK() * dep * d.s;
+      [[-0.52, 0.56], [0.52, 0.54], [0, 0.78]].forEach(([ox, r]) => {
+        g.fillStyle = d.c;
+        g.beginPath(); g.ellipse(x + ox * s2, y - r * s2 * 0.82, r * s2, r * s2 * 0.86, 0, 0, 7);
+        g.fill(); g.stroke();
+      });
+      g.fillStyle = 'rgba(255,255,255,.18)';
+      g.beginPath(); g.ellipse(x - s2 * 0.2, y - s2 * 0.9, s2 * 0.26, s2 * 0.16, -0.4, 0, 7); g.fill();
+    }else if(d.k === 'flower'){
+      const s2 = 10 * uiK() * dep;
+      g.strokeStyle = '#5F9A5D'; g.lineWidth = LW() * 0.8;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - s2 * 1.5); g.stroke();
+      ink(LW() * 0.6); g.fillStyle = d.c;
+      for(let i = 0; i < 5; i++){
+        const a2 = i / 5 * 6.283;
+        g.beginPath();
+        g.arc(x + Math.cos(a2) * s2 * 0.44, y - s2 * 1.5 + Math.sin(a2) * s2 * 0.44, s2 * 0.36, 0, 7);
+        g.fill(); g.stroke();
+      }
+      g.fillStyle = '#FFE08A'; g.beginPath(); g.arc(x, y - s2 * 1.5, s2 * 0.26, 0, 7); g.fill(); g.stroke();
+    }else{
+      const s2 = 11 * uiK() * dep;
+      g.strokeStyle = '#5F9A5D'; g.lineWidth = LW() * 1.1;
+      [-0.6, -0.1, 0.45].forEach(o => {
+        g.beginPath(); g.moveTo(x + o * s2, y);
+        g.quadraticCurveTo(x + o * s2 * 2.2, y - s2 * 1.0, x + o * s2 * 3.4, y - s2 * 1.5); g.stroke();
+      });
+    }
+    g.restore();
+  });
+}
+
+/* 광장에 있는 것 하나 */
+function drawPlazaThing(id, cx, base, s, glow){
+  g.save();
+  if(glow){
+    g.save(); g.globalAlpha = 0.28 + Math.sin(home.t * 5) * 0.16;
+    g.fillStyle = '#FFE08A';
+    g.beginPath(); g.ellipse(cx, base - s * 0.5, s * 1.2, s * 0.95, 0, 0, 7); g.fill(); g.restore();
+  }
+  ink();
+  const label = (txt, y) => {
+    g.fillStyle = '#5A4A40'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '700 ' + (14 * uiK()) + 'px Gaegu, sans-serif';
+    g.fillText(txt, cx, y);
+  };
+  switch(id){
+    case 'back': {                                  /* 정원으로 돌아가는 아치 */
+      shadow(cx, base, s * 0.5);
+      const w = s * 1.1, h = s * 1.3;
+      g.strokeStyle = '#C9A06A'; g.lineWidth = LW() * 3.2; g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(cx - w / 2, base);
+      g.lineTo(cx - w / 2, base - h * 0.6);
+      g.quadraticCurveTo(cx, base - h * 1.25, cx + w / 2, base - h * 0.6);
+      g.lineTo(cx + w / 2, base);
+      g.stroke();
+      ink();
+      ['#8FBF92', '#A9D9A2'].forEach((c, i) => {    /* 덩굴 */
+        g.fillStyle = c;
+        for(let k = 0; k < 5; k++){
+          const t = (k + i * 0.5) / 5;
+          const a = Math.PI * (0.1 + t * 0.8);
+          const px = cx - Math.cos(a) * w * 0.52;
+          const py = base - h * 0.6 - Math.sin(a) * h * 0.52;
+          g.beginPath(); g.arc(px, py, s * 0.1, 0, 7); g.fill(); g.stroke();
+        }
+      });
+      label('정원', base - h * 1.4);
+      break;
+    }
+    case 'tent': {                                  /* 캐치마인드 천막 */
+      shadow(cx, base, s * 0.9);
+      const w = s * 1.7, h = s * 1.1;
+      g.fillStyle = '#EFA6B8';                      /* 지붕 */
+      g.beginPath(); g.moveTo(cx - w * 0.6, base - h);
+      g.lineTo(cx, base - h - s * 0.7); g.lineTo(cx + w * 0.6, base - h);
+      g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,.45)';
+      for(let i = 0; i < 3; i++){
+        g.beginPath(); g.moveTo(cx - w * 0.6 + i * w * 0.4, base - h);
+        g.lineTo(cx - w * 0.42 + i * w * 0.4, base - h);
+        g.lineTo(cx - s * 0.02 + i * w * 0.14, base - h - s * 0.7);
+        g.closePath(); g.fill();
+      }
+      box(cx - w / 2, base - h, w, h, s * 0.07, '#FFFBF0');
+      /* 안쪽 칠판 */
+      box(cx - w * 0.33, base - h * 0.84, w * 0.66, h * 0.56, s * 0.05, '#DFEFE4');
+      g.strokeStyle = '#8FBF92'; g.lineWidth = LW() * 1.3; g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(cx - w * 0.2, base - h * 0.4);
+      g.quadraticCurveTo(cx - s * 0.05, base - h * 0.78, cx + w * 0.16, base - h * 0.44);
+      g.stroke(); ink();
+      /* 기둥 */
+      g.strokeStyle = '#C9A06A'; g.lineWidth = LW() * 2;
+      g.beginPath(); g.moveTo(cx - w / 2, base - h); g.lineTo(cx - w / 2, base);
+      g.moveTo(cx + w / 2, base - h); g.lineTo(cx + w / 2, base); g.stroke();
+      ink();
+      label('캐치마인드', base - h - s * 0.95);
+      break;
+    }
+    case 'bench': {                                 /* 벤치 */
+      shadow(cx, base, s * 0.75);
+      const w = s * 1.5;
+      g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.8; g.lineCap = 'round';
+      /* 다리 */
+      g.beginPath(); g.moveTo(cx - w * 0.38, base); g.lineTo(cx - w * 0.38, base - s * 0.34);
+      g.moveTo(cx + w * 0.38, base); g.lineTo(cx + w * 0.38, base - s * 0.34); g.stroke();
+      /* 등받이 기둥 — 없으면 널빤지가 공중에 뜹니다 */
+      g.beginPath(); g.moveTo(cx - w * 0.4, base - s * 0.3); g.lineTo(cx - w * 0.4, base - s * 0.92);
+      g.moveTo(cx + w * 0.4, base - s * 0.3); g.lineTo(cx + w * 0.4, base - s * 0.92); g.stroke();
+      ink();
+      box(cx - w / 2, base - s * 0.42, w, s * 0.12, s * 0.04, '#D9A066');   /* 앉는 자리 */
+      box(cx - w / 2, base - s * 0.70, w, s * 0.1, s * 0.04, '#D9A066');    /* 등받이 */
+      box(cx - w / 2, base - s * 0.88, w, s * 0.1, s * 0.04, '#D9A066');
+      break;
+    }
+    case 'tree': {                                  /* 큰 나무 */
+      shadow(cx, base, s * 0.9);
+      leafTree(cx, base, s * 1.15, '#7FB97C');
+      break;
+    }
+  }
+  g.restore();
 }
 
 /* 정원에 있는 것 하나 */
@@ -843,27 +1080,6 @@ function drawYardThing(id, cx, base, s, glow){
       label('알바', base - s * 1.55);
       break;
     }
-    case 'mail': {                                    /* 우체통 — 계정 */
-      shadow(cx, base, s * 0.34);
-      ink(); g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.6;
-      g.beginPath(); g.moveTo(cx, base); g.lineTo(cx, base - s * 0.62); g.stroke();
-      ink();
-      const mw = s * 0.62, mh = s * 0.46, my = base - s * 0.62 - mh;
-      box(cx - mw / 2, my + mh * 0.3, mw, mh * 0.7, s * 0.05, '#8FC0D8');
-      g.fillStyle = '#8FC0D8';                        /* 둥근 지붕 */
-      g.beginPath(); g.arc(cx, my + mh * 0.3, mw / 2, Math.PI, 0); g.fill(); g.stroke();
-      g.fillStyle = '#5A4A40';
-      rrect(cx - mw * 0.22, my + mh * 0.46, mw * 0.44, mh * 0.12, mh * 0.06); g.fill();
-      g.strokeStyle = '#E86A6A'; g.lineWidth = LW() * 1.4;  /* 깃발 */
-      g.beginPath(); g.moveTo(cx + mw * 0.5, my + mh * 0.34);
-      g.lineTo(cx + mw * 0.5, my - mh * 0.1); g.stroke();
-      g.fillStyle = '#E86A6A';
-      g.beginPath(); g.moveTo(cx + mw * 0.5, my - mh * 0.1);
-      g.lineTo(cx + mw * 0.98, my + mh * 0.02);
-      g.lineTo(cx + mw * 0.5, my + mh * 0.14); g.closePath(); g.fill(); ink(); g.stroke();
-      label('계정', my - mh * 0.34);
-      break;
-    }
     case 'rank': {                                    /* 명예의 전당 — 랭킹 */
       shadow(cx, base, s * 0.95);
       const bw = s * 0.5;                             /* 단 하나의 너비 */
@@ -905,7 +1121,7 @@ function drawYardThing(id, cx, base, s, glow){
 }
 
 /* ===============================================================
-   집 안 붙박이 — 사진첩 · 할 일판 · 공구함 · 라디오
+   집 안 붙박이 — 사진첩
    위쪽 버튼 줄을 없앤 대신, 누르면 두기가 걸어가서 열어줍니다.
    =============================================================== */
 function drawFixed(id, cx, base, s, glow){
@@ -929,78 +1145,6 @@ function drawFixed(id, cx, base, s, glow){
       g.fillStyle = '#C8DCC9';
       rrect(-s * 0.15, -s * 0.18, s * 0.3, s * 0.18, s * 0.015); g.fill();
       g.restore(); ink();
-      break;
-    }
-    case 'calend': {                                  /* 할 일판 — 벽에 건 체크리스트 */
-      ink(LW() * 0.9);
-      g.beginPath(); g.moveTo(cx, base - s * 0.82); g.lineTo(cx, base - s * 0.96); g.stroke();
-      g.fillStyle = '#8A7560';
-      g.beginPath(); g.arc(cx, base - s * 0.98, s * 0.045, 0, 7); g.fill(); g.stroke();
-      box(cx - s * 0.34, base - s * 0.82, s * 0.68, s * 0.82, s * 0.05, '#FFFBF0');
-      box(cx - s * 0.34, base - s * 0.82, s * 0.68, s * 0.18, s * 0.05, '#E8907F');
-      g.fillStyle = '#FFF8F0';
-      for(let i = 0; i < 3; i++){
-        const ly = base - s * 0.56 + i * s * 0.17;
-        g.strokeStyle = '#C2A88A'; g.lineWidth = LW() * 0.7;
-        g.beginPath(); g.moveTo(cx - s * 0.11, ly); g.lineTo(cx + s * 0.24, ly); g.stroke();
-        ink(LW() * 0.8);
-        g.strokeRect(cx - s * 0.25, ly - s * 0.06, s * 0.11, s * 0.11);
-        if(i < 2){                                    /* 체크 */
-          g.strokeStyle = '#6FA86F'; g.lineWidth = LW() * 1.3;
-          g.beginPath(); g.moveTo(cx - s * 0.22, ly - s * 0.005);
-          g.lineTo(cx - s * 0.19, ly + s * 0.035); g.lineTo(cx - s * 0.14, ly - s * 0.045);
-          g.stroke();
-        }
-        ink();
-      }
-      /* 남은 할 일이 있으면 빨간 점 */
-      if(typeof dailyLeft === 'function' && dailyLeft() > 0){
-        g.fillStyle = '#E8564E';
-        g.beginPath();
-        g.arc(cx + s * 0.3, base - s * 0.84, s * 0.1 + Math.sin(home.t * 4) * s * 0.015, 0, 7);
-        g.fill(); g.stroke();
-      }
-      break;
-    }
-    case 'tools': {                                   /* 공구 걸이 — 꾸미기 */
-      box(cx - s * 0.44, base - s * 0.72, s * 0.88, s * 0.72, s * 0.05,
-          deco ? '#9CCADF' : '#E0C49A');
-      g.fillStyle = 'rgba(120,95,60,.22)';              /* 타공판 구멍 */
-      for(let r2 = 0; r2 < 3; r2++) for(let c2 = 0; c2 < 4; c2++){
-        g.beginPath();
-        g.arc(cx - s * 0.3 + c2 * s * 0.2, base - s * 0.6 + r2 * s * 0.2, s * 0.022, 0, 7); g.fill();
-      }
-      /* 망치 */
-      g.strokeStyle = '#A3805A'; g.lineWidth = LW() * 1.6;
-      g.beginPath(); g.moveTo(cx - s * 0.2, base - s * 0.52); g.lineTo(cx - s * 0.2, base - s * 0.14);
-      g.stroke(); ink();
-      box(cx - s * 0.33, base - s * 0.62, s * 0.26, s * 0.12, s * 0.02, '#8A7560');
-      /* 드라이버 */
-      g.strokeStyle = '#8FC0D8'; g.lineWidth = LW() * 1.4;
-      g.beginPath(); g.moveTo(cx + s * 0.16, base - s * 0.56); g.lineTo(cx + s * 0.16, base - s * 0.3);
-      g.stroke(); ink();
-      box(cx + s * 0.08, base - s * 0.3, s * 0.16, s * 0.18, s * 0.03, '#E8907F');
-      break;
-    }
-    case 'radio': {                                   /* 선반 위 라디오 — 설정 */
-      box(cx - s * 0.5, base, s * 1.0, s * 0.1, s * 0.03, '#C9A06A');   /* 선반 */
-      box(cx - s * 0.4, base - s * 0.46, s * 0.8, s * 0.46, s * 0.06, '#C9A88B');
-      box(cx - s * 0.32, base - s * 0.38, s * 0.4, s * 0.3, s * 0.04, '#5A4A40');
-      g.fillStyle = '#8A7560';                         /* 스피커 구멍 */
-      for(let r2 = 0; r2 < 3; r2++) for(let c2 = 0; c2 < 4; c2++){
-        g.beginPath();
-        g.arc(cx - s * 0.27 + c2 * s * 0.1, base - s * 0.33 + r2 * s * 0.09, s * 0.025, 0, 7);
-        g.fill();
-      }
-      g.fillStyle = '#FFE08A';                         /* 손잡이 둘 */
-      [0.0, 0.17].forEach((o, i) => {
-        g.beginPath(); g.arc(cx + s * 0.2, base - s * 0.36 + o * 1.4, s * 0.07, 0, 7);
-        g.fill(); g.stroke();
-      });
-      g.strokeStyle = '#8A7560'; g.lineWidth = LW() * 1.2;   /* 안테나 */
-      g.beginPath(); g.moveTo(cx + s * 0.3, base - s * 0.46);
-      g.lineTo(cx + s * 0.44, base - s * 0.78); g.stroke();
-      ink();
       break;
     }
   }
