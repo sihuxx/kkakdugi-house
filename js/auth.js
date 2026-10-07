@@ -109,29 +109,54 @@ function checkEmail(em){
   return null;
 }
 
+/* ===== 아이디 =====
+   Supabase Auth 는 이메일만 받으므로, 아이디를 '<아이디>@ggakdugi.id' 라는
+   가짜 이메일로 바꿔서 넘깁니다. 사용자에게는 아이디만 보여줍니다.
+   (.id 는 실제 TLD 라서 Supabase 의 이메일 형식 검사를 통과합니다) */
+const ID_DOMAIN = 'ggakdugi.id';
+function checkId(id){
+  if(typeof id !== 'string') return '아이디를 확인해주세요';
+  const v = id.trim();
+  if(v.length < 3 || v.length > 20) return '아이디는 3~20자예요';
+  if(!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(v)) return '영문으로 시작하고 영문·숫자·_·. 만 써주세요';
+  return null;
+}
+const idToEmail = id => String(id).trim().toLowerCase() + '@' + ID_DOMAIN;
+/* 화면에 보여줄 때 도메인을 떼어낸다 */
+const emailToId = em => String(em || '').replace('@' + ID_DOMAIN, '');
+
 /* ===== 가입 · 로그인 ===== */
-async function signUp(email, pw){
+async function signUp(id, pw, remember){
   if(!ON) throw new Error('서버가 설정되지 않았어요');
-  const e1 = checkEmail(email); if(e1) throw new Error(e1);
-  const e2 = checkPw(pw);       if(e2) throw new Error(e2);
-  await api('/auth/v1/signup', { method:'POST', auth:false,
-    body:{ email: email.trim().toLowerCase(), password: pw } });
-  /* 이메일 인증을 켜두면 여기서 세션이 안 옵니다 — 그게 정상이고 더 안전합니다 */
+  const e1 = checkId(id);  if(e1) throw new Error(e1);
+  const e2 = checkPw(pw);  if(e2) throw new Error(e2);
+  let d;
+  try{
+    d = await api('/auth/v1/signup', { method:'POST', auth:false,
+      body:{ email: idToEmail(id), password: pw } });
+  }catch(err){
+    if(err.status === 422 || err.status === 400) throw new Error('이미 있는 아이디예요');
+    if(err.status === 429) throw new Error('잠시 후 다시 시도해주세요');
+    throw new Error('지금은 연결이 안 돼요');
+  }
+  /* 가짜 이메일이라 인증 메일을 받을 수 없습니다 — Supabase 에서
+     Auth → "Confirm email" 을 꺼둬야 가입 즉시 세션이 옵니다. */
+  if(d && d.access_token){ applySession(d, remember); return { signedIn: true }; }
   return { needVerify: true };
 }
 
-async function signIn(email, pw, remember){
+async function signIn(id, pw, remember){
   if(!ON) throw new Error('서버가 설정되지 않았어요');
-  if(checkEmail(email) || typeof pw !== 'string' || !pw)
-    throw new Error('이메일 또는 비밀번호가 맞지 않아요');
+  if(checkId(id) || typeof pw !== 'string' || !pw)
+    throw new Error('아이디 또는 비밀번호가 맞지 않아요');
   let d;
   try{
     d = await api('/auth/v1/token?grant_type=password', { method:'POST', auth:false,
-      body:{ email: email.trim().toLowerCase(), password: pw } });
+      body:{ email: idToEmail(id), password: pw } });
   }catch(err){
     /* 계정이 있는지 없는지 구분되지 않게 늘 같은 문구 */
     if(err.status === 400 || err.status === 401)
-      throw new Error('이메일 또는 비밀번호가 맞지 않아요');
+      throw new Error('아이디 또는 비밀번호가 맞지 않아요');
     if(err.status === 429) throw new Error('잠시 후 다시 시도해주세요');
     throw new Error('지금은 연결이 안 돼요');
   }
@@ -145,7 +170,8 @@ function applySession(d, remember){
   expAt  = Date.now() + (Math.max(60, d.expires_in || 3600) - 60) * 1000;
   keepRT(d.refresh_token || null, !!remember);
   const u = d.user || {};
-  user = { id: u.id, email: u.email, verified: !!(u.email_confirmed_at || u.confirmed_at) };
+  user = { id: u.id, email: u.email, name: emailToId(u.email),
+           verified: !!(u.email_confirmed_at || u.confirmed_at) };
   fire();
 }
 
@@ -179,15 +205,10 @@ async function signOut(){
   clearTokens(); fire();
 }
 
-async function resetPassword(email){
-  if(!ON) throw new Error('서버가 설정되지 않았어요');
-  if(checkEmail(email)) throw new Error('이메일을 확인해주세요');
-  try{
-    await api('/auth/v1/recover', { method:'POST', auth:false,
-      body:{ email: email.trim().toLowerCase() } });
-  }catch(e){}
-  /* 가입된 메일인지 알려주지 않기 위해 결과와 무관하게 같은 안내 */
-  return true;
+/* 아이디 방식에는 받을 메일이 없어서 비밀번호 재설정을 지원하지 않습니다.
+   (화면에서도 '비밀번호를 잊었어요' 버튼을 숨깁니다) */
+async function resetPassword(){
+  throw new Error('아이디 방식은 비밀번호 재설정을 지원하지 않아요');
 }
 
 /* 조건에 맞는 줄이 몇 개인지만 센다 — 순위표에서 내 등수를 구할 때 씁니다.
@@ -354,6 +375,7 @@ function pushLater(state){
 }
 
 return { enabled, current, onChange, ready, signUp, signIn, signOut, resetPassword,
-         checkPw, checkEmail, pull, push, pushLater, sanitizeSave, token, api, count,
+         checkPw, checkEmail, checkId, idToEmail, pull, push, pushLater,
+         sanitizeSave, token, api, count,
          get busy(){ return busy; } };
 })();

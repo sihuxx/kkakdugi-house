@@ -762,7 +762,6 @@ function showAuth(){
     ? '비밀번호는 이 게임이 저장하지 않아요. 인증 서버가 암호화해서 보관합니다.'
     : '서버가 아직 연결되지 않아 이 기기에만 저장됩니다 (js/config.js).';
   $('authForm').hidden = !Auth.enabled();
-  $('authForgot').hidden = !Auth.enabled();
   setAuthMode('login');
   setTimeout(() => { try{ $('authEmail').focus(); }catch(e){} }, 150);
 }
@@ -773,14 +772,6 @@ function leaveAuth(){
 $('tabLogin').onclick = () => setAuthMode('login');
 $('tabJoin').onclick  = () => setAuthMode('join');
 $('authSkip').onclick = () => { try{ localStorage.setItem('ggakdugi.local', '1'); }catch(e){} leaveAuth(); };
-$('authForgot').onclick = async () => {
-  const em = $('authEmail').value;
-  if(Auth.checkEmail(em)){ authMsg('이메일을 먼저 적어주세요', true); return; }
-  $('authForgot').disabled = true;
-  try{ await Auth.resetPassword(em); }catch(e){}
-  $('authForgot').disabled = false;
-  authMsg('가입된 주소라면 재설정 메일을 보냈어요');
-};
 $('authForm').onsubmit = async e => {
   e.preventDefault();
   const btn = $('authGo');
@@ -790,16 +781,21 @@ $('authForm').onsubmit = async e => {
   btn.disabled = true; authMsg('');
   try{
     if(authMode === 'join'){
-      await Auth.signUp(em, pw);
+      const r = await Auth.signUp(em, pw, keep);
       $('authPw').value = '';
-      setAuthMode('login');
-      authMsg('메일함을 확인해 인증을 끝내고 로그인해주세요');
+      if(r && r.signedIn){
+        await mergeCloud(); leaveAuth();
+        toast('가입했어요', Auth.current().name);
+      }else{
+        setAuthMode('login');
+        authMsg('가입됐어요 · 이제 로그인해주세요');
+      }
     }else{
       await Auth.signIn(em, pw, keep);
       $('authPw').value = '';
       await mergeCloud();
       leaveAuth();
-      toast('로그인했어요', Auth.current().email);
+      toast('로그인했어요', Auth.current().name);
     }
   }catch(err){
     authMsg(String(err && err.message || '문제가 생겼어요'), true);

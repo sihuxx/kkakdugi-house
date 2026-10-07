@@ -991,8 +991,7 @@ function buildAccount(body){
   const u = Auth.current();
   const box = document.createElement('div'); box.className = 'acctbox';
   const rows = [
-    ['이메일', u ? u.email : '-'],
-    ['메일 인증', u && u.verified ? '완료' : '아직'],
+    ['아이디', u ? u.name : '-'],
     ['세이브', '서버에 자동 저장 중']
   ];
   rows.forEach(([k, v]) => {

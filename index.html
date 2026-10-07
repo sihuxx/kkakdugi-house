@@ -109,13 +109,13 @@
         </div>
 
         <form id="authForm" autocomplete="on" novalidate>
-          <label class="fld"><span>이메일</span>
-            <input id="authEmail" type="email" inputmode="email" autocomplete="username"
-                   maxlength="254" spellcheck="false" required></label>
+          <label class="fld"><span>아이디</span>
+            <input id="authEmail" type="text" autocomplete="username"
+                   maxlength="20" spellcheck="false" autocapitalize="off" required></label>
           <label class="fld"><span>비밀번호</span>
             <input id="authPw" type="password" autocomplete="current-password"
                    maxlength="200" required></label>
-          <p class="pwhint" id="pwHint" hidden>10자 이상 · 대문자 · 소문자 · 숫자 · 기호 중 3가지 이상</p>
+          <p class="pwhint" id="pwHint" hidden>아이디 3~20자 (영문 시작) · 비밀번호 10자 이상, 대·소문자·숫자·기호 중 3가지</p>
           <label class="chk"><input id="authKeep" type="checkbox">
             <span>이 기기에서 로그인 유지</span></label>
           <p class="autherr" id="authErr" role="alert" hidden></p>
@@ -123,7 +123,6 @@
         </form>
 
         <div class="authsub">
-          <button class="linkbtn" id="authForgot" type="button">비밀번호를 잊었어요</button>
           <button class="linkbtn" id="authSkip" type="button">계정 없이 이 기기에서만 하기</button>
         </div>
       </div>
