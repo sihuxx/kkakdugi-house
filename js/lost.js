@@ -4,8 +4,8 @@
 /* ===============================================================
    미아 찾기 — 광장에 모인 두기들 중에서 찾는 사람 고르기
 
-   반사신경이 아니라 눈으로 하는 알바입니다. 제한시간은 넉넉하고
-   틀리면 시간이 깎이니, 급하게 찍는 것보다 차분히 보는 게 이깁니다.
+   반사신경이 아니라 눈으로 하는 알바입니다. 시간이 빠듯하고
+   틀리면 더 깎이니, 급하게 찍는 것보다 한 번에 맞히는 게 이깁니다.
 
    그림을 새로 만들지 않습니다 — 이미 있는 두기 31종을 그대로 깔아요.
    그래서 도감을 많이 모을수록 "저건 누구" 가 빨리 보이고,
@@ -14,9 +14,9 @@
 const LostGame = (function(){
 "use strict";
 
-const TIME_START = 70;      /* 시작 시간(초) */
-const TIME_HIT   = 3.2;     /* 맞히면 더 주는 시간 */
-const TIME_MISS  = 4.5;     /* 틀리면 깎는 시간 */
+const TIME_START = 40;      /* 시작 시간(초) */
+const TIME_HIT   = 2.6;     /* 맞히면 더 주는 시간 */
+const TIME_MISS  = 5.0;     /* 틀리면 깎는 시간 */
 const CROWD0     = 9;       /* 1라운드 인원 */
 const CROWD_UP   = 3;       /* 라운드마다 늘어나는 인원 */
 const CROWD_MAX  = 54;
@@ -102,9 +102,8 @@ function good(p){
   streak++;
   const mine = owns(target.id);
   const base = 70 + round * 22;
-  const fast = Math.round(Math.max(0, left) * 1.1);
   const bonus = (mine ? Math.round(base * 0.3) : 0) + Math.min(120, (streak - 1) * 20);
-  score += base + fast * 0 + bonus;        /* 남은 시간은 마지막에 한 번에 */
+  score += base + bonus;        /* 남은 시간은 마지막에 한 번에 */
   left = Math.min(TIME_START, left + TIME_HIT);
   flash = 0.5;
   hitFx.push({ x: p.x, y: p.y - p.s * 0.6, t: 0,

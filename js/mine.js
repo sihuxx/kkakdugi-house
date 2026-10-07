@@ -110,7 +110,9 @@ function leave(bottom){
 function finish(r){
   if(ended) return;
   ended = true;
-  if(depth > (S.mineBest || 0)) S.mineBest = depth;
+  /* 무너진 판은 기록으로 치지 않습니다 — '무너졌어요…' 아래에
+     '가장 깊이 내려갔어요!' 가 같이 뜨는 게 이상했습니다 */
+  if(!r.collapsed && depth > (S.mineBest || 0)) S.mineBest = depth;
   setTimeout(() => { if(onEnd) onEnd(r); }, 700);
 }
 function quit(){                               /* 창을 닫듯 그냥 나가기 — 번 건 챙겨준다 */

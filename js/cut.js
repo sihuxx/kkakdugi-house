@@ -10,12 +10,16 @@ const CUTC={
   SR:{s1:'#FFDFE9',s2:'#FFF7D6',orb:'#FF9EB5',ray:'rgba(255,158,181,.26)',
       plate:'#FFE3EC',label:'진귀!',intro:5.2,rev:3.6},
   UR:{s1:'#FFF0C4',s2:'#FFF8E4',orb:'#E0B84E',ray:'rgba(224,184,78,.32)',
-      plate:'#FFF1CE',label:'전설!!',intro:6.2,rev:4.2}
+      plate:'#FFF1CE',label:'전설!!',intro:6.2,rev:4.2},
+  /* 울트라초수퍼전설 — 이 칸이 없어서 귀여운 두기를 뽑으면 연출이 멈췄습니다 */
+  UU:{s1:'#F3E4FB',s2:'#FFF7D6',orb:'#C98BE8',ray:'rgba(201,139,232,.30)',
+      plate:'#F6E8FD',label:'울트라초수퍼전설!!!',intro:6.4,rev:4.4}
 };
-const HIRANK = rk => rk === 'SR' || rk === 'UR';
+const HIRANK = rk => rk === 'SR' || rk === 'UR' || rk === 'UU';
 let cut=null;
 
 function startCut(rank, results, onDone){
+  if(!CUTC[rank]) rank = 'UR';        /* 모르는 등급이 와도 멈추지 않게 */
   const cast=[];
   const mine=look();                       /* 지금 입고 있는 모습이 앞장선다 */
   const pool=CHARS.filter(c=>c.id!==mine.id);

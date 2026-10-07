@@ -762,7 +762,7 @@ function pointer(yFrac, down){
   if(!down){ setSlide(false); return; }
   if(yFrac < 0.6) doJump(); else setSlide(true);
 }
-function quit(){ state = 'over'; runBgmStop(); goHome(); }
+function quit(){ state = 'over'; runBgmStop(); backFromJob(); }
 return { start, frame, key, pad, pointer, quit, resize: sync,
          state: () => state, peek: () => ({ state, player, ents, segs, speed, energy, skill, hits,
            theme: CO.theme.id, mapend: MAPEND, chunks: MAP.length,

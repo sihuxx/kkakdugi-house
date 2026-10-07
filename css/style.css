@@ -911,8 +911,9 @@ body.fs #stage{border-radius:0;box-shadow:none;}
   text-shadow:0 1px 3px rgba(90,60,120,.45);}
 @keyframes uuFlow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 
-/* 오늘의 할 일 — 닫기 */
-#dailyPanel{position:relative;}
+/* 오늘의 할 일 — 닫기.
+   여기서 position 을 다시 쓰면 위에 있는 absolute 를 덮어써서
+   패널이 화면 흐름 속으로 들어가 버린다 (실제로 화면 밖으로 밀려났었음). */
 #dailyClose{position:absolute;right:10px;top:10px;border:0;cursor:pointer;
   width:26px;height:26px;border-radius:999px;font-size:13px;line-height:1;
   background:#F3EAE1;color:#8A7260;}

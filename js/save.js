@@ -60,7 +60,15 @@ let S = freshSave();
 })();
 let save = function(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} };
 
+/* 설정은 늘 '같은 객체' 를 들고 있어야 합니다.
+   클라우드에서 세이브를 받아 S 를 통째로 갈아끼우면 이 참조가 끊어져서
+   소리·빛 설정을 바꿔도 저장이 안 되는 일이 있었습니다 (applyCloud 참고). */
 const settings = S.settings;
+
+/* 업적 표를 걷어내면서 호출부만 남아 있었습니다.
+   가구를 살 때마다 여기서 터져서 — 클로버는 빠지고 화면은 그대로이고,
+   한 번 더 누르면 또 사져서 같은 가구가 두 개 생겼습니다. */
+function checkAchieve(){ /* 업적 기능은 현재 없음 */ }
 const look = () => CHARS.find(c => c.id === S.look) || CHARS[0];
 const owns = id => S.own.includes(id);
 const hasFurn = id => S.furn.includes(id);
@@ -96,7 +104,7 @@ function addClover(n){
 
 /* ===== 두기 레벨 =====
    뭘 하든 조금씩 쌓입니다. 올라가면 알바비가 오르고 보상이 나와요. */
-let lvFx = 0;                       /* 레벨업 연출 남은 시간 */
+let lvFx = 0;                       /* 레벨업 연출 남은 시간 (care.js 에서 읽음) */
 function addExp(n){
   const d = S.dugi;
   if(d.lv >= LV_MAX){ d.exp = 0; return; }
@@ -236,7 +244,7 @@ function bumpDaily(kind, n){
     row.n += n;
     if(row.n >= def.need){
       row.got = true; changed = true;
-      S.clover += def.pay; addLove(3); addExp(70);
+      addClover(def.pay); addLove(3); addExp(70);
       toast('오늘의 할 일 완료!', def.txt + ' · 클로버 +' + def.pay);
       sfxCoin(4);
     }

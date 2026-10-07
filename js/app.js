@@ -68,14 +68,28 @@ function toggleCond(force){
 let jobFrom = 'room';
 function markJobFrom(){ jobFrom = (place === 'room') ? 'room' : place; }
 /* 알바·로비에서 '돌아가기' — 떠났던 자리로 */
-function backFromJob(){
-  if(jobFrom === 'plaza'){ goPlaza(); return; }
-  if(jobFrom === 'yard'){ goYard(); return; }
-  goHome();
+function backFromJob(after){
+  if(jobFrom === 'plaza'){ goPlaza(after); return; }
+  if(jobFrom === 'yard'){ goYard(); }
+  else goHome();
+  after && after();
+}
+
+/* 꾸미기 — 들어올 때의 자리를 찍어두고, 되돌리기를 누르면 그대로 복구 */
+let decoSnap = null;
+
+/* 장면을 떠날 때 공통으로 정리하는 것들.
+   한 군데서만 빠뜨려도 '두기가 벽에 붙어 안 움직인다' 같은 버그가 됩니다. */
+function clearScene(){
+  if(mini) closeMini();                 /* 씻기기 보상을 날리지 않게 */
+  for(const k in keys) keys[k] = false; /* 알바 중에 뗀 키가 남아 있던 문제 */
+  home.sweep = false; home.drag = null; home.aim = null; home.autoAct = null;
+  decoSnap = null;
 }
 
 function goHome(){
   leavePlaza(); $('emoteBar').hidden = true; $('decoBar').hidden = true;
+  clearScene();
   const wasOut = outside();
   place = 'room';
   mode = 'home'; deco = false; mini = null;
@@ -92,6 +106,7 @@ function goHome(){
 /* ===== 정원으로 나가기 ===== */
 function goYard(){
   leavePlaza(); $('emoteBar').hidden = true; $('decoBar').hidden = true;
+  clearScene();
   place = 'yard';
   mode = 'home'; deco = false; mini = null;
   closeModal(); showScreen(null);
@@ -106,14 +121,18 @@ function goYard(){
 
 /* ===== 광장 ===== */
 let plazaBusy = false;
-function goPlaza(){
+/* 광장은 연결을 기다려야 해서 '다 되면' 콜백으로 알려줍니다.
+   예전엔 바로 돌아와서, 알바 목록을 열어두면 1~2초 뒤에 혼자 닫히고
+   그 사이에 고른 알바가 광장 화면에 가로채이는 일이 있었습니다. */
+function goPlaza(done){
   if(plazaBusy) return;
-  if(!Net.enabled()){ toast('광장은 서버 연결이 필요해요', '혼자 하기 모드예요'); return; }
+  if(!Net.enabled()){ toast('광장은 서버 연결이 필요해요', '혼자 하기 모드예요'); done && done(); return; }
   plazaBusy = true;
+  mode = 'home';                 /* 들어가는 동안 알바가 시작되지 않게 잠근다 */
   toast('광장으로 가는 중…', '');
   Plaza.enter(err => {
     plazaBusy = false;
-    if(err){ toast('광장에 못 들어갔어요', err.message || ''); return; }
+    if(err){ toast('광장에 못 들어갔어요', err.message || ''); goYard(); done && done(); return; }
     place = 'plaza';
     mode = 'home'; deco = false; mini = null;
     closeModal(); showScreen(null);
@@ -127,6 +146,7 @@ function goPlaza(){
     paintChat([]);
     toast('광장에 왔어요', '지금 ' + Plaza.count() + '명 · 두기를 누르면 명함');
     refreshBar();
+    done && done();
   });
 }
 function leavePlaza(){
@@ -174,6 +194,7 @@ function paintEmotes(){
 
 /* ===== 배달 알바 ===== */
 function startRun(){
+  if(plazaBusy) return;
   markJobFrom();
   leavePlaza(); closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
@@ -207,7 +228,8 @@ function runEnd(r){
 
 /* ===== 광산 알바 ===== */
 function startMine(){
-  markJobFrom();
+  if(plazaBusy) return;
+  markJobFrom(); leavePlaza();
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'mine'; $('topbar').hidden = true; showScreen(null);
@@ -249,7 +271,8 @@ function mineEnd(r){
 
 /* ===== 미아 찾기 ===== */
 function startLost(){
-  markJobFrom();
+  if(plazaBusy) return;
+  markJobFrom(); leavePlaza();
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'lost'; $('topbar').hidden = true;
@@ -283,7 +306,8 @@ function lostEnd(r){
 
 /* ===== 택배 포장 ===== */
 function startPack(){
-  markJobFrom();
+  if(plazaBusy) return;
+  markJobFrom(); leavePlaza();
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'pack'; $('topbar').hidden = true;
@@ -329,7 +353,7 @@ function startCatch(){
     toast('서버가 연결되지 않았어요', '혼자 하는 알바를 해주세요');
     openModal('job'); return;
   }
-  markJobFrom();
+  markJobFrom(); leavePlaza(); bgmStop();
   mode = 'cmlobby';
   $('topbar').hidden = true; $('runPad').hidden = true;
   $('cmPanel').hidden = true;
@@ -337,6 +361,10 @@ function startCatch(){
   showScreen($('cmLobby'));
 }
 function enterRoom(code){
+  /* 광장 천막에서 바로 들어오는 길도 있으니 여기서도 자리를 기억하고,
+     광장 UI(채팅·인사줄)를 걷어낸다 — 안 그러면 그리는 칸을 가린다. */
+  markJobFrom();
+  leavePlaza();
   const btn = $('cmJoin'), mk = $('cmMake');
   btn.disabled = mk.disabled = true; cmErr('연결하는 중…');
   Net.join(code, { name: S.dugi.name, look: S.look }, err => {
@@ -356,7 +384,7 @@ function enterRoom(code){
 function catchEnd(r){
   $('cmPanel').hidden = true;
   Plaza.setMyRoom('');
-  if(!r){ mode = 'home'; backFromJob(); openModal('job'); return; }
+  if(!r){ mode = 'home'; backFromJob(() => openModal('job')); return; }
   mode = 'catchresult';
   const before = S.career.draw || 0;
   /* 점수는 남의 브라우저가 센 것이라 그대로 믿지 않는다 — 값도 자르고 보상에도 상한 */
@@ -392,7 +420,7 @@ $('cmCode').addEventListener('input', e => {
   if(e.target.value !== v) e.target.value = v;
   cmErr('');
 });
-$('cmBack').onclick = () => { mode = 'home'; backFromJob(); openModal('job'); };
+$('cmBack').onclick = () => { mode = 'home'; backFromJob(() => openModal('job')); };
 $('cmQuit').onclick = () => { if(confirm('방에서 나갈까요?')) CatchMind.quit(); };
 $('cmForm').onsubmit = e => {
   e.preventDefault();
@@ -504,6 +532,8 @@ addEventListener('keydown', e => {
   if(e.code === 'Escape' && modalOpen) closeModal();
 });
 addEventListener('keyup', e => {
+  /* 먼저 걷어둔다 — 알바 중에 뗀 키가 남아서 집에 와도 두기가 계속 걸었습니다 */
+  if(KMAP[e.code]) keys[KMAP[e.code]] = false;
   if(mode === 'run'){ DugiRun.key(e.code, false); return; }
   if(KMAP[e.code]) keys[KMAP[e.code]] = false;
 });
@@ -595,12 +625,11 @@ function toggleDaily(force){
   if(open) paintDaily();
 }
 $('dailyClose').onclick = () => toggleDaily(false);
-/* 꾸미기 — 들어올 때의 자리를 찍어두고, 되돌리기를 누르면 그대로 복구 */
-let decoSnap = null;
 function toggleDeco(force){
   const want = force === undefined ? !deco : force;
   if(want && place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
   if(want === deco) return;
+  if(mini) closeMini();                 /* 하던 미니게임 보상을 챙기고 나간다 */
   deco = want; mini = null;
   if(deco){
     decoSnap = JSON.stringify(S.pos || {});
@@ -798,8 +827,14 @@ async function mergeCloud(){
 function applyCloud(data){
   const clean = Auth.sanitizeSave(data);
   if(!clean) return;
+  /* settings 는 '같은 객체' 를 계속 써야 합니다 — 소리·빛 모듈이 이 객체를
+     붙잡고 있어서, 통째로 갈아끼우면 설정을 바꿔도 저장이 안 됐습니다. */
+  const sv = clean.settings; delete clean.settings;
   Object.assign(S, clean);
+  if(sv) Object.assign(settings, sv);
+  S.settings = settings;
   S.seen = Date.now();
+  applyVolumes();
   save(); relayout(); refreshBar(); paintDaily();
 }
 
@@ -808,7 +843,11 @@ const _saveLocal = save;
 save = function(){ _saveLocal(); if(Auth.enabled() && Auth.current()) Auth.pushLater(S); };
 
 /* 로그인 상태가 바뀌면 상단바를 다시 그린다 */
-Auth.onChange(() => { try{ refreshBar(); paintMenu(); }catch(e){} });
+Auth.onChange(u => {
+  try{ refreshBar(); paintMenu(); }catch(e){}
+  /* 계정이 바뀌면 남의 기록 캐시를 들고 있으면 안 됩니다 */
+  try{ if(!u && Board.forget) Board.forget(); }catch(e){}
+});
 
 /* 페이지를 열 때: 저장된 세션이 있으면 조용히 이어서 로그인 */
 (async function bootAuth(){

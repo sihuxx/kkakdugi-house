@@ -184,6 +184,10 @@ function buildShop(body){
       if(has){ toast('이미 집에 있어요', f.name); return; }
       if(locked){ sfxNo(); toast('집이 좁아요', HOUSES[f.need].name + '으로 이사하면 놓을 수 있어요'); return; }
       if(full){ sfxNo(); toast('자리가 없어요', '이사하면 자리가 늘어나요'); return; }
+      /* 화면이 낡았을 수도 있으니 누르는 순간 다시 본다 — 같은 가구를 두 번 사면
+         보너스가 겹쳐 계산되고, 새로고침하면 클로버만 날아갔었다 */
+      if(S.furn.includes(f.id)){ sfxNo(); toast('이미 가지고 있어요', ''); openModal('shop'); return; }
+      if(S.furn.length >= HOUSE().slots){ sfxNo(); toast('자리가 없어요', '집을 넓혀보세요'); return; }
       if(S.clover < f.price){ sfxNo(); toast('클로버가 모자라요', '알바해서 벌어보세요'); return; }
       addClover(-f.price); S.furn.push(f.id); save(); relayout(); refreshBar(); sfxCoin(3);
       checkAchieve();
@@ -769,7 +773,10 @@ const RANKSOUND = {
   R: () => arp([740, 988], 0.09, 0.12),
   SR: () => { arp([660, 880, 1175, 1568], 0.075, 0.15, 'square'); shimmer(); },
   UR: () => { arp([523, 784, 1047, 1319, 1568, 2093], 0.07, 0.2, 'square');
-              shimmer(); setTimeout(shimmer, 220); }
+              shimmer(); setTimeout(shimmer, 220); },
+  /* 제일 희귀한 등급만 소리가 없었습니다 */
+  UU: () => { arp([523, 659, 784, 1047, 1319, 1568, 2093, 2637], 0.065, 0.26, 'square');
+              shimmer(); setTimeout(shimmer, 180); setTimeout(shimmer, 380); }
 };
 function buildGacha(body){
   const wrap = document.createElement('div'); wrap.className = 'gacha';
@@ -831,7 +838,7 @@ function buildGacha(body){
   $('gFree').onclick = () => { if(freeLeft()) run(1, true); };
   $('g1').onclick = () => run(1);
   $('g10').onclick = () => run(10);
-  if(lastPull) renderPullResult(lastPull);
+  if(lastPull){ renderPullResult(lastPull); lastPull = null; }
 }
 const RANK_RC = { R:'#8FC0D8', SR:'#FF9EB5', UR:'#E8C86A', UU:'#C98BE8' };
 function decorate(el, rank){
@@ -840,9 +847,10 @@ function decorate(el, rank){
   ring.className = 'ring'; ring.style.setProperty('--rc', RANK_RC[rank] || '#8FC0D8');
   el.appendChild(ring);
   if(rank === 'SR' || rank === 'UR' || rank === 'UU'){
-    for(let k = 0; k < (rank === 'UU' ? 20 : rank === 'UR' ? 14 : 9); k++){
+    const n = rank === 'UU' ? 20 : rank === 'UR' ? 14 : 9;
+    for(let k = 0; k < n; k++){
       const s = document.createElement('span'); s.className = 'spark';
-      const a = k / 9 * 6.283, d = 42 + Math.random() * 34;
+      const a = k / n * 6.283, d = 42 + Math.random() * 34;   /* 항상 /9 라 겹쳤었음 */
       s.style.setProperty('--dx', (Math.cos(a) * d).toFixed(1) + 'px');
       s.style.setProperty('--dy', (Math.sin(a) * d).toFixed(1) + 'px');
       s.style.animationDelay = (Math.random() * 0.12) + 's';

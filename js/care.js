@@ -414,7 +414,9 @@ function homeDown(px, py){
       home.aim = { x:r.x, y:r.y, bx:b.x, by:b.y }; return;
     }
   }
-  if(home.sweep){
+  /* 청소 중이라도 먼지 근처를 눌렀을 때만 가로챈다.
+     예전엔 전부 삼켜서, 먼지를 다 지우기 전까지 쓰다듬기도 이동도 안 됐습니다. */
+  if(home.sweep && home.dusts.some(d => Math.hypot((d.x - r.x) * 1.4, (d.y - r.y) * 0.8) < 0.1)){
     sweepAt(r); return;
   }
   /* 먼지를 누르면 바로 청소 시작 — 돌봄 버튼 줄이 없으니 먼지 자체가 버튼입니다 */
@@ -651,8 +653,12 @@ function drawPrompt(){
   const k = uiK();
   const LABEL = { wardrobe:'옷장 열기', gacha:'뽑기', shop:'상점 들어가기',
                   job:'알바하러 가기', out:'밖으로 나가기', in:'집으로 들어가기',
-                  guest:'간식 나눠주기' };
-  const label = LABEL[n.act] || CARE[n.act].name;
+                  guest:'간식 나눠주기', album:'사진첩 열기', rank:'랭킹 보기',
+                  plaza:'광장으로 가기', yardback:'정원으로 가기',
+                  tent:'캐치마인드 방 보기', sit:'잠깐 앉기', look:'올려다보기' };
+  /* CARE 에 없는 act(사진첩·랭킹·광장…)가 들어오면 여기서 매 프레임 터졌습니다.
+     그 프레임의 남은 그리기가 통째로 날아가서 빛 효과가 사라졌습니다. */
+  const label = LABEL[n.act] || (CARE[n.act] && CARE[n.act].name) || n.name || '';
   g.save();
   g.font = '700 ' + (19 * k) + 'px Gaegu, sans-serif';
   const w = g.measureText('E  ' + label).width + 30 * k, h = 30 * k;
