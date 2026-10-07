@@ -910,3 +910,46 @@ body.fs #stage{border-radius:0;box-shadow:none;}
   background-size:300% 100%;color:#FFFFFF;animation:uuFlow 2.6s linear infinite;
   text-shadow:0 1px 3px rgba(90,60,120,.45);}
 @keyframes uuFlow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+
+/* 오늘의 할 일 — 닫기 */
+#dailyPanel{position:relative;}
+#dailyClose{position:absolute;right:10px;top:10px;border:0;cursor:pointer;
+  width:26px;height:26px;border-radius:999px;font-size:13px;line-height:1;
+  background:#F3EAE1;color:#8A7260;}
+#dailyClose:hover{background:#E9DDD0;}
+
+/* ── 광장 채팅 ─────────────────────────────────────────── */
+#plazaChat{position:absolute;left:12px;bottom:12px;z-index:7;width:min(290px,60%);
+    display:flex;flex-direction:column;gap:6px;}
+#plazaChat[hidden]{display:none!important;}
+#pcLog{display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto;
+    padding:2px;}
+#pcLog p{margin:0;font-size:12.5px;line-height:1.45;color:#5C4C42;
+    background:rgba(255,252,248,.88);border-radius:13px;padding:5px 11px;
+    box-shadow:0 2px 6px rgba(120,95,75,.08);overflow-wrap:anywhere;}
+#pcLog p.me{background:rgba(253,242,222,.92);}
+#pcLog p b{font-family:var(--display);font-size:14px;color:#7A6250;margin-right:6px;}
+#pcForm{display:flex;gap:5px;}
+#pcInput{flex:1;min-width:0;font-family:var(--body);font-size:13px;color:#5C4C42;
+    border:none;border-radius:999px;padding:8px 14px;background:rgba(255,252,248,.95);
+    box-shadow:0 2px 8px rgba(120,95,75,.10);}
+#pcInput:focus{outline:2px solid #EFA6B8;outline-offset:1px;}
+#pcForm .btn{flex:none;padding:7px 14px;font-size:12.5px;}
+#pcNote{margin:0;font-size:11.5px;color:#C05B52;min-height:14px;}
+@container (max-width: 700px){
+  #plazaChat{width:min(230px,54%);}
+  #pcLog{max-height:96px;}
+}
+
+/* ── 꾸미기 바 ─────────────────────────────────────────── */
+#decoBar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:8;
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:center;max-width:94%;
+    background:rgba(255,252,248,.92);border-radius:999px;padding:7px 10px 7px 16px;
+    box-shadow:0 8px 22px rgba(120,95,75,.16);}
+#decoBar[hidden]{display:none!important;}
+#decoBar .dtxt{font-family:var(--body);font-size:12.5px;color:var(--ink-soft);}
+#decoBar .btn{padding:6px 14px;font-size:12.5px;}
+@container (max-width: 700px){
+  #decoBar .dtxt{display:none;}
+  #decoBar{padding:7px 10px;}
+}

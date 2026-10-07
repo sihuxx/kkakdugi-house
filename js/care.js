@@ -762,7 +762,6 @@ function drawHome(dt){
   drawLightRoom(dt);                 /* 창문 빛 · 전등 불빛 · 공중 먼지 */
   if(deco) drawZoneLabels();
   drawPrompt();
-  if(deco) drawDecoHint();
   if(mini) drawMini();
   FX.bloom(DAY().bloom, 3);          /* 밝은 데가 번진다 */
 }
@@ -783,18 +782,6 @@ function drawLightRoom(dt){
     const L = lampSpot();
     FX.glow(L.x, L.y, Math.min(W, H) * 0.3, '255,214,132', D.glow * 0.5);
   }
-}
-function drawDecoHint(){
-  const k = uiK();
-  g.save();
-  g.fillStyle = 'rgba(120,95,75,.9)';
-  const txt = '가구를 끌어서 옮기세요';
-  g.font = '700 ' + (18 * k) + 'px Gaegu, sans-serif';
-  const w = g.measureText(txt).width + 30 * k;
-  rrect(W / 2 - w / 2, H * 0.12, w, 30 * k, 15 * k); g.fill();
-  g.fillStyle = '#FFF8F0'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(txt, W / 2, H * 0.12 + 15 * k);
-  g.restore();
 }
 
 /* ===== 미니 오버레이 그리기 ===== */

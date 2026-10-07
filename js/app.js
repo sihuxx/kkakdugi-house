@@ -63,8 +63,19 @@ function toggleCond(force){
   if(open) refreshBar();
 }
 
+/* 알바를 나가기 전에 어디에 있었나 — 끝나면 그 자리로 돌려놓는다.
+   정원에서 알바를 갔는데 집으로 돌아오면 다시 걸어 나가야 해서 번거롭다. */
+let jobFrom = 'room';
+function markJobFrom(){ jobFrom = (place === 'room') ? 'room' : place; }
+/* 알바·로비에서 '돌아가기' — 떠났던 자리로 */
+function backFromJob(){
+  if(jobFrom === 'plaza'){ goPlaza(); return; }
+  if(jobFrom === 'yard'){ goYard(); return; }
+  goHome();
+}
+
 function goHome(){
-  leavePlaza(); $('emoteBar').hidden = true;
+  leavePlaza(); $('emoteBar').hidden = true; $('decoBar').hidden = true;
   const wasOut = outside();
   place = 'room';
   mode = 'home'; deco = false; mini = null;
@@ -80,7 +91,7 @@ function goHome(){
 
 /* ===== 정원으로 나가기 ===== */
 function goYard(){
-  leavePlaza(); $('emoteBar').hidden = true;
+  leavePlaza(); $('emoteBar').hidden = true; $('decoBar').hidden = true;
   place = 'yard';
   mode = 'home'; deco = false; mini = null;
   closeModal(); showScreen(null);
@@ -112,15 +123,41 @@ function goPlaza(){
     home.vx = home.vy = 0; home.act = null; home.sweep = false;
     home.ball.home = true; home.aim = null;
     paintEmotes();
+    $('plazaChat').hidden = false;
+    paintChat([]);
     toast('광장에 왔어요', '지금 ' + Plaza.count() + '명 · 두기를 누르면 명함');
     refreshBar();
   });
 }
 function leavePlaza(){
+  $('plazaChat').hidden = true;
   if(!Plaza.alive()) return;
   Plaza.leave();
   $('emoteBar').hidden = true;
 }
+
+/* 광장 채팅 — 들어오는 글은 전부 esc 로 감싸서 넣습니다 */
+function paintChat(log){
+  const el = $('pcLog');
+  el.innerHTML = log.map(m =>
+    '<p' + (m.mine ? ' class="me"' : '') + '><b>' + esc(m.name) + '</b>' +
+    esc(m.text) + '</p>').join('');
+  el.scrollTop = el.scrollHeight;
+}
+Plaza.onChat = paintChat;
+function pcNote(t){
+  const n = $('pcNote');
+  n.textContent = t || '';
+  clearTimeout(pcNote.t);
+  if(t) pcNote.t = setTimeout(() => { n.textContent = ''; }, 2600);
+}
+$('pcForm').onsubmit = e => {
+  e.preventDefault();
+  const inp = $('pcInput');
+  const why = Plaza.say(inp.value);
+  if(why === null){ inp.value = ''; pcNote(''); return; }   /* 보냄 */
+  if(why) pcNote(why);
+};
 
 /* 인사 — 정해진 6개만. 자유 입력이 없으니 욕설도 스크립트도 못 들어옵니다. */
 function paintEmotes(){
@@ -137,9 +174,10 @@ function paintEmotes(){
 
 /* ===== 배달 알바 ===== */
 function startRun(){
+  markJobFrom();
   leavePlaza(); closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
-  mode = 'run'; $('topbar').hidden = true; showScreen(null);
+  mode = 'run'; $('topbar').hidden = true; $('plazaChat').hidden = true; showScreen(null);
   $('runPad').hidden = !(W < 760 || matchMedia('(pointer:coarse)').matches);
   DugiRun.start({ look: look(), onEnd: runEnd });
 }
@@ -169,6 +207,7 @@ function runEnd(r){
 
 /* ===== 광산 알바 ===== */
 function startMine(){
+  markJobFrom();
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'mine'; $('topbar').hidden = true; showScreen(null);
@@ -210,6 +249,7 @@ function mineEnd(r){
 
 /* ===== 미아 찾기 ===== */
 function startLost(){
+  markJobFrom();
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'lost'; $('topbar').hidden = true;
@@ -243,6 +283,7 @@ function lostEnd(r){
 
 /* ===== 택배 포장 ===== */
 function startPack(){
+  markJobFrom();
   closeModal(); initAudio(); bgmStop();
   if(ctx && ctx.state === 'suspended') ctx.resume();
   mode = 'pack'; $('topbar').hidden = true;
@@ -288,6 +329,7 @@ function startCatch(){
     toast('서버가 연결되지 않았어요', '혼자 하는 알바를 해주세요');
     openModal('job'); return;
   }
+  markJobFrom();
   mode = 'cmlobby';
   $('topbar').hidden = true; $('runPad').hidden = true;
   $('cmPanel').hidden = true;
@@ -314,7 +356,7 @@ function enterRoom(code){
 function catchEnd(r){
   $('cmPanel').hidden = true;
   Plaza.setMyRoom('');
-  if(!r){ mode = 'home'; goHome(); openModal('job'); return; }
+  if(!r){ mode = 'home'; backFromJob(); openModal('job'); return; }
   mode = 'catchresult';
   const before = S.career.draw || 0;
   /* 점수는 남의 브라우저가 센 것이라 그대로 믿지 않는다 — 값도 자르고 보상에도 상한 */
@@ -350,7 +392,7 @@ $('cmCode').addEventListener('input', e => {
   if(e.target.value !== v) e.target.value = v;
   cmErr('');
 });
-$('cmBack').onclick = () => { mode = 'home'; goHome(); openModal('job'); };
+$('cmBack').onclick = () => { mode = 'home'; backFromJob(); openModal('job'); };
 $('cmQuit').onclick = () => { if(confirm('방에서 나갈까요?')) CatchMind.quit(); };
 $('cmForm').onsubmit = e => {
   e.preventDefault();
@@ -446,6 +488,7 @@ addEventListener('keydown', e => {
   }
   if(mode === 'home' && !modalOpen){
     if(mini && e.code === 'Escape'){ closeMini(); return; }
+    if(deco && e.code === 'Escape'){ toggleDeco(false); return; }
     if(KMAP[e.code] && !mini){ e.preventDefault(); keys[KMAP[e.code]] = true; home.target = null; return; }
     if((e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') && !mini){
       e.preventDefault(); if(home.near) act(home.near); return; }
@@ -510,6 +553,7 @@ document.addEventListener('pointerdown', e => {
   audioKick();
   if(!e.target.closest('#menuPanel,#menuBtn')) toggleMenu(false);
   if(!e.target.closest('#condPanel,#condChip')) toggleCond(false);
+  if(!e.target.closest('#dailyPanel,#menuPanel,#menuBtn')) toggleDaily(false);
   if(e.target.closest('button,.dcard,.shopcard,.jobcard,.tab,.photo')) uiClick();
 }, true);
 function audioKick(){
@@ -544,18 +588,46 @@ $('mAcct').onclick  = () => { toggleMenu(false); openAccount(); };
 $('mSet').onclick   = () => { toggleMenu(false); openModal('settings'); };
 
 /* 메뉴는 전부 사물에서 열립니다 (care.js 의 act 참고) */
-function toggleDaily(){
+function toggleDaily(force){
   const p2 = $('dailyPanel');
-  p2.hidden = !p2.hidden;
-  paintDaily();
+  const open = force === undefined ? p2.hidden : force;
+  p2.hidden = !open;
+  if(open) paintDaily();
 }
-function toggleDeco(){
-  if(place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
-  deco = !deco; mini = null;
-  toast(deco ? '꾸미기 모드' : '꾸미기 끝',
-        deco ? '가구를 끌어서 옮기세요 · 공구함을 다시 누르면 끝' : '자리를 저장했어요');
-  if(!deco) save();
+$('dailyClose').onclick = () => toggleDaily(false);
+/* 꾸미기 — 들어올 때의 자리를 찍어두고, 되돌리기를 누르면 그대로 복구 */
+let decoSnap = null;
+function toggleDeco(force){
+  const want = force === undefined ? !deco : force;
+  if(want && place !== 'room'){ toast('집 안에서만 꾸밀 수 있어요', ''); return; }
+  if(want === deco) return;
+  deco = want; mini = null;
+  if(deco){
+    decoSnap = JSON.stringify(S.pos || {});
+    toast('꾸미기 모드', '가구를 끌어서 옮기세요');
+  }else{
+    decoSnap = null;
+    save();
+    toast('꾸미기 끝', '자리를 저장했어요');
+  }
+  paintDeco();
 }
+function paintDeco(){
+  $('decoBar').hidden = !(deco && mode === 'home' && place === 'room');
+  try{ paintMenu(); }catch(e){}
+}
+$('decoDone').onclick  = () => toggleDeco(false);
+$('decoUndo').onclick  = () => {
+  if(!deco || decoSnap == null) return;
+  try{ S.pos = JSON.parse(decoSnap); }catch(e){ S.pos = {}; }
+  relayout(); save();
+  toast('되돌렸어요', '꾸미기를 시작할 때 자리로');
+};
+$('decoReset').onclick = () => {
+  if(!deco) return;
+  S.pos = {}; relayout(); save();
+  toast('기본 자리로', '가구를 처음 자리에 놓았어요');
+};
 function openAccount(){
   if(Auth.current()) openModal('account'); else showAuth();
 }
@@ -568,7 +640,7 @@ $('runAgain').onclick = () => {
   else if(mode === 'catchresult') startCatch();
   else startRun();
 };
-$('runHome').onclick = () => goHome();
+$('runHome').onclick = () => backFromJob();
 $('introGo').onclick = () => finishIntro();
 $('introName').addEventListener('keydown', e => { if(e.key === 'Enter') finishIntro(); });
 $('skipBtn').onclick = () => skipCut();

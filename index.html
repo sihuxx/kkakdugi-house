@@ -66,6 +66,21 @@
       </div>
     </header>
 
+    <div id="decoBar" hidden>
+      <span class="dtxt">가구를 끌어서 옮기세요</span>
+      <button class="btn small" id="decoDone" type="button">다 됐어요</button>
+      <button class="btn ghost small" id="decoUndo" type="button">되돌리기</button>
+      <button class="btn ghost small" id="decoReset" type="button">기본 자리로</button>
+    </div>
+    <aside id="plazaChat" hidden>
+      <div id="pcLog" aria-live="polite"></div>
+      <form id="pcForm" autocomplete="off">
+        <input id="pcInput" type="text" maxlength="60" placeholder="광장에 한마디"
+               autocomplete="off" spellcheck="false">
+        <button class="btn small" type="submit">보내기</button>
+      </form>
+      <p class="hint" id="pcNote"></p>
+    </aside>
     <div id="emoteBar" hidden></div>
     <button id="fsBtn" type="button" title="전체화면" aria-label="전체화면">⛶</button>
     <button id="skipBtn" type="button" hidden>건너뛰기</button>
@@ -186,6 +201,7 @@
 
     <!-- 오늘의 할 일 -->
     <aside id="dailyPanel" hidden>
+      <button id="dailyClose" type="button" aria-label="닫기">✕</button>
       <h3>오늘의 할 일</h3>
       <div id="dailyList"></div>
       <p class="hint">매일 새로 생겨요</p>
