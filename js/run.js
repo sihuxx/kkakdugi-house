@@ -333,7 +333,10 @@ function update(dt){
         if(d < 300){ e.x += (player.x - e.x)*Math.min(1, dt*7); e.y += ((player.y+40) - e.y)*Math.min(1, dt*7); }
       }
       const r = e.kind === 'big' ? 52 : 40;
-      if(Math.abs(e.x - player.x) < r && Math.abs(e.y - (player.y + ph*0.5)) < r + 14){
+      /* 부딪힘과 똑같이 이동 구간 전체로 — 렉으로 한 프레임 크게 움직여도 안 놓친다 */
+      const ey = e.y, cy = py0 + ph*0.5, cy1 = py1 - ph*0.5;
+      if(px1 >= e.x - r && px0 <= e.x + r &&
+         ey >= Math.min(cy,cy1) - r - 14 && ey <= Math.max(cy,cy1) + r + 14){
         e.gone = true; combo++; maxCombo = Math.max(maxCombo, combo);
         const mult = skill === 'slow' ? 2 : 1;
         if(e.kind === 'big'){ jellyN += 5; score += 250*mult; energy = Math.min(100, energy + 28); SFX.big(); pop(e.x, e.y, '#FFD36E'); }

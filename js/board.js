@@ -38,7 +38,8 @@ async function submit(job){
     await Auth.api('/rest/v1/scores', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: { user_id: Auth.current().id, job, name: cleanName(S.dugi.name, 8) || '두기', best }
+      /* user_id 는 서버 트리거가 auth.uid() 로 채운다 — 클라가 보낼 필요 없음 */
+      body: { job, name: cleanName(S.dugi.name, 8) || '두기', best }
     });
     lastSent[job] = best;
     delete cache[job];
@@ -75,9 +76,9 @@ function clean(rows, job){
 async function rankOf(job, best){
   if(!enabled()) return null;
   try{
-    const head = await Auth.count('/rest/v1/scores?select=user_id&job=eq.' +
+    const head = await Auth.count('/rest/v1/scores?select=best&job=eq.' +
       encodeURIComponent(job) + '&best=gt.' + encodeURIComponent(best));
-    const all  = await Auth.count('/rest/v1/scores?select=user_id&job=eq.' +
+    const all  = await Auth.count('/rest/v1/scores?select=best&job=eq.' +
       encodeURIComponent(job));
     if(head == null || all == null) return null;
     return { rank: head + 1, total: all, best };

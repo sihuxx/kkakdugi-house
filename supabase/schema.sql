@@ -208,10 +208,18 @@ create policy "내 기록만 지운다"
   using ((select auth.uid()) = user_id);
 
 revoke all on public.scores from anon;
+-- 순위표에서 남의 auth uuid 가 새어나가지 않게, 읽기는 꼭 필요한 칸만 연다.
+-- (user_id 는 쓰기에만 쓰이고, 읽기로는 아예 안 나간다)
+revoke select on public.scores from authenticated;
+grant  select (job, name, best, updated_at) on public.scores to authenticated;
+grant  insert, update, delete on public.scores to authenticated;
 
 -- 들어오는 값을 서버가 한 번 더 손본다
+-- security definer 함수는 search_path 를 비워야 안전합니다.
+-- public 을 열어두면, 공격자가 같은 이름의 함수·연산자를 먼저 놓아
+-- definer(주인) 권한으로 실행시키는 경로가 생깁니다.
 create or replace function public.scores_guard()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   new.user_id := (select auth.uid());          -- 남의 이름으로 못 올린다
   new.updated_at := now();
@@ -233,7 +241,7 @@ create trigger scores_guard_upd before update on public.scores
 
 -- 올리는 횟수 제한 — saves 와 같은 방식 (1분에 20번)
 create or replace function public.scores_rate_limit()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = '' as $$
 declare r public.save_rate%rowtype;
 begin
   select * into r from public.save_rate where user_id = (select auth.uid()) for update;

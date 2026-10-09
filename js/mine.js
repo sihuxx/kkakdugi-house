@@ -448,7 +448,8 @@ function pointer(px, py){
 }
 function key(code){
   if(code === 'Space' || code === 'Enter' || code === 'ArrowDown') dig();
-  if(code === 'Escape' || code === 'ArrowUp' || code === 'KeyQ') leave(false);
+  /* 'ready' 일 때만 올라가기 — 바닥 도달 연출 중 키로 빠져나가 결과가 틀어지던 것 */
+  if((code === 'Escape' || code === 'ArrowUp' || code === 'KeyQ') && phase === 'ready') leave(false);
 }
 
 return { start, frame, pointer, key, quit,
