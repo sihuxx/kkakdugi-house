@@ -7,6 +7,27 @@
 --       "누가 무엇을 읽고 쓸 수 있는가" 는 전부 여기서 정해집니다.
 -- ===============================================================
 
+-- ═══════════════════════════════════════════════════════════
+--  ⚠️  먼저: 남아 있는 '모든' 정책을 지운다
+--  라이브 DB 에 대시보드나 예전 스키마에서 만든 느슨한 정책이 하나라도
+--  남아 있으면, 아무리 올바른 정책을 새로 만들어도 그게 같이 적용되어
+--  뚫립니다. (교내 대회에서 세이브 쓰기 IDOR 가 이래서 열렸음)
+--  그래서 세 테이블의 정책을 이름과 상관없이 전부 걷어냅니다.
+-- ═══════════════════════════════════════════════════════════
+do $$
+declare r record;
+begin
+  for r in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename in ('saves','save_rate','scores')
+  loop
+    execute format('drop policy if exists %I on %I.%I',
+                   r.policyname, r.schemaname, r.tablename);
+  end loop;
+end $$;
+
 -- ── 세이브 테이블 ───────────────────────────────────────────
 create table if not exists public.saves (
   user_id    uuid primary key references auth.users(id) on delete cascade,
@@ -47,6 +68,12 @@ create policy "본인 것만 고치기" on public.saves
 create policy "본인 것만 지우기" on public.saves
   for delete to authenticated
   using ( (select auth.uid()) = user_id );
+
+-- 테이블이 '이미' 있던 경우엔 create table 의 check 가 안 붙으므로 다시 보강한다
+alter table public.saves drop constraint if exists saves_size_ok;
+alter table public.saves add  constraint saves_size_ok  check (pg_column_size(data) <= 500000);
+alter table public.saves drop constraint if exists saves_shape_ok;
+alter table public.saves add  constraint saves_shape_ok check (jsonb_typeof(data) = 'object');
 
 -- 로그인하지 않은 사람(anon)에게는 아무 권한도 주지 않는다
 revoke all on public.saves from anon;
@@ -207,6 +234,22 @@ create policy "내 기록만 지운다"
   on public.scores for delete to authenticated
   using ((select auth.uid()) = user_id);
 
+-- scores 도 '이미' 있던 경우를 대비해 핵심 제약을 다시 보강한다
+alter table public.scores drop constraint if exists scores_range;
+alter table public.scores add  constraint scores_range check (
+  (job = 'deliver' and best between 0 and 200000) or
+  (job = 'mine'    and best between 0 and 30)     or
+  (job = 'lost'    and best between 0 and 60000)  or
+  (job = 'pack'    and best between 0 and 300000) or
+  (job = 'draw'    and best between 0 and 100000)
+);
+alter table public.scores drop constraint if exists scores_name_len;
+alter table public.scores add  constraint scores_name_len   check (char_length(name) between 1 and 8);
+alter table public.scores drop constraint if exists scores_name_clean;
+alter table public.scores add  constraint scores_name_clean check (name !~ '[<>&"''`\\]');
+alter table public.scores drop constraint if exists scores_job_ok;
+alter table public.scores add  constraint scores_job_ok     check (job in ('deliver','mine','lost','pack','draw'));
+
 revoke all on public.scores from anon;
 -- 순위표에서 남의 auth uuid 가 새어나가지 않게, 읽기는 꼭 필요한 칸만 연다.
 -- (user_id 는 쓰기에만 쓰이고, 읽기로는 아예 안 나간다)
@@ -269,7 +312,30 @@ create trigger scores_rate_ins before insert on public.scores
 create trigger scores_rate_upd before update on public.scores
   for each row execute function public.scores_rate_limit();
 
--- ── 확인용 ─────────────────────────────────────────────────
--- 아래가 전부 true 로 나와야 합니다.
--- select relname, relrowsecurity, relforcerowsecurity
---   from pg_class where relname in ('saves','save_rate','scores');
+-- ═══════════════════════════════════════════════════════════
+--  ✅ 확인용 — 위 전체를 실행한 뒤, 아래 세 쿼리를 따로 돌려보세요.
+-- ═══════════════════════════════════════════════════════════
+
+-- (1) RLS 가 세 테이블 모두 켜지고(force) 있어야 한다 → rls, forced 전부 true
+-- select relname as 테이블,
+--        relrowsecurity as rls,
+--        relforcerowsecurity as forced
+-- from pg_class
+-- where relname in ('saves','save_rate','scores');
+
+-- (2) 정책이 '정확히' 내가 만든 것만 있어야 한다.
+--     여기에 모르는 정책(예: permissive, 'Enable all', using(true) 등)이
+--     하나라도 더 있으면 그게 구멍입니다. 보이면 drop policy 로 지우세요.
+-- select tablename as 테이블, policyname as 정책, cmd as 동작,
+--        qual as using_조건, with_check as check_조건
+-- from pg_policies
+-- where schemaname = 'public'
+--   and tablename in ('saves','save_rate','scores')
+-- order by tablename, cmd;
+
+-- (3) 트리거가 붙어 있어야 한다 → saves 4개(guard x2, rate x2), scores 4개
+-- select event_object_table as 테이블, trigger_name as 트리거, action_timing, event_manipulation
+-- from information_schema.triggers
+-- where event_object_schema = 'public'
+--   and event_object_table in ('saves','scores')
+-- order by 테이블, 트리거;
